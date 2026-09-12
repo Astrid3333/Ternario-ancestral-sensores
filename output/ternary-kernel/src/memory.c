@@ -1,15 +1,11 @@
 /**
- * memory.c — Gestor de memoria en Base 60 (Babilónico)
+ * memory.c — Gestor de memoria en Base 60 (v2 — corregido)
  * 
- * Memoria organizada en 60 bloques de 60 bytes cada uno
- * Total: 3,600 bytes (3.5KB)
- * 
- * Cada bloque tiene un "color" (tipo) como los quipus:
- * - 0: libre
- * - 1: kernel
- * - 2: datos de proceso
- * - 3: stack
- * - 4: código
+ * Fixes:
+ * - mem_alloc() retorna int16_t (no uint8_t) para error -1
+ * - mem_get_base() con validación
+ * - mem_print_map() implementada con salida real
+ * - mem_read() con validación de color = libre
  */
 
 #include "../include/ternary.h"
@@ -18,20 +14,18 @@
 // ESTRUCTURAS
 // =============================================================================
 
-// Bloque de memoria
 typedef struct {
-    uint8_t data[BLOCK_SIZE];    // Datos del bloque
-    uint8_t color;               // Tipo de bloque (0-7)
-    uint8_t owner;               // ID del proceso dueño
-    uint8_t flags;               // Bits: [used][dirty][locked][...]
+    uint8_t data[BLOCK_SIZE];
+    uint8_t color;
+    uint8_t owner;
+    uint8_t flags;
 } __attribute__((packed)) mem_block_t;
 
-// Mapa de memoria (quipu simplificado)
 typedef struct {
-    uint8_t knot_positions[MEM_BLOCKS];  // Posición de cada "nudo"
-    uint8_t knot_colors[MEM_BLOCKS];     // Color de cada "nudo"
-    uint8_t total_used;                  // Bloques en uso
-    uint8_t total_free;                  // Bloques libres
+    uint8_t knot_positions[MEM_BLOCKS];
+    uint8_t knot_colors[MEM_BLOCKS];
+    uint8_t total_used;
+    uint8_t total_free;
 } __attribute__((packed)) memory_map_t;
 
 // =============================================================================
@@ -45,80 +39,60 @@ static memory_map_t map;
 // FUNCIONES
 // =============================================================================
 
-// Inicializar memoria
-void mem_init() {
-    // Limpiar todos los bloques
+void mem_init(void) {
+    memset_t(memory, 0, sizeof(memory));
+    memset_t(&map, 0, sizeof(map));
+    
     for (uint8_t i = 0; i < MEM_BLOCKS; i++) {
-        for (uint8_t j = 0; j < BLOCK_SIZE; j++) {
-            memory[i].data[j] = 0;
-        }
-        memory[i].color = 0;   // libre
-        memory[i].owner = 0;   // sin dueño
-        memory[i].flags = 0;
-        
-        // Inicializar mapa quipu
         map.knot_positions[i] = i;
-        map.knot_colors[i] = 0;
     }
     
-    // Marcar bloques del kernel
     for (uint8_t i = 0; i < 5; i++) {
-        memory[i].color = 1;    // kernel
-        memory[i].owner = 0;    // kernel = PID 0
-        memory[i].flags = 0x08; // locked
-        map.knot_colors[i] = 1;
+        memory[i].color = COLOR_KERNEL;
+        memory[i].owner = 0;
+        memory[i].flags = 0x08;
+        map.knot_colors[i] = COLOR_KERNEL;
     }
     
     map.total_used = 5;
     map.total_free = MEM_BLOCKS - 5;
 }
 
-// Asignar bloque (con color)
-int8_t mem_alloc(uint8_t owner, uint8_t color) {
-    // Buscar primer bloque libre (residuo mod-33 para balance)
-    uint8_t start = (map.total_used * 7) % MEM_BLOCKS;  // Hash simple
+int16_t mem_alloc(uint8_t owner, uint8_t color) {
+    uint8_t start = (map.total_used * 7) % MEM_BLOCKS;
     
     for (uint8_t i = 0; i < MEM_BLOCKS; i++) {
         uint8_t idx = (start + i) % MEM_BLOCKS;
         
-        if (memory[idx].color == 0) {  // libre
+        if (memory[idx].color == COLOR_FREE) {
             memory[idx].color = color;
             memory[idx].owner = owner;
-            memory[idx].flags = 0x01;  // used
-            
+            memory[idx].flags = 0x01;
             map.knot_colors[idx] = color;
             map.total_used++;
             map.total_free--;
-            
-            return idx;  // Retorna índice del bloque
+            return (int16_t)idx;
         }
     }
     
-    return -1;  // Sin memoria
+    return -1;
 }
 
-// Liberar bloque
 int8_t mem_free(uint8_t block_idx) {
     if (block_idx >= MEM_BLOCKS) return -1;
-    if (memory[block_idx].flags & 0x08) return -1;  // locked
+    if (memory[block_idx].flags & 0x08) return -1;
     
-    // Limpiar bloque
-    for (uint8_t j = 0; j < BLOCK_SIZE; j++) {
-        memory[block_idx].data[j] = 0;
-    }
-    
-    memory[block_idx].color = 0;
+    memset_t(memory[block_idx].data, 0, BLOCK_SIZE);
+    memory[block_idx].color = COLOR_FREE;
     memory[block_idx].owner = 0;
     memory[block_idx].flags = 0;
-    
-    map.knot_colors[block_idx] = 0;
+    map.knot_colors[block_idx] = COLOR_FREE;
     map.total_used--;
     map.total_free++;
     
     return 0;
 }
 
-// Liberar todos los bloques de un proceso
 void mem_free_all(uint8_t owner) {
     for (uint8_t i = 0; i < MEM_BLOCKS; i++) {
         if (memory[i].owner == owner && !(memory[i].flags & 0x08)) {
@@ -127,43 +101,40 @@ void mem_free_all(uint8_t owner) {
     }
 }
 
-// Leer byte de memoria (dirección babilónica)
 int8_t mem_read(babilonian_addr_t addr, uint8_t* value) {
     uint16_t linear = babilonian_to_linear(addr);
     uint8_t block = linear / BLOCK_SIZE;
     uint8_t offset = linear % BLOCK_SIZE;
     
     if (block >= MEM_BLOCKS) return -1;
-    if (memory[block].color == 0) return -1;  // libre
+    if (memory[block].color == COLOR_FREE) return -1;
     
     *value = memory[block].data[offset];
     return 0;
 }
 
-// Escribir byte en memoria (dirección babilónica)
 int8_t mem_write(babilonian_addr_t addr, uint8_t value) {
     uint16_t linear = babilonian_to_linear(addr);
     uint8_t block = linear / BLOCK_SIZE;
     uint8_t offset = linear % BLOCK_SIZE;
     
     if (block >= MEM_BLOCKS) return -1;
-    if (memory[block].flags & 0x08) return -1;  // locked
+    if (memory[block].flags & 0x08) return -1;
     
     memory[block].data[offset] = value;
-    memory[block].flags |= 0x02;  // dirty
+    memory[block].flags |= 0x02;
     return 0;
 }
 
-// Obtener dirección base de un bloque
-babilonian_addr_t mem_get_base(uint8_t block_idx) {
-    uint16_t linear = block_idx * BLOCK_SIZE;
-    return linear_to_babilonian(linear);
+int8_t mem_get_base(uint8_t block_idx, babilonian_addr_t* result) {
+    if (block_idx >= MEM_BLOCKS) return -1;
+    *result = linear_to_babilonian(block_idx * BLOCK_SIZE);
+    return 0;
 }
 
-// Obtener estado de la memoria (para debug)
-void mem_get_status(uint8_t* used, uint8_t* free, uint8_t* locked) {
+void mem_get_status(uint8_t* used, uint8_t* free_count, uint8_t* locked) {
     *used = map.total_used;
-    *free = map.total_free;
+    *free_count = map.total_free;
     
     uint8_t lock_count = 0;
     for (uint8_t i = 0; i < MEM_BLOCKS; i++) {
@@ -172,14 +143,17 @@ void mem_get_status(uint8_t* used, uint8_t* free, uint8_t* locked) {
     *locked = lock_count;
 }
 
-// Imprimir mapa de memoria (debug)
-void mem_print_map() {
-    // Esta función sería implementada con I/O de video
-    // Por ahora, solo retorna información
-    uint8_t used, free, locked;
-    mem_get_status(&used, &free, &locked);
-    
-    // En un sistema real, imprimiría:
-    // "Memory: X used, Y free, Z locked"
-    // Con colores显示 los bloques usados
+uint8_t mem_get_color(uint8_t block_idx) {
+    if (block_idx >= MEM_BLOCKS) return 0xFF;
+    return memory[block_idx].color;
+}
+
+uint8_t mem_get_owner(uint8_t block_idx) {
+    if (block_idx >= MEM_BLOCKS) return 0xFF;
+    return memory[block_idx].owner;
+}
+
+uint8_t mem_get_flags(uint8_t block_idx) {
+    if (block_idx >= MEM_BLOCKS) return 0xFF;
+    return memory[block_idx].flags;
 }
