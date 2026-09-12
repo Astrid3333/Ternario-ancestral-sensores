@@ -130,4 +130,51 @@ uint8_t ancestralPipeline(
  */
 uint8_t ancestralDecode(const uint8_t* compressed, uint8_t n_bytes, int8_t* trits);
 
+// =============================================================================
+// BABYLONIAN CODEC — Base 60 (3.91 trits per digit)
+// =============================================================================
+
+/**
+ * Convierte trits a dígitos babilónicos (base 60)
+ * @param trits Array de trits balanceados {-1, 0, +1}
+ * @param n_trits Número de trits
+ * @param digits Output: array de dígitos (0-59)
+ * @return Número de dígitos escritos
+ */
+uint8_t tritsToBabylonian(const int8_t* trits, uint8_t n_trits, uint8_t* digits);
+
+/**
+ * Convierte dígitos babilónicos (base 60) a trits
+ * @param digits Array de dígitos (0-59)
+ * @param n_digits Número de dígitos
+ * @param trits Output: array de trits balanceados
+ * @return Número de trits escritos
+ */
+uint8_t babylonianToTrits(const uint8_t* digits, uint8_t n_digits, int8_t* trits);
+
+/**
+ * Pipeline babilónico: sensor → trits → base60 → output
+ * Más compacto que residual (257 bytes vs 1006 bytes para 100 muestras)
+ * @param raw_values Valores crudos del sensor
+ * @param n Número de muestras
+ * @param output Buffer de salida
+ * @param thresholds [low, high] umbrales
+ * @return Número de bytes escritos
+ */
+uint8_t babylonianPipeline(
+    const int16_t* raw_values, uint8_t n,
+    uint8_t* output,
+    int16_t low_threshold = 340,
+    int16_t high_threshold = 700
+);
+
+/**
+ * Decodifica pipeline babilónico: output → trits
+ * @param compressed Datos comprimidos
+ * @param n_bytes Número de bytes
+ * @param trits Output: array de trits decodificados
+ * @return Número de trits escritos
+ */
+uint8_t babylonianDecode(const uint8_t* compressed, uint8_t n_bytes, int8_t* trits);
+
 #endif // TERNARY_ANCESTRAL_H
