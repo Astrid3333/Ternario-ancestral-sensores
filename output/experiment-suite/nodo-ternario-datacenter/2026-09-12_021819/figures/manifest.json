@@ -1,0 +1,24 @@
+{
+  "figures": [
+    {
+      "basename": "fig01_compression_ratio",
+      "description": "Comparación de ratios de compresión entre métodos",
+      "conclusion": "Ternario raw supera a todos los métodos con 8x de compresión"
+    },
+    {
+      "basename": "fig02_energy_landauer",
+      "description": "Ahorro energético según límite de Landauer",
+      "conclusion": "Ternario raw ahorra 80% de energía vs binario"
+    },
+    {
+      "basename": "fig03_memory_latency",
+      "description": "Comparación de memoria y latencia de codificación",
+      "conclusion": "Ternario residual reduce memoria 50% con latencia aceptable"
+    },
+    {
+      "basename": "fig04_ablation",
+      "description": "Ablación de componentes del motor ternario",
+      "conclusion": "La compresión residual es esencial; sin ella, ternario raw es mejor"
+    }
+  ]
+}
