@@ -1,0 +1,50 @@
+--- palabras design:
+854 experiment_design.md
+--- secciones report:
+7
+--- figuras:
+4
+--- schema results:
+['ablations', 'anchors', 'checks', 'metrics', 'provenance', 'simulated']
+simulated = False
+--- arbol:
+.:
+data_contract.md
+experiment
+experiment_design.md
+experiment_report.md
+figures
+results.json
+
+./experiment:
+config.yaml
+data.py
+evaluate.py
+__init__.py
+maya_lc_to_jdn.m
+model.py
+persa_bisiesto.m
+__pycache__
+README.md
+requirements.txt
+run_all.m
+tonalpohualli.m
+train.py
+
+./experiment/__pycache__:
+data.cpython-312.pyc
+evaluate.cpython-312.pyc
+__init__.cpython-312.pyc
+model.cpython-312.pyc
+train.cpython-312.pyc
+
+./figures:
+fig01_mean_year_error.pdf
+fig01_mean_year_error.svg
+fig02_drift_accumulation.pdf
+fig02_drift_accumulation.svg
+fig03_round_coincidence.pdf
+fig03_round_coincidence.svg
+fig04_ablation_no_leap.pdf
+fig04_ablation_no_leap.svg
+figure_contract.md

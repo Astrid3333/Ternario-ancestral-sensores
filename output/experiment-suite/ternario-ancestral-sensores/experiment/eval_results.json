@@ -1,0 +1,50 @@
+{
+  "status": "OK",
+  "octave_checks": 19,
+  "passed": 19,
+  "failed": 0,
+  "python_results": {
+    "n_samples": 1006,
+    "temperature_range": [
+      18.639969,
+      30.860695
+    ],
+    "ternary": {
+      "n_trits": 1006,
+      "distribution": [
+        53,
+        449,
+        504
+      ]
+    },
+    "residual": {
+      "n_blocks": 251,
+      "cycles_detected": 6,
+      "compression_ratio": 0.4176052690865072,
+      "unique_residues": 18
+    },
+    "quipu": {
+      "n_blocks": 201,
+      "total_codeword": 1407,
+      "valid": true
+    },
+    "benchmark": {
+      "binary_bits": 8048,
+      "ternary_bits": 665.8600237553159,
+      "ternary_quipu_bits": 2230.0422385146667,
+      "delta_bits": 8040,
+      "gzip_bits": 3122.6240000000003,
+      "energy_binary_J": 2.3105638067113572e-17,
+      "energy_ternary_J": 3.029925372512994e-18,
+      "energy_saving_pct": 86.88664055192005
+    },
+    "landauer": {
+      "E_binary_J": 2.870978885078724e-21,
+      "E_ternary_J": 4.550393873212011e-21,
+      "efficiency_ratio": 1.5849625007211563,
+      "ln3_over_3": 0.3662040962227033,
+      "ln2_over_2": 0.34657359027997264,
+      "advantage_pct": 5.6641667147437635
+    }
+  }
+}

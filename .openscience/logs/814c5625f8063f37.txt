@@ -1,0 +1,4 @@
+Usage: octave [OPTIONS] COMMAND [ARGS]...
+Try 'octave --help' for help.
+
+Error: No such option '--quiet'.

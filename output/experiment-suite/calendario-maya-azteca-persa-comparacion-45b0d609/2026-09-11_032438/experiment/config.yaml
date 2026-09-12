@@ -1,0 +1,14 @@
+# Parámetros del run (única fuente de constantes ajustables)
+correlation_gmt_jdn: 584283       # JDN de 0.0.0.0.0 (6-sep-3114 a.C. juliano proléptico)
+tropical_year: 365.24219          # días; convención del run
+tzolk_in: 260
+haab: 365
+calendar_round: 18980
+long_count_13_baktun: 1872000
+persian_cycle_years: 33
+persian_cycle_leaps: 8
+persian_leap_residues_mod33: [1, 5, 9, 13, 17, 22, 26, 30]
+tehran_utc_offset_hours: 3.5
+gregorian_mean_year: 365.2425
+julian_mean_year: 365.25
+provenance: "measured: aritmetica exacta + motor archaeoastronomy (Meeus) verificado en sesion 2026-09-11"
