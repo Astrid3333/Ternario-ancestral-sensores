@@ -1,6 +1,6 @@
 # Contrato de datos — Centro de datos nodal ternario
 
-**Run:** `output/experiment-suite/nodo-ternario-datacenter/2026-09-12_021819/`
+**Run:** `output/experiment-suite/02-nodo-ternario-datacenter/2026-09-12_021819/`
 **Modo:** measured (cómputo determinista en Octave + Python; datos sintéticos + OpenWeatherMap real)
 **Fecha:** 2026-09-12.
 

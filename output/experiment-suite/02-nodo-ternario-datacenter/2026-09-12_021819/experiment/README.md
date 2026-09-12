@@ -5,7 +5,7 @@ Simula un nodo de centro de datos con codificación ternaria nativa y compara co
 ## Ejecución
 
 ```bash
-cd output/experiment-suite/nodo-ternario-datacenter/2026-09-12_021819
+cd output/experiment-suite/02-nodo-ternario-datacenter/2026-09-12_021819
 python -m experiment.train
 python -m experiment.evaluate
 ```

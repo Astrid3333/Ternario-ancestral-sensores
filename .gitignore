@@ -2,5 +2,17 @@
 *.swp
 *.swo
 *~
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+
+# Session files
+.openscience/
+notes/.gitkeep
+
+# Temporary files
+*.tmp
+*.log
