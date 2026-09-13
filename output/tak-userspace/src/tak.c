@@ -15,6 +15,7 @@
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/statfs.h>
 #include <fcntl.h>
 
 /* Subsystem APIs */
@@ -462,6 +463,10 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "wc [-lwc] [file]" COLOR_RESET " Word/line/char count\n");
     printf("  " COLOR_CYAN "head [-n N] [file]" COLOR_RESET " First N lines\n");
     printf("  " COLOR_CYAN "tail [-n N] [file]" COLOR_RESET " Last N lines\n");
+    printf("  " COLOR_CYAN "find <dir> [-name p]" COLOR_RESET " Find files\n");
+    printf("  " COLOR_CYAN "chmod <mode> <file>" COLOR_RESET " Change permissions\n");
+    printf("  " COLOR_CYAN "du [dir]" COLOR_RESET "          Disk usage\n");
+    printf("  " COLOR_CYAN "df [path]" COLOR_RESET "         Filesystem space\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -958,6 +963,108 @@ int cmd_tail(int argc, char** argv) {
     return 0;
 }
 
+int cmd_find(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: find <dir> [-name pattern]\n"); return 1; }
+    const char* root = argv[1];
+    const char* name_pattern = NULL;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "-name") == 0 && i + 1 < argc) name_pattern = argv[++i];
+    }
+
+    char stack[256][1024];
+    int sp = 0;
+    strncpy(stack[sp], root, 1023); sp++;
+
+    while (sp > 0) {
+        sp--;
+        char dir[1024];
+        strncpy(dir, stack[sp], 1023); dir[1023] = 0;
+
+        DIR* d = opendir(dir);
+        if (!d) continue;
+
+        struct dirent* ent;
+        while ((ent = readdir(d)) != NULL) {
+            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) continue;
+
+            char path[1024];
+            snprintf(path, sizeof(path), "%s/%s", dir, ent->d_name);
+
+            struct stat st;
+            if (lstat(path, &st) < 0) continue;
+
+            int match = 1;
+            if (name_pattern) {
+                match = 0;
+                /* Simple wildcard match: *pat*, pat*, *pat, exact */
+                if (name_pattern[0] == '*' && name_pattern[strlen(name_pattern)-1] == '*') {
+                    match = strstr(ent->d_name, name_pattern + 1) != NULL;
+                } else if (name_pattern[0] == '*') {
+                    match = strcmp(ent->d_name + strlen(ent->d_name) - strlen(name_pattern + 1), name_pattern + 1) == 0;
+                } else if (name_pattern[strlen(name_pattern)-1] == '*') {
+                    match = strncmp(ent->d_name, name_pattern, strlen(name_pattern) - 1) == 0;
+                } else {
+                    match = strcmp(ent->d_name, name_pattern) == 0;
+                }
+            }
+
+            if (match) printf("%s\n", path);
+
+            if (S_ISDIR(st.st_mode) && sp < 256) {
+                strncpy(stack[sp], path, 1023);
+                sp++;
+            }
+        }
+        closedir(d);
+    }
+    return 0;
+}
+
+int cmd_chmod(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: chmod <mode> <file>\n"); return 1; }
+    int mode = (int)strtol(argv[1], NULL, 8);
+    if (chmod(argv[2], mode) == 0) return 0;
+    fprintf(stderr, "  chmod: %s: %s\n", argv[2], strerror(errno));
+    return 1;
+}
+
+int cmd_du(int argc, char** argv) {
+    const char* path = argc > 1 ? argv[1] : ".";
+    struct stat st;
+    if (stat(path, &st) < 0) { fprintf(stderr, "  du: %s: %s\n", path, strerror(errno)); return 1; }
+
+    if (S_ISDIR(st.st_mode)) {
+        DIR* d = opendir(path);
+        if (!d) { fprintf(stderr, "  du: %s: %s\n", path, strerror(errno)); return 1; }
+        long total = 0;
+        struct dirent* ent;
+        while ((ent = readdir(d)) != NULL) {
+            if (ent->d_name[0] == '.') continue;
+            char sub[1024];
+            snprintf(sub, sizeof(sub), "%s/%s", path, ent->d_name);
+            struct stat ss;
+            if (stat(sub, &ss) == 0) total += ss.st_size;
+        }
+        closedir(d);
+        printf("%ld\t%s\n", total / 1024, path);
+    } else {
+        printf("%ld\t%s\n", (long)st.st_size / 1024, path);
+    }
+    return 0;
+}
+
+int cmd_df(int argc, char** argv) {
+    const char* path = argc > 1 ? argv[1] : ".";
+    struct statfs sf;
+    if (statfs(path, &sf) < 0) { fprintf(stderr, "  df: %s: %s\n", path, strerror(errno)); return 1; }
+    long total = (sf.f_blocks * sf.f_bsize) / 1024;
+    long used = ((sf.f_blocks - sf.f_bfree) * sf.f_bsize) / 1024;
+    long avail = (sf.f_bavail * sf.f_bsize) / 1024;
+    printf("Filesystem     1K-blocks    Used Available Use%% Mounted on\n");
+    printf("tak-fs         %9ld %7ld %9ld  --  %s\n", total, used, avail, path);
+    return 0;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -1256,6 +1363,10 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "wc") == 0) { builtin_rc = cmd_wc(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "head") == 0) { builtin_rc = cmd_head(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "tail") == 0) { builtin_rc = cmd_tail(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "find") == 0) { builtin_rc = cmd_find(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "chmod") == 0) { builtin_rc = cmd_chmod(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "du") == 0) { builtin_rc = cmd_du(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "df") == 0) { builtin_rc = cmd_df(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }
