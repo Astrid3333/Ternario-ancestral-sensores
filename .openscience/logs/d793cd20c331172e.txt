@@ -1,8 +1,0 @@
-fig01 OK [-452925.22, -20925.22, 674.78, 26.78, 20.24]
-fig02 OK
-fig03 OK
-Traceback (most recent call last):
-  File "/home/astrid/Documentos/OpenScience/sessions/2026-09-11-0311/output/experiment-suite/calendario-maya-azteca-persa-comparacion-45b0d609/2026-09-11_032438/figures/make_fig04_ablation.py", line 23, in <module>
-    ax.figtext(0.01, 0.01, "* Ablación hipotética: 365 exacto. El ciclo-33 persa es aproximación; "
-    ^^^^^^^^^^
-AttributeError: 'Axes' object has no attribute 'figtext'

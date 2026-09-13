@@ -16,3 +16,6 @@ notes/.gitkeep
 # Temporary files
 *.tmp
 *.log
+
+# Open Science internal files
+.openscience/
