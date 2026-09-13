@@ -457,6 +457,11 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "mkdir <dir>" COLOR_RESET "      Create directory\n");
     printf("  " COLOR_CYAN "mv <src> <dst>" COLOR_RESET "  Move/rename file\n");
     printf("  " COLOR_CYAN "cp <src> <dst>" COLOR_RESET "  Copy file\n");
+    printf("  " COLOR_CYAN "grep [-inv] <pat> [f]" COLOR_RESET " Search pattern\n");
+    printf("  " COLOR_CYAN "sort [-rn] [file]" COLOR_RESET " Sort lines\n");
+    printf("  " COLOR_CYAN "wc [-lwc] [file]" COLOR_RESET " Word/line/char count\n");
+    printf("  " COLOR_CYAN "head [-n N] [file]" COLOR_RESET " First N lines\n");
+    printf("  " COLOR_CYAN "tail [-n N] [file]" COLOR_RESET " Last N lines\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -750,6 +755,209 @@ int cmd_cp(int argc, char** argv) {
     return 0;
 }
 
+int cmd_grep(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: grep <pattern> [file]\n"); return 1; }
+    const char* pattern = argv[1];
+    int ignore_case = 0;
+    int invert = 0;
+    int line_numbers = 0;
+    /* Parse flags */
+    int ai = 1;
+    while (ai < argc && argv[ai][0] == '-') {
+        for (int j = 1; argv[ai][j]; j++) {
+            if (argv[ai][j] == 'i') ignore_case = 1;
+            else if (argv[ai][j] == 'v') invert = 1;
+            else if (argv[ai][j] == 'n') line_numbers = 1;
+        }
+        ai++;
+    }
+    if (ai >= argc) { fprintf(stderr, "  Usage: grep [-inv] <pattern> [file]\n"); return 1; }
+    pattern = argv[ai];
+    ai++;
+
+    /* Read from stdin or file */
+    FILE* fp = stdin;
+    char* line = NULL;
+    size_t len = 0;
+    ssize_t nread;
+    int line_num = 0;
+    int matches = 0;
+
+    if (ai < argc) {
+        fp = fopen(argv[ai], "r");
+        if (!fp) { fprintf(stderr, "  grep: %s: %s\n", argv[ai], strerror(errno)); return 1; }
+    }
+
+    while ((nread = getline(&line, &len, fp)) != -1) {
+        line_num++;
+        /* Remove trailing newline */
+        if (nread > 0 && line[nread - 1] == '\n') line[nread - 1] = 0;
+        int found = 0;
+        if (ignore_case) {
+            char* lower_line = strdup(line);
+            char* lower_pat = strdup(pattern);
+            for (int i = 0; lower_line[i]; i++) lower_line[i] = tolower(lower_line[i]);
+            for (int i = 0; lower_pat[i]; i++) lower_pat[i] = tolower(lower_pat[i]);
+            found = strstr(lower_line, lower_pat) != NULL;
+            free(lower_line); free(lower_pat);
+        } else {
+            found = strstr(line, pattern) != NULL;
+        }
+        if (found != invert) {
+            matches++;
+            if (line_numbers) printf("%d:", line_num);
+            printf("%s\n", line);
+        }
+    }
+
+    free(line);
+    if (fp != stdin) fclose(fp);
+    return matches == 0 ? 1 : 0;
+}
+
+int cmd_sort(int argc, char** argv) {
+    int reverse = 0;
+    int numeric = 0;
+    int ai = 1;
+    while (ai < argc && argv[ai][0] == '-') {
+        for (int j = 1; argv[ai][j]; j++) {
+            if (argv[ai][j] == 'r') reverse = 1;
+            else if (argv[ai][j] == 'n') numeric = 1;
+        }
+        ai++;
+    }
+
+    char* lines[4096];
+    int n = 0;
+    char buf[4096];
+    FILE* fp = stdin;
+    if (ai < argc) {
+        fp = fopen(argv[ai], "r");
+        if (!fp) { fprintf(stderr, "  sort: %s: %s\n", argv[ai], strerror(errno)); return 1; }
+    }
+    while (fgets(buf, sizeof(buf), fp) && n < 4096) {
+        lines[n] = strdup(buf);
+        n++;
+    }
+    if (fp != stdin) fclose(fp);
+
+    /* Sort using strcmp or atoi */
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = i + 1; j < n; j++) {
+            int cmp;
+            if (numeric) cmp = atoi(lines[i]) - atoi(lines[j]);
+            else cmp = strcmp(lines[i], lines[j]);
+            if (reverse ? cmp < 0 : cmp > 0) {
+                char* tmp = lines[i]; lines[i] = lines[j]; lines[j] = tmp;
+            }
+        }
+    }
+
+    for (int i = 0; i < n; i++) {
+        printf("%s", lines[i]);
+        free(lines[i]);
+    }
+    return 0;
+}
+
+int cmd_wc(int argc, char** argv) {
+    int show_lines = 1, show_words = 1, show_chars = 1;
+    int ai = 1;
+    while (ai < argc && argv[ai][0] == '-') {
+        show_lines = show_words = show_chars = 0;
+        for (int j = 1; argv[ai][j]; j++) {
+            if (argv[ai][j] == 'l') show_lines = 1;
+            else if (argv[ai][j] == 'w') show_words = 1;
+            else if (argv[ai][j] == 'c') show_chars = 1;
+        }
+        ai++;
+    }
+    if (!show_lines && !show_words && !show_chars) show_lines = show_words = show_chars = 1;
+
+    FILE* fp = stdin;
+    if (ai < argc) {
+        fp = fopen(argv[ai], "r");
+        if (!fp) { fprintf(stderr, "  wc: %s: %s\n", argv[ai], strerror(errno)); return 1; }
+    }
+
+    int lines = 0, words = 0, chars = 0;
+    char buf[4096];
+    int in_word = 0;
+    size_t n;
+    while ((n = fread(buf, 1, sizeof(buf), fp)) > 0) {
+        for (size_t i = 0; i < n; i++) {
+            chars++;
+            if (buf[i] == '\n') lines++;
+            if (buf[i] == ' ' || buf[i] == '\n' || buf[i] == '\t') in_word = 0;
+            else if (!in_word) { in_word = 1; words++; }
+        }
+    }
+    if (fp != stdin) fclose(fp);
+
+    if (show_lines) printf("%d ", lines);
+    if (show_words) printf("%d ", words);
+    if (show_chars) printf("%d ", chars);
+    if (ai < argc) printf("%s", argv[ai]);
+    printf("\n");
+    return 0;
+}
+
+int cmd_head(int argc, char** argv) {
+    int n = 10;
+    int ai = 1;
+    if (ai < argc && strcmp(argv[ai], "-n") == 0) { ai++; if (ai < argc) n = atoi(argv[ai++]); }
+    if (ai < argc && argv[ai][0] == '-' && argv[ai][1] >= '0' && argv[ai][1] <= '9') { n = atoi(argv[ai] + 1); ai++; }
+
+    FILE* fp = stdin;
+    if (ai < argc) {
+        fp = fopen(argv[ai], "r");
+        if (!fp) { fprintf(stderr, "  head: %s: %s\n", argv[ai], strerror(errno)); return 1; }
+    }
+
+    char buf[4096];
+    int count = 0;
+    while (count < n && fgets(buf, sizeof(buf), fp)) {
+        printf("%s", buf);
+        count++;
+    }
+    if (fp != stdin) fclose(fp);
+    return 0;
+}
+
+int cmd_tail(int argc, char** argv) {
+    int n = 10;
+    int ai = 1;
+    if (ai < argc && strcmp(argv[ai], "-n") == 0) { ai++; if (ai < argc) n = atoi(argv[ai++]); }
+    if (ai < argc && argv[ai][0] == '-' && argv[ai][1] >= '0' && argv[ai][1] <= '9') { n = atoi(argv[ai] + 1); ai++; }
+
+    FILE* fp = stdin;
+    if (ai < argc) {
+        fp = fopen(argv[ai], "r");
+        if (!fp) { fprintf(stderr, "  tail: %s: %s\n", argv[ai], strerror(errno)); return 1; }
+    }
+
+    char* ring[4096];
+    int ring_size = 0;
+    char buf[4096];
+    while (fgets(buf, sizeof(buf), fp)) {
+        if (ring_size < 4096) {
+            ring[ring_size++] = strdup(buf);
+        } else {
+            free(ring[0]);
+            for (int i = 0; i < 4095; i++) ring[i] = ring[i + 1];
+            ring[4095] = strdup(buf);
+        }
+    }
+    if (fp != stdin) fclose(fp);
+
+    int start = ring_size > n ? ring_size - n : 0;
+    for (int i = start; i < ring_size; i++) {
+        printf("%s", ring[i]);
+        free(ring[i]);
+    }
+    return 0;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -854,9 +1062,26 @@ void cmd_neofetch(void) {
 }
 
 void cmd_echo(int argc, char** argv) {
-    for (int i = 1; i < argc; i++) {
-        if (i > 1) write(STDOUT_FILENO, " ", 1);
-        write(STDOUT_FILENO, argv[i], strlen(argv[i]));
+    int interpret_escapes = 0;
+    int start = 1;
+    if (argc > 1 && strcmp(argv[1], "-e") == 0) { interpret_escapes = 1; start = 2; }
+    for (int i = start; i < argc; i++) {
+        if (i > start) write(STDOUT_FILENO, " ", 1);
+        if (interpret_escapes) {
+            for (int j = 0; argv[i][j]; j++) {
+                if (argv[i][j] == '\\' && argv[i][j+1]) {
+                    j++;
+                    if (argv[i][j] == 'n') write(STDOUT_FILENO, "\n", 1);
+                    else if (argv[i][j] == 't') write(STDOUT_FILENO, "\t", 1);
+                    else if (argv[i][j] == '\\') write(STDOUT_FILENO, "\\", 1);
+                    else { write(STDOUT_FILENO, "\\", 1); write(STDOUT_FILENO, &argv[i][j], 1); }
+                } else {
+                    write(STDOUT_FILENO, &argv[i][j], 1);
+                }
+            }
+        } else {
+            write(STDOUT_FILENO, argv[i], strlen(argv[i]));
+        }
     }
     write(STDOUT_FILENO, "\n", 1);
 }
@@ -869,16 +1094,31 @@ int run_segment(char* line) {
     while (*line == ' ') line++;
     if (*line == 0) return 0;
 
-    /* Check for pipes */
+    /* Check for pipes (respecting quotes) */
     char* pipe_cmds[16];
     int n_pipes = 0;
 
-    char* saveptr;
-    char* pipe_tok = strtok_r(line, "|", &saveptr);
-    while (pipe_tok && n_pipes < 16) {
-        while (*pipe_tok == ' ') pipe_tok++;
-        pipe_cmds[n_pipes++] = pipe_tok;
-        pipe_tok = strtok_r(NULL, "|", &saveptr);
+    {
+        char* p = line;
+        char quote = 0;
+        pipe_cmds[0] = p;
+        n_pipes = 1;
+        while (*p) {
+            if (quote) {
+                if (*p == quote) quote = 0;
+            } else {
+                if (*p == '\'' || *p == '"') quote = *p;
+                else if (*p == '|') {
+                    *p = 0;
+                    p++;
+                    while (*p == ' ') p++;
+                    pipe_cmds[n_pipes++] = p;
+                    if (n_pipes >= 16) break;
+                    continue;
+                }
+            }
+            p++;
+        }
     }
 
     if (n_pipes > 1) {
@@ -951,14 +1191,29 @@ int run_single(char* line) {
     while (*line == ' ') line++;
     if (*line == 0) return 0;
 
-    /* Tokenize */
+    /* Tokenize with quote support */
     char* argv[64];
     int argc = 0;
 
-    char* tok = strtok(line, " \t");
-    while (tok && argc < 64) {
-        argv[argc++] = tok;
-        tok = strtok(NULL, " \t");
+    char* p = line;
+    while (*p && argc < 64) {
+        while (*p == ' ' || *p == '\t') p++;
+        if (!*p) break;
+
+        char quote = 0;
+        if (*p == '\'' || *p == '"') { quote = *p; p++; }
+
+        argv[argc++] = p;
+        while (*p) {
+            if (quote) {
+                if (*p == quote) { quote = 0; *p = ' '; p++; break; }
+            } else {
+                if (*p == ' ' || *p == '\t') break;
+                if (*p == '\'' || *p == '"') { quote = *p; *p = ' '; p++; continue; }
+            }
+            p++;
+        }
+        if (*p) { *p = 0; p++; }
     }
     argv[argc] = NULL;
 
@@ -996,6 +1251,11 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "mkdir") == 0) { builtin_rc = cmd_mkdir(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "mv") == 0) { builtin_rc = cmd_mv(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cp") == 0) { builtin_rc = cmd_cp(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "grep") == 0) { builtin_rc = cmd_grep(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "sort") == 0) { builtin_rc = cmd_sort(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "wc") == 0) { builtin_rc = cmd_wc(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "head") == 0) { builtin_rc = cmd_head(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tail") == 0) { builtin_rc = cmd_tail(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }
@@ -1173,7 +1433,13 @@ int run_piped(char** cmds, int ncmds) {
 /* Find operator at top level (not inside quotes, not part of another word) */
 static char* find_op(const char* line, const char* op) {
     int len = strlen(op);
+    char quote = 0;
     for (int i = 0; line[i]; i++) {
+        if (quote) {
+            if (line[i] == quote) quote = 0;
+            continue;
+        }
+        if (line[i] == '\'' || line[i] == '"') { quote = line[i]; continue; }
         if (strncmp(line + i, op, len) == 0) {
             /* Make sure it's not part of &&& or ||| */
             if (len == 1 && (op[0] == '&' || op[0] == '|')) {
