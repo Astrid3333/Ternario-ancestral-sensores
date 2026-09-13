@@ -190,6 +190,17 @@ int job_fg(int id) {
     return -1;
 }
 
+int job_bg(int id) {
+    for (int i = 0; i < MAX_JOBS; i++) {
+        if (jobs[i].running && jobs[i].id == id) {
+            kill(jobs[i].pid, SIGCONT);
+            printf("  [%d] %d continued\n", jobs[i].id, jobs[i].pid);
+            return 0;
+        }
+    }
+    return -1;
+}
+
 // =============================================================================
 // HISTORY
 // =============================================================================
@@ -443,6 +454,9 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "touch <name> <data>" COLOR_RESET " Create file\n");
     printf("  " COLOR_CYAN "cat <name>" COLOR_RESET "       Read file\n");
     printf("  " COLOR_CYAN "rm <name>" COLOR_RESET "        Delete file\n");
+    printf("  " COLOR_CYAN "mkdir <dir>" COLOR_RESET "      Create directory\n");
+    printf("  " COLOR_CYAN "mv <src> <dst>" COLOR_RESET "  Move/rename file\n");
+    printf("  " COLOR_CYAN "cp <src> <dst>" COLOR_RESET "  Copy file\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -451,6 +465,7 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "history" COLOR_RESET "         Command history\n");
     printf("  " COLOR_CYAN "jobs" COLOR_RESET "            List background jobs\n");
     printf("  " COLOR_CYAN "fg <id>" COLOR_RESET "         Bring job to foreground\n");
+    printf("  " COLOR_CYAN "bg <id>" COLOR_RESET "         Resume job in background\n");
     printf("  " COLOR_CYAN "whoami" COLOR_RESET "          Current user\n");
     printf("  " COLOR_CYAN "uname" COLOR_RESET "           System info\n");
     printf("  " COLOR_CYAN "uptime" COLOR_RESET "          System uptime\n");
@@ -462,6 +477,7 @@ void cmd_help(void) {
     printf("  cmd1 | cmd2           Pipe output to cmd2\n");
     printf("  cmd1 ; cmd2           Run cmd1 then cmd2\n");
     printf("  cmd1 && cmd2          Run cmd2 only if cmd1 succeeds\n");
+    printf("  cmd1 || cmd2          Run cmd2 only if cmd1 fails\n");
     printf("  cmd > file            Redirect stdout to file\n");
     printf("  cmd >> file           Append stdout to file\n");
     printf("  cmd < file            Redirect file to stdin\n");
@@ -494,12 +510,12 @@ void cmd_pwd(void) {
     printf("  %s\n", cwd);
 }
 
-void cmd_ls(int argc, char** argv) {
+int cmd_ls(int argc, char** argv) {
     const char* dir = argc > 1 ? argv[1] : ".";
     DIR* d = opendir(dir);
     if (!d) {
-        printf("  ls: %s: %s\n", dir, strerror(errno));
-        return;
+        fprintf(stderr, "  ls: %s: %s\n", dir, strerror(errno));
+        return 1;
     }
 
     struct dirent* ent;
@@ -521,6 +537,7 @@ void cmd_ls(int argc, char** argv) {
     }
     if (count % 5 != 0) printf("\n");
     closedir(d);
+    return 0;
 }
 
 void cmd_ps(void) {
@@ -706,6 +723,33 @@ void cmd_rm(int argc, char** argv) {
         printf("  " COLOR_RED "✗" COLOR_RESET " Could not delete\n");
 }
 
+int cmd_mkdir(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: mkdir <dir>\n"); return 1; }
+    if (mkdir(argv[1], 0755) == 0) return 0;
+    fprintf(stderr, "  mkdir: %s: %s\n", argv[1], strerror(errno));
+    return 1;
+}
+
+int cmd_mv(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: mv <src> <dst>\n"); return 1; }
+    if (rename(argv[1], argv[2]) == 0) return 0;
+    fprintf(stderr, "  mv: %s -> %s: %s\n", argv[1], argv[2], strerror(errno));
+    return 1;
+}
+
+int cmd_cp(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: cp <src> <dst>\n"); return 1; }
+    int src = open(argv[1], O_RDONLY);
+    if (src < 0) { fprintf(stderr, "  cp: %s: %s\n", argv[1], strerror(errno)); return 1; }
+    int dst = open(argv[2], O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    if (dst < 0) { fprintf(stderr, "  cp: %s: %s\n", argv[2], strerror(errno)); close(src); return 1; }
+    char buf[4096];
+    ssize_t r;
+    while ((r = read(src, buf, sizeof(buf))) > 0) write(dst, buf, r);
+    close(src); close(dst);
+    return 0;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -838,8 +882,7 @@ int run_segment(char* line) {
     }
 
     if (n_pipes > 1) {
-        run_piped(pipe_cmds, n_pipes);
-        return 0;
+        return run_piped(pipe_cmds, n_pipes);
     }
 
     /* Single command with possible redirection and background */
@@ -935,13 +978,14 @@ int run_single(char* line) {
 
         /* Check builtins */
         int is_builtin = 0;
+        int builtin_rc = 0;
         if (strcmp(argv[0], "help") == 0 || strcmp(argv[0], "?") == 0) { cmd_help(); is_builtin = 1; }
         else if (strcmp(argv[0], "ps") == 0) { cmd_ps(); is_builtin = 1; }
         else if (strcmp(argv[0], "fork") == 0) { cmd_fork(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "kill") == 0) { cmd_kill_tak(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cd") == 0) { cmd_cd(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "pwd") == 0) { cmd_pwd(); is_builtin = 1; }
-        else if (strcmp(argv[0], "ls") == 0) { cmd_ls(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ls") == 0) { builtin_rc = cmd_ls(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "mem") == 0) { cmd_mem(); is_builtin = 1; }
         else if (strcmp(argv[0], "malloc") == 0) { cmd_malloc(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "free") == 0) { cmd_free_block(argc, argv); is_builtin = 1; }
@@ -949,6 +993,9 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "touch") == 0) { cmd_touch(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cat") == 0) { cmd_cat(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "rm") == 0) { cmd_rm(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "mkdir") == 0) { builtin_rc = cmd_mkdir(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "mv") == 0) { builtin_rc = cmd_mv(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "cp") == 0) { builtin_rc = cmd_cp(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }
@@ -964,14 +1011,19 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "history") == 0) { history_show(); is_builtin = 1; }
         else if (strcmp(argv[0], "jobs") == 0) { job_list(); is_builtin = 1; }
         else if (strcmp(argv[0], "fg") == 0) {
-            if (argc < 2) fprintf(stderr, "  Usage: fg <job_id>\n");
-            else if (job_fg(atoi(argv[1])) != 0) fprintf(stderr, "  No such job: %s\n", argv[1]);
+            if (argc < 2) { fprintf(stderr, "  Usage: fg <job_id>\n"); builtin_rc = 1; }
+            else if (job_fg(atoi(argv[1])) != 0) { fprintf(stderr, "  No such job: %s\n", argv[1]); builtin_rc = 1; }
+            is_builtin = 1;
+        }
+        else if (strcmp(argv[0], "bg") == 0) {
+            if (argc < 2) { fprintf(stderr, "  Usage: bg <job_id>\n"); builtin_rc = 1; }
+            else if (job_bg(atoi(argv[1])) != 0) { fprintf(stderr, "  No such job: %s\n", argv[1]); builtin_rc = 1; }
             is_builtin = 1;
         }
 
         if (is_builtin) {
             fflush(stdout);
-            _exit(0);
+            _exit(builtin_rc);
         }
 
         /* External: PATH lookup + exec */
@@ -1002,6 +1054,7 @@ int run_single(char* line) {
             setpgid(pid, pid);
             int jid = job_add(pid, argv[0]);
             printf("  [%d] %d\n", jid, pid);
+            return 0;
         } else {
             foreground_pid = pid;
             setpgid(pid, shell_pgid);
@@ -1010,9 +1063,13 @@ int run_single(char* line) {
             waitpid(pid, &status, 0);
             tcsetpgrp(STDIN_FILENO, shell_pgid);
             foreground_pid = -1;
+            if (WIFEXITED(status)) return WEXITSTATUS(status);
+            if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+            return 1;
         }
     } else {
         printf("  fork: %s\n", strerror(errno));
+        return 1;
     }
 
     return 0;
@@ -1022,12 +1079,13 @@ int run_single(char* line) {
 // PIPE EXECUTION
 // =============================================================================
 
-void run_piped(char** cmds, int ncmds) {
+int run_piped(char** cmds, int ncmds) {
     int prev_fd = -1;
     int fd[2];
+    pid_t last_pid = -1;
 
     for (int i = 0; i < ncmds; i++) {
-        if (pipe(fd) < 0) { perror("pipe"); return; }
+        if (pipe(fd) < 0) { perror("pipe"); return 1; }
 
         pid_t pid = fork();
         if (pid == 0) {
@@ -1059,10 +1117,6 @@ void run_piped(char** cmds, int ncmds) {
             if (strcmp(argv[0], "trit") == 0 || strcmp(argv[0], "b60") == 0 ||
                 strcmp(argv[0], "cal") == 0 || strcmp(argv[0], "mem") == 0 ||
                 strcmp(argv[0], "whoami") == 0) {
-                /* These write to stdout which is redirected */
-                char* pargv[64];
-                for (int j = 0; j <= argc; j++) pargv[j] = argv[j];
-                /* Reconstruct original line */
                 char orig[TAK_CMD_MAX];
                 strncpy(orig, cmds[i], TAK_CMD_MAX - 1);
                 run_single(orig);
@@ -1096,12 +1150,20 @@ void run_piped(char** cmds, int ncmds) {
         if (prev_fd != -1) close(prev_fd);
         close(fd[1]);
         prev_fd = fd[0];
+        last_pid = pid;
     }
 
     if (prev_fd != -1) close(prev_fd);
-    /* Wait for last child only */
-    int status;
-    wait(&status);
+    /* Wait for all children, return last one's status */
+    int status = 0;
+    for (int i = 0; i < ncmds; i++) {
+        int s;
+        wait(&s);
+        if (i == ncmds - 1) status = s;
+    }
+    if (WIFEXITED(status)) return WEXITSTATUS(status);
+    if (WIFSIGNALED(status)) return 128 + WTERMSIG(status);
+    return 1;
 }
 
 // =============================================================================
@@ -1123,14 +1185,14 @@ static char* find_op(const char* line, const char* op) {
     return NULL;
 }
 
-void parse_and_run(char* line) {
+int parse_and_run(char* line) {
     while (*line == ' ') line++;
-    if (*line == 0) return;
+    if (*line == 0) return 0;
 
     history_add(line);
 
     /* Alias/Unalias handled first (before any splitting) */
-    if (strcmp(line, "alias") == 0) { alias_list(); return; }
+    if (strcmp(line, "alias") == 0) { alias_list(); return 0; }
     if (strncmp(line, "alias ", 6) == 0) {
         char* arg = line + 6;
         char* eq = strchr(arg, '=');
@@ -1143,7 +1205,7 @@ void parse_and_run(char* line) {
             if (val) printf("  %s=%s\n", arg, val);
             else printf("  alias: %s: not found\n", arg);
         }
-        return;
+        return 0;
     }
     if (strncmp(line, "unalias ", 8) == 0) {
         char* name = line + 8;
@@ -1151,11 +1213,11 @@ void parse_and_run(char* line) {
             if (strcmp(aliases[i].name, name) == 0) {
                 aliases[i] = aliases[--n_aliases];
                 printf("  Removed alias '%s'\n", name);
-                return;
+                return 0;
             }
         }
         printf("  alias: %s: not found\n", name);
-        return;
+        return 0;
     }
 
     /* Alias expansion: if first word is an alias, expand it */
@@ -1178,28 +1240,25 @@ void parse_and_run(char* line) {
     if (semi) {
         *semi = 0;
         parse_and_run(line);
-        parse_and_run(semi + 1);
-        return;
+        return parse_and_run(semi + 1);
     }
 
     /* 2. Split on && */
     char* andop = find_op(line, "&&");
     if (andop) {
         *andop = 0; andop += 2;
-        parse_and_run(line);
-        /* Only run right side if left succeeded — crude check via fork */
-        /* For simplicity, just run both (like bash with set -e off) */
-        parse_and_run(andop);
-        return;
+        int left = parse_and_run(line);
+        if (left == 0) return parse_and_run(andop);
+        return left;
     }
 
     /* 3. Split on || */
     char* orop = find_op(line, "||");
     if (orop) {
         *orop = 0; orop += 2;
-        parse_and_run(line);
-        parse_and_run(orop);
-        return;
+        int left = parse_and_run(line);
+        if (left != 0) return parse_and_run(orop);
+        return left;
     }
 
     /* 4. Check for pipes */
@@ -1215,12 +1274,11 @@ void parse_and_run(char* line) {
     }
 
     if (n_pipes > 1) {
-        run_piped(pipe_cmds, n_pipes);
-        return;
+        return run_piped(pipe_cmds, n_pipes);
     }
 
     /* 5. Single command: handle redirection + background */
-    run_segment(line);
+    return run_segment(line);
 }
 
 // =============================================================================
