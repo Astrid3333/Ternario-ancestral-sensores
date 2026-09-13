@@ -467,6 +467,13 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "chmod <mode> <file>" COLOR_RESET " Change permissions\n");
     printf("  " COLOR_CYAN "du [dir]" COLOR_RESET "          Disk usage\n");
     printf("  " COLOR_CYAN "df [path]" COLOR_RESET "         Filesystem space\n");
+    printf("  " COLOR_CYAN "env" COLOR_RESET "              List environment\n");
+    printf("  " COLOR_CYAN "export VAR=val" COLOR_RESET "  Set environment\n");
+    printf("  " COLOR_CYAN "tee [-a] <file>" COLOR_RESET " Write stdin to file+stdout\n");
+    printf("  " COLOR_CYAN "date [-u]" COLOR_RESET "        Show date/time\n");
+    printf("  " COLOR_CYAN "sleep <n>" COLOR_RESET "       Sleep N seconds\n");
+    printf("  " COLOR_CYAN "which <cmd>" COLOR_RESET "     Find command path\n");
+    printf("  " COLOR_CYAN "diff <f1> <f2>" COLOR_RESET " Compare two files\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -1065,6 +1072,107 @@ int cmd_df(int argc, char** argv) {
     return 0;
 }
 
+int cmd_env(int argc, char** argv) {
+    extern char** environ;
+    for (int i = 0; environ[i]; i++) printf("%s\n", environ[i]);
+    return 0;
+}
+
+int cmd_export(int argc, char** argv) {
+    if (argc < 2) { cmd_env(0, NULL); return 0; }
+    for (int i = 1; i < argc; i++) {
+        char* eq = strchr(argv[i], '=');
+        if (eq) {
+            *eq = 0;
+            setenv(argv[i], eq + 1, 1);
+        } else {
+            /* export VAR → mark for export (no-op in our simple shell) */
+        }
+    }
+    return 0;
+}
+
+int cmd_tee(int argc, char** argv) {
+    int append = 0;
+    int ai = 1;
+    if (ai < argc && strcmp(argv[ai], "-a") == 0) { append = 1; ai++; }
+    if (ai >= argc) { fprintf(stderr, "  Usage: tee [-a] <file>\n"); return 1; }
+
+    int fd = open(argv[ai], O_WRONLY | O_CREAT | (append ? O_APPEND : O_TRUNC), 0644);
+    if (fd < 0) { fprintf(stderr, "  tee: %s: %s\n", argv[ai], strerror(errno)); return 1; }
+
+    char buf[4096];
+    ssize_t n;
+    while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
+        write(STDOUT_FILENO, buf, n);
+        write(fd, buf, n);
+    }
+    close(fd);
+    return 0;
+}
+
+int cmd_date(int argc, char** argv) {
+    time_t now = time(NULL);
+    struct tm* t = localtime(&now);
+    char buf[256];
+    if (argc > 1 && strcmp(argv[1], "-u") == 0) t = gmtime(&now);
+    strftime(buf, sizeof(buf), "%a %b %d %H:%M:%S %Y", t);
+    printf("%s\n", buf);
+    return 0;
+}
+
+int cmd_sleep(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: sleep <seconds>\n"); return 1; }
+    unsigned int secs = (unsigned int)atoi(argv[1]);
+    sleep(secs);
+    return 0;
+}
+
+int cmd_which(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: which <command>\n"); return 1; }
+    const char* path_env = getenv("PATH");
+    if (!path_env) { fprintf(stderr, "  which: PATH not set\n"); return 1; }
+    char* path_copy = strdup(path_env);
+    char* sv;
+    char* d = strtok_r(path_copy, ":", &sv);
+    while (d) {
+        char full[1024];
+        snprintf(full, sizeof(full), "%s/%s", d, argv[1]);
+        if (access(full, X_OK) == 0) { printf("%s\n", full); free(path_copy); return 0; }
+        d = strtok_r(NULL, ":", &sv);
+    }
+    free(path_copy);
+    fprintf(stderr, "  which: %s not found\n", argv[1]);
+    return 1;
+}
+
+int cmd_diff(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: diff <file1> <file2>\n"); return 1; }
+    FILE* f1 = fopen(argv[1], "r");
+    FILE* f2 = fopen(argv[2], "r");
+    if (!f1) { fprintf(stderr, "  diff: %s: %s\n", argv[1], strerror(errno)); return 1; }
+    if (!f2) { fprintf(stderr, "  diff: %s: %s\n", argv[2], strerror(errno)); fclose(f1); return 1; }
+
+    char line1[4096], line2[4096];
+    int line_num = 0;
+    int diffs = 0;
+    while (1) {
+        char* r1 = fgets(line1, sizeof(line1), f1);
+        char* r2 = fgets(line2, sizeof(line2), f2);
+        line_num++;
+        if (!r1 && !r2) break;
+        if (!r1 || !r2 || strcmp(line1, line2) != 0) {
+            diffs++;
+            if (r1) printf("%d: %s", line_num, line1);
+            if (r2) printf("%d: %s", line_num, line2);
+            if (!r1) printf("%d: end of %s\n", line_num, argv[1]);
+            if (!r2) printf("%d: end of %s\n", line_num, argv[2]);
+        }
+    }
+    fclose(f1); fclose(f2);
+    return diffs == 0 ? 0 : 1;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -1201,6 +1309,39 @@ int run_segment(char* line) {
     while (*line == ' ') line++;
     if (*line == 0) return 0;
 
+    /* Expand $VAR before pipe splitting (respects quotes) */
+    {
+        char exp[4096];
+        int ei = 0;
+        char q = 0;
+        for (int i = 0; line[i] && ei < 4095; i++) {
+            if (q) {
+                if (line[i] == q) { q = 0; exp[ei++] = line[i]; continue; }
+            } else {
+                if (line[i] == '\'' || line[i] == '"') { q = line[i]; exp[ei++] = line[i]; continue; }
+                if (line[i] == '$' && line[i+1] && line[i+1] != ' ' && line[i+1] != '=' && line[i+1] != '|') {
+                    i++;
+                    char varname[256];
+                    int vi = 0;
+                    while (line[i] && line[i] != ' ' && line[i] != '"' && line[i] != '\'' &&
+                           line[i] != '|' && line[i] != ';' && line[i] != '&' && line[i] != '$' && vi < 255) {
+                        varname[vi++] = line[i++];
+                    }
+                    varname[vi] = 0;
+                    i--; /* loop will increment */
+                    const char* val = getenv(varname);
+                    if (val) {
+                        for (int k = 0; val[k] && ei < 4095; k++) exp[ei++] = val[k];
+                    }
+                    continue;
+                }
+            }
+            exp[ei++] = line[i];
+        }
+        exp[ei] = 0;
+        strcpy(line, exp);
+    }
+
     /* Check for pipes (respecting quotes) */
     char* pipe_cmds[16];
     int n_pipes = 0;
@@ -1326,6 +1467,34 @@ int run_single(char* line) {
 
     if (argc == 0) return 0;
 
+    /* Expand $VAR in arguments (not in single quotes) */
+    for (int i = 0; i < argc; i++) {
+        char* arg = argv[i];
+        if (!strchr(arg, '$')) continue;
+        char exp[4096];
+        int ei = 0;
+        for (int j = 0; arg[j] && ei < 4095; j++) {
+            if (arg[j] == '$' && arg[j+1] && arg[j+1] != ' ') {
+                j++;
+                char varname[256];
+                int vi = 0;
+                while (arg[j] && arg[j] != ' ' && arg[j] != '"' && arg[j] != '\'' && vi < 255) {
+                    varname[vi++] = arg[j++];
+                }
+                varname[vi] = 0;
+                j--; /* loop will increment */
+                const char* val = getenv(varname);
+                if (val) {
+                    for (int k = 0; val[k] && ei < 4095; k++) exp[ei++] = val[k];
+                }
+            } else {
+                exp[ei++] = arg[j];
+            }
+        }
+        exp[ei] = 0;
+        strcpy(arg, exp);
+    }
+
     /* Fork for ALL commands (builtins and external) so redirections work */
     int background = 0;
     if (argc > 1 && strcmp(argv[argc - 1], "&") == 0) {
@@ -1367,6 +1536,12 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "chmod") == 0) { builtin_rc = cmd_chmod(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "du") == 0) { builtin_rc = cmd_du(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "df") == 0) { builtin_rc = cmd_df(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "env") == 0) { builtin_rc = cmd_env(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tee") == 0) { builtin_rc = cmd_tee(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "date") == 0) { builtin_rc = cmd_date(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "sleep") == 0) { builtin_rc = cmd_sleep(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "which") == 0) { builtin_rc = cmd_which(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "diff") == 0) { builtin_rc = cmd_diff(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }
@@ -1568,7 +1743,7 @@ int parse_and_run(char* line) {
 
     history_add(line);
 
-    /* Alias/Unalias handled first (before any splitting) */
+    /* Alias/Unalias/Export handled first (before any splitting, in parent) */
     if (strcmp(line, "alias") == 0) { alias_list(); return 0; }
     if (strncmp(line, "alias ", 6) == 0) {
         char* arg = line + 6;
@@ -1595,6 +1770,38 @@ int parse_and_run(char* line) {
         }
         printf("  alias: %s: not found\n", name);
         return 0;
+    }
+    /* Export: set env var, then continue processing rest of line */
+    if (strncmp(line, "export ", 7) == 0) {
+        char* arg = line + 7;
+        /* Handle multiple exports: export A=1 B=2 */
+        while (*arg) {
+            while (*arg == ' ') arg++;
+            char* eq = strchr(arg, '=');
+            if (!eq) break;
+            char* val_start = eq + 1;
+            char* val_end = val_start;
+            if (*val_end == '"' || *val_end == '\'') {
+                char q = *val_end;
+                val_end++;
+                while (*val_end && *val_end != q) val_end++;
+                if (*val_end == q) val_end++;
+            } else {
+                while (*val_end && *val_end != ' ' && *val_end != ';' &&
+                       *val_end != '&' && *val_end != '|') val_end++;
+            }
+            *eq = 0;
+            char save = *val_end;
+            *val_end = 0;
+            setenv(arg, val_start, 1);
+            *val_end = save;
+            arg = val_end;
+        }
+        /* Find next command after export */
+        while (*arg == ' ') arg++;
+        if (*arg == ';') { arg++; while (*arg == ' ') arg++; }
+        if (*arg == 0) return 0;
+        return parse_and_run(arg);
     }
 
     /* Alias expansion: if first word is an alias, expand it */
