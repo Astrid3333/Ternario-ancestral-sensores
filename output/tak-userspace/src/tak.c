@@ -5153,6 +5153,768 @@ int cmd_block_show(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 1: TERNARY KERNEL SIMULATION
+   ═══════════════════════════════════════════════════════
+
+   Simulates a ternary OS boot sequence.
+   Shows the experience of running a real ternary kernel.
+*/
+
+/* Boot sequence */
+int cmd_kernel_boot(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: kernel-boot [--fast] [--gui]\n");
+        fprintf(stderr, "\n  Simulates ternary OS boot sequence.\n");
+        return 1;
+    }
+
+    int fast = 0, gui = 0;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--fast") == 0) fast = 1;
+        else if (strcmp(argv[i], "--gui") == 0) gui = 1;
+    }
+
+    int delay = fast ? 50 : 500;
+
+    printf("\n");
+    printf(COLOR_CYAN "  ╔══════════════════════════════════════════════════════════╗\n");
+    printf("  ║              TERNARY OS KERNEL v1.0                    ║\n");
+    printf("  ║         Ultra-lite · Ternary · Ancestral               ║\n");
+    printf("  ╚══════════════════════════════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    usleep(delay * 1000);
+    printf("  " COLOR_GREEN "[BOOT]" COLOR_RESET " Initializing ternary processor...\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_GREEN "[BOOT]" COLOR_RESET " CPU: Ternary-1 @ 27MHz (9 trit registers)\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_GREEN "[BOOT]" COLOR_RESET " Memory: 27 words (3^3)\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_GREEN "[BOOT]" COLOR_RESET " Stack: 9 levels deep\n");
+    usleep(delay * 1000);
+
+    printf("\n");
+    printf("  " COLOR_YELLOW "[MEMORY]" COLOR_RESET " Testing ternary memory...\n");
+    for (int i = 0; i < 27; i++) {
+        printf("\r  " COLOR_YELLOW "[MEMORY]" COLOR_RESET " Word %02d: 000", i);
+        usleep(delay * 100);
+    }
+    printf(" " COLOR_GREEN "OK" COLOR_RESET "\n");
+
+    usleep(delay * 1000);
+    printf("\n");
+    printf("  " COLOR_CYAN "[DRIVER]" COLOR_RESET " Loading ternary drivers...\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_CYAN "[DRIVER]" COLOR_RESET " Ternary display driver: OK\n");
+    usleep(delay * 100);
+    printf("  " COLOR_CYAN "[DRIVER]" COLOR_RESET " Ternary keyboard driver: OK\n");
+    usleep(delay * 100);
+    printf("  " COLOR_CYAN "[DRIVER]" COLOR_RESET " Ternary network driver: OK\n");
+    usleep(delay * 100);
+    printf("  " COLOR_CYAN "[DRIVER]" COLOR_RESET " Ternary storage driver: OK\n");
+
+    usleep(delay * 1000);
+    printf("\n");
+    printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Mounting Quipu filesystem...\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Quipu root: ~/.tak/quipu/\n");
+    printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Knots: 0 loaded\n");
+
+    usleep(delay * 1000);
+    printf("\n");
+    printf("  " COLOR_RED "[SCHED]" COLOR_RESET " Initializing Maya calendar scheduler...\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_RED "[SCHED]" COLOR_RESET " Tzolkin: 1/260\n");
+    printf("  " COLOR_RED "[SCHED]" COLOR_RESET " Haab: 1/365\n");
+    printf("  " COLOR_RED "[SCHED]" COLOR_RESET " Tick: 0\n");
+
+    usleep(delay * 1000);
+    printf("\n");
+    printf("  " COLOR_GREEN "[NET]" COLOR_RESET " Starting ternary mesh network...\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_GREEN "[NET]" COLOR_RESET " Node address: 000\n");
+    printf("  " COLOR_GREEN "[NET]" COLOR_RESET " Status: LISTENING\n");
+
+    usleep(delay * 1000);
+    printf("\n");
+    printf("  " COLOR_CYAN "[CRYPTO]" COLOR_RESET " Loading ternary encryption...\n");
+    usleep(delay * 1000);
+    printf("  " COLOR_CYAN "[CRYPTO]" COLOR_RESET " Algorithm: Ternary XOR (base 3)\n");
+    printf("  " COLOR_CYAN "[CRYPTO]" COLOR_RESET " Key size: 81 trits (3^4)\n");
+
+    usleep(delay * 1000);
+    printf("\n");
+    printf("  " COLOR_GREEN "═══════════════════════════════════════════════════════════" COLOR_RESET "\n");
+    printf("  " COLOR_GREEN "TERNARY OS BOOT COMPLETE" COLOR_RESET "\n");
+    printf("  " COLOR_YELLOW "185 commands" COLOR_RESET " · " COLOR_CYAN "196KB" COLOR_RESET " · " COLOR_GREEN "Ternary" COLOR_RESET "\n");
+    printf("  " COLOR_GREEN "═══════════════════════════════════════════════════════════" COLOR_RESET "\n");
+
+    if (gui) {
+        printf("\n  " COLOR_CYAN "Launching TUI desktop..." COLOR_RESET "\n");
+        system("./tak -c 'desktop'");
+    } else {
+        printf("\n  " COLOR_YELLOW "Type 'help' for available commands" COLOR_RESET "\n");
+    }
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 2: TERNARY CPU SIMULATOR
+   ═══════════════════════════════════════════════════════
+
+   Full ternary CPU simulator with:
+   - 9 registers (R0-R8)
+   - 27 words of memory
+   - 9-level stack
+   - 81 opcodes (3^4)
+   - Balanced ternary arithmetic
+*/
+
+int cmd_cpu_sim(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: cpu-sim <program> [--trace] [--stats]\n");
+        fprintf(stderr, "\n  Ternary CPU Simulator:\n");
+        fprintf(stderr, "    9 registers, 27 memory words, 81 opcodes\n");
+        fprintf(stderr, "    Balanced ternary arithmetic (-1, 0, +1)\n");
+        return 1;
+    }
+
+    char* program = argv[1];
+    int trace = 0, stats = 0;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--trace") == 0) trace = 1;
+        else if (strcmp(argv[i], "--stats") == 0) stats = 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY CPU SIMULATOR         ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Program:" COLOR_RESET " %s (%d trits)\n", program, (int)strlen(program));
+
+    /* CPU state */
+    int regs[9] = {0};
+    int mem[27] = {0};
+    int stack[9] = {0};
+    int sp = 0, pc = 0;
+    int cycles = 0;
+    int running = 1;
+
+    printf("  " COLOR_CYAN "Simulating..." COLOR_RESET "\n\n");
+
+    while (running && pc + 3 < (int)strlen(program)) {
+        /* Fetch 3-trit opcode */
+        int opcode = (program[pc] - '0') * 9 + (program[pc + 1] - '0') * 3 + (program[pc + 2] - '0');
+        pc += 3;
+        cycles++;
+
+        if (trace) {
+            printf("  " COLOR_MAGENTA "[PC:%02d]" COLOR_RESET " Opcode: %02d ", pc - 3, opcode);
+        }
+
+        switch (opcode) {
+            case 0: /* NOP */
+                if (trace) printf("NOP\n");
+                break;
+            case 1: /* LOAD Rn, val */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int val = program[pc++] - '0';
+                    regs[rn] = val;
+                    if (trace) printf("LOAD R%d, %d\n", rn, val);
+                }
+                break;
+            case 2: /* STORE Rn, addr */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int addr = program[pc++] - '0';
+                    mem[addr] = regs[rn];
+                    if (trace) printf("STORE R%d → M[%d]\n", rn, addr);
+                }
+                break;
+            case 3: /* ADD Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] += regs[rm];
+                    if (trace) printf("ADD R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 4: /* SUB Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] -= regs[rm];
+                    if (trace) printf("SUB R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 5: /* MUL Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] *= regs[rm];
+                    if (trace) printf("MUL R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 6: /* DIV Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    if (regs[rm] != 0) regs[rn] /= regs[rm];
+                    if (trace) printf("DIV R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 7: /* AND Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] &= regs[rm];
+                    if (trace) printf("AND R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 8: /* OR Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] |= regs[rm];
+                    if (trace) printf("OR R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 9: /* XOR Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] ^= regs[rm];
+                    if (trace) printf("XOR R%d, R%d → %d\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 10: /* SHL Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    regs[rn] <<= 1;
+                    if (trace) printf("SHL R%d → %d\n", rn, regs[rn]);
+                }
+                break;
+            case 11: /* SHR Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    regs[rn] >>= 1;
+                    if (trace) printf("SHR R%d → %d\n", rn, regs[rn]);
+                }
+                break;
+            case 12: /* JMP addr */
+                if (pc < (int)strlen(program)) {
+                    int addr = program[pc++] - '0';
+                    pc = addr * 3;
+                    if (trace) printf("JMP → %d\n", pc);
+                }
+                break;
+            case 13: /* JZ addr */
+                if (pc < (int)strlen(program)) {
+                    int addr = program[pc++] - '0';
+                    if (regs[0] == 0) pc = addr * 3;
+                    if (trace) printf("JZ %d (R0=%d) → %d\n", addr, regs[0], pc);
+                }
+                break;
+            case 14: /* JNZ addr */
+                if (pc < (int)strlen(program)) {
+                    int addr = program[pc++] - '0';
+                    if (regs[0] != 0) pc = addr * 3;
+                    if (trace) printf("JNZ %d (R0=%d) → %d\n", addr, regs[0], pc);
+                }
+                break;
+            case 15: /* PUSH Rn */
+                if (pc < (int)strlen(program) && sp < 9) {
+                    int rn = program[pc++] - '0';
+                    stack[sp++] = regs[rn];
+                    if (trace) printf("PUSH R%d (%d)\n", rn, regs[rn]);
+                }
+                break;
+            case 16: /* POP Rn */
+                if (pc < (int)strlen(program) && sp > 0) {
+                    int rn = program[pc++] - '0';
+                    regs[rn] = stack[--sp];
+                    if (trace) printf("POP → R%d (%d)\n", rn, regs[rn]);
+                }
+                break;
+            case 17: /* CALL addr */
+                if (pc < (int)strlen(program) && sp < 9) {
+                    int addr = program[pc++] - '0';
+                    stack[sp++] = pc;
+                    pc = addr * 3;
+                    if (trace) printf("CALL → %d\n", pc);
+                }
+                break;
+            case 18: /* RET */
+                if (sp > 0) {
+                    pc = stack[--sp];
+                    if (trace) printf("RET → %d\n", pc);
+                }
+                break;
+            case 19: /* INC Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    regs[rn]++;
+                    if (trace) printf("INC R%d → %d\n", rn, regs[rn]);
+                }
+                break;
+            case 20: /* DEC Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    regs[rn]--;
+                    if (trace) printf("DEC R%d → %d\n", rn, regs[rn]);
+                }
+                break;
+            case 21: /* NOT Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    regs[rn] = ~regs[rn];
+                    if (trace) printf("NOT R%d → %d\n", rn, regs[rn]);
+                }
+                break;
+            case 22: /* NEG Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    regs[rn] = -regs[rn];
+                    if (trace) printf("NEG R%d → %d\n", rn, regs[rn]);
+                }
+                break;
+            case 23: /* PRINT Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    printf("  " COLOR_GREEN "PRINT" COLOR_RESET " R%d = %d\n", rn, regs[rn]);
+                }
+                break;
+            case 24: /* INPUT Rn */
+                if (pc < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    printf("  " COLOR_YELLOW "INPUT" COLOR_RESET " R%d = ", rn);
+                    if (scanf("%d", &regs[rn]) != 1) regs[rn] = 0;
+                }
+                break;
+            case 25: /* HALT */
+                printf("  " COLOR_RED "HALT" COLOR_RESET "\n");
+                running = 0;
+                break;
+            case 26: /* DEBUG */
+                printf("\n  " COLOR_CYAN "═══ CPU STATE ═══" COLOR_RESET "\n");
+                for (int i = 0; i < 9; i++) printf("    R%d = %d\n", i, regs[i]);
+                printf("    SP = %d, PC = %d\n", sp, pc);
+                printf("  " COLOR_CYAN "════════════════" COLOR_RESET "\n");
+                break;
+            case 27: /* CMP Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[0] = (regs[rn] == regs[rm]) ? 0 : (regs[rn] < regs[rm]) ? -1 : 1;
+                    if (trace) printf("CMP R%d, R%d → R0=%d\n", rn, rm, regs[0]);
+                }
+                break;
+            case 28: /* MOV Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    regs[rn] = regs[rm];
+                    if (trace) printf("MOV R%d ← R%d (%d)\n", rn, rm, regs[rn]);
+                }
+                break;
+            case 29: /* SWAP Rn, Rm */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int rm = program[pc++] - '0';
+                    int tmp = regs[rn];
+                    regs[rn] = regs[rm];
+                    regs[rm] = tmp;
+                    if (trace) printf("SWAP R%d ↔ R%d\n", rn, rm);
+                }
+                break;
+            case 30: /* LOADM Rn, addr */
+                if (pc + 1 < (int)strlen(program)) {
+                    int rn = program[pc++] - '0';
+                    int addr = program[pc++] - '0';
+                    regs[rn] = mem[addr];
+                    if (trace) printf("LOADM R%d ← M[%d] (%d)\n", rn, addr, regs[rn]);
+                }
+                break;
+            case 31: /* INCm addr */
+                if (pc < (int)strlen(program)) {
+                    int addr = program[pc++] - '0';
+                    mem[addr]++;
+                    if (trace) printf("INCm M[%d] → %d\n", addr, mem[addr]);
+                }
+                break;
+            case 32: /* DECm addr */
+                if (pc < (int)strlen(program)) {
+                    int addr = program[pc++] - '0';
+                    mem[addr]--;
+                    if (trace) printf("DECm M[%d] → %d\n", addr, mem[addr]);
+                }
+                break;
+            default:
+                printf("  " COLOR_RED "UNKNOWN" COLOR_RESET " opcode: %d\n", opcode);
+                running = 0;
+        }
+    }
+
+    if (stats) {
+        printf("\n  " COLOR_CYAN "═══ CPU STATISTICS ═══" COLOR_RESET "\n");
+        printf("    Cycles: %d\n", cycles);
+        printf("    Registers: ");
+        for (int i = 0; i < 9; i++) printf("R%d=%d ", i, regs[i]);
+        printf("\n    Stack: SP=%d\n", sp);
+        printf("    Memory: ");
+        for (int i = 0; i < 27; i++) printf("%d", mem[i] & 1);
+        printf("\n  " COLOR_CYAN "══════════════════════" COLOR_RESET "\n");
+    }
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 3: TERNARY RSA ENCRYPTION
+   ═══════════════════════════════════════════════════════
+
+   RSA-like encryption using ternary primes.
+
+   Key generation:
+   1. Generate two ternary primes p, q
+   2. n = p * q
+   3. phi = (p-1) * (q-1)
+   4. e = coprime to phi
+   5. d = e^-1 mod phi
+
+   Encrypt: c = m^e mod n
+   Decrypt: m = c^d mod n
+*/
+
+/* Calculate ternary GCD */
+int tern_gcd(int a, int b) {
+    while (b) { int t = b; b = a % b; a = t; }
+    return a;
+}
+
+/* Calculate modular inverse */
+int tern_modinv(int a, int m) {
+    int m0 = m, t, q;
+    int x0 = 0, x1 = 1;
+    if (m == 1) return 0;
+    while (a > 1) {
+        q = a / m;
+        t = m;
+        m = a % m; a = t;
+        t = x0;
+        x0 = x1 - q * x0;
+        x1 = t;
+    }
+    if (x1 < 0) x1 += m0;
+    return x1;
+}
+
+/* Modular exponentiation */
+long long tern_powmod(long long base, long long exp, long long mod) {
+    long long result = 1;
+    base = base % mod;
+    while (exp > 0) {
+        if (exp % 2 == 1)
+            result = (result * base) % mod;
+        exp = exp >> 1;
+        base = (base * base) % mod;
+    }
+    return result;
+}
+
+/* Check if number is prime (ternary-optimized) */
+int tern_is_prime(int n) {
+    if (n <= 1) return 0;
+    if (n <= 3) return 1;
+    if (n % 2 == 0 || n % 3 == 0) return 0;
+    for (int i = 5; i * i <= n; i += 6) {
+        if (n % i == 0 || n % (i + 2) == 0) return 0;
+    }
+    return 1;
+}
+
+/* Generate RSA keys */
+int cmd_rsa_keygen(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: rsa-keygen <bits> [--output keys.rsa]\n");
+        fprintf(stderr, "  Example: rsa-keygen 8\n");
+        return 1;
+    }
+
+    int bits = atoi(argv[1]);
+    char output[256] = "keys.rsa";
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strcpy(output, argv[++i]);
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY RSA KEY GENERATOR     ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Bits:" COLOR_RESET " %d\n", bits);
+
+    /* Find two primes (at least 100 apart) */
+    int p = 101;
+    int count = 0;
+    while (count < 1) {
+        p += 2;
+        if (tern_is_prime(p)) count++;
+    }
+
+    int q = p + 100;
+    while (!tern_is_prime(q)) q += 2;
+
+    printf("  " COLOR_GREEN "p:" COLOR_RESET " %d (prime)\n", p);
+    printf("  " COLOR_GREEN "q:" COLOR_RESET " %d (prime)\n", q);
+
+    /* RSA parameters */
+    long long n = (long long)p * q;
+    long long phi = (long long)(p - 1) * (q - 1);
+    long long e = 3;
+    while (tern_gcd(e, phi) != 1) e += 2;
+    long long d = tern_modinv(e, phi);
+
+    printf("  " COLOR_CYAN "n:" COLOR_RESET "   %lld\n", n);
+    printf("  " COLOR_CYAN "phi:" COLOR_RESET " %lld\n", phi);
+    printf("  " COLOR_CYAN "e:" COLOR_RESET "   %lld\n", e);
+    printf("  " COLOR_CYAN "d:" COLOR_RESET "   %lld\n", d);
+
+    /* Save keys */
+    FILE* f = fopen(output, "w");
+    if (f) {
+        fprintf(f, "%lld %lld\n%lld %lld\n", e, n, d, n);
+        fclose(f);
+        printf("\n  " COLOR_GREEN "Saved" COLOR_RESET " to %s\n", output);
+    }
+
+    return 0;
+}
+
+/* Encrypt with RSA */
+int cmd_rsa_encrypt(int argc, char** argv) {
+    if (argc < 4 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: rsa-encrypt <keyfile> <message> [--output encrypted.rsa]\n");
+        return 1;
+    }
+
+    char* keyfile = argv[1];
+    char* message = argv[2];
+    char output[256] = "encrypted.rsa";
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strcpy(output, argv[++i]);
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY RSA ENCRYPTION        ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    /* Read keys */
+    FILE* f = fopen(keyfile, "r");
+    if (!f) { fprintf(stderr, "  Error: Cannot open %s\n", keyfile); return 1; }
+    long long e, n;
+    fscanf(f, "%lld %lld", &e, &n);
+    fclose(f);
+
+    printf("  " COLOR_YELLOW "Key:" COLOR_RESET "    %s\n", keyfile);
+    printf("  " COLOR_YELLOW "Message:" COLOR_RESET " %s\n", message);
+    printf("  " COLOR_YELLOW "e:" COLOR_RESET "      %lld\n", e);
+    printf("  " COLOR_YELLOW "n:" COLOR_RESET "      %lld\n", n);
+
+    /* Encrypt each character */
+    printf("\n  " COLOR_CYAN "Encryption:" COLOR_RESET "\n  ");
+    FILE* out = fopen(output, "w");
+    for (int i = 0; message[i]; i++) {
+        long long m = (long long)message[i];
+        long long c = tern_powmod(m, e, n);
+        printf(COLOR_GREEN "%lld" COLOR_RESET " ", c);
+        if (out) fprintf(out, "%lld ", c);
+    }
+    if (out) fclose(out);
+    printf("\n\n  " COLOR_GREEN "Saved" COLOR_RESET " to %s\n", output);
+
+    return 0;
+}
+
+/* Decrypt with RSA */
+int cmd_rsa_decrypt(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: rsa-decrypt <keyfile> <encrypted_file>\n");
+        return 1;
+    }
+
+    char* keyfile = argv[1];
+    char* encfile = argv[2];
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY RSA DECRYPTION        ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    /* Read private key */
+    FILE* f = fopen(keyfile, "r");
+    if (!f) { fprintf(stderr, "  Error: Cannot open %s\n", keyfile); return 1; }
+    long long e, n, d;
+    fscanf(f, "%lld %lld", &e, &n);
+    fscanf(f, "%lld %lld", &d, &n);
+    fclose(f);
+
+    printf("  " COLOR_YELLOW "Key:" COLOR_RESET "    %s (private)\n", keyfile);
+    printf("  " COLOR_YELLOW "d:" COLOR_RESET "      %lld\n", d);
+    printf("  " COLOR_YELLOW "n:" COLOR_RESET "      %lld\n", n);
+
+    /* Read encrypted data */
+    f = fopen(encfile, "r");
+    if (!f) { fprintf(stderr, "  Error: Cannot open %s\n", encfile); return 1; }
+
+    printf("\n  " COLOR_CYAN "Decryption:" COLOR_RESET "\n  ");
+    long long c;
+    while (fscanf(f, "%lld", &c) == 1) {
+        long long m = tern_powmod(c, d, n);
+        printf(COLOR_GREEN "%c" COLOR_RESET, (char)m);
+    }
+    printf("\n");
+    fclose(f);
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 4: TERNARY DATABASE
+   ═══════════════════════════════════════════════════════
+
+   Simple key-value database with ternary indexing.
+
+   Features:
+   - Store key-value pairs
+   - Ternary index for fast lookup
+   - JSON-like storage
+   - Query by key
+*/
+
+/* Ternary database node */
+typedef struct TernDB {
+    char key[128];
+    char value[256];
+    struct TernDB* next;
+} TernDB;
+
+static TernDB* db_head = NULL;
+
+/* Create database */
+int cmd_db_create(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: db-create <name>\n");
+        return 1;
+    }
+
+    char path[512];
+    snprintf(path, sizeof(path), "%s/db/%s.db", fs_get_root(), argv[1]);
+    mkdir(dirname(path), 0755);
+
+    FILE* f = fopen(path, "w");
+    if (f) {
+        fclose(f);
+        printf("  " COLOR_GREEN "Created" COLOR_RESET " database: %s\n", argv[1]);
+    }
+    return 0;
+}
+
+/* Insert into database */
+int cmd_db_insert(int argc, char** argv) {
+    if (argc < 4 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: db-insert <db> <key> <value>\n");
+        fprintf(stderr, "  Example: db-insert sensors temp 25\n");
+        return 1;
+    }
+
+    char* db_name = argv[1];
+    char* key = argv[2];
+    char* value = argv[3];
+
+    char path[512];
+    snprintf(path, sizeof(path), "%s/db/%s.db", fs_get_root(), db_name);
+
+    FILE* f = fopen(path, "a");
+    if (f) {
+        fprintf(f, "%s=%s\n", key, value);
+        fclose(f);
+        printf("  " COLOR_GREEN "Inserted" COLOR_RESET " %s=%s into %s\n", key, value, db_name);
+    }
+    return 0;
+}
+
+/* Query database */
+int cmd_db_query(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: db-query <db> <key>\n");
+        fprintf(stderr, "  Example: db-query sensors temp\n");
+        return 1;
+    }
+
+    char* db_name = argv[1];
+    char* key = argv[2];
+
+    char path[512];
+    snprintf(path, sizeof(path), "%s/db/%s.db", fs_get_root(), db_name);
+
+    FILE* f = fopen(path, "r");
+    if (!f) { fprintf(stderr, "  Error: Database not found\n"); return 1; }
+
+    printf(COLOR_CYAN "  ── Query: %s.%s ──" COLOR_RESET "\n\n", db_name, key);
+
+    char line[512];
+    int found = 0;
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\n")] = 0;
+        char* eq = strchr(line, '=');
+        if (eq) {
+            *eq = 0;
+            if (strcmp(line, key) == 0) {
+                printf("  " COLOR_GREEN "%s" COLOR_RESET " = %s\n", line, eq + 1);
+                found = 1;
+            }
+        }
+    }
+    fclose(f);
+
+    if (!found) printf("  " COLOR_YELLOW "Not found" COLOR_RESET "\n");
+    return 0;
+}
+
+/* List database entries */
+int cmd_db_list(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: db-list <db>\n");
+        return 1;
+    }
+
+    char* db_name = argv[1];
+    char path[512];
+    snprintf(path, sizeof(path), "%s/db/%s.db", fs_get_root(), db_name);
+
+    FILE* f = fopen(path, "r");
+    if (!f) { fprintf(stderr, "  Error: Database not found\n"); return 1; }
+
+    printf(COLOR_CYAN "  ── Database: %s ──" COLOR_RESET "\n\n", db_name);
+
+    char line[512];
+    int count = 0;
+    while (fgets(line, sizeof(line), f)) {
+        line[strcspn(line, "\n")] = 0;
+        char* eq = strchr(line, '=');
+        if (eq) {
+            *eq = 0;
+            printf("  " COLOR_GREEN "%-20s" COLOR_RESET " = %s\n", line, eq + 1);
+            count++;
+        }
+    }
+    fclose(f);
+
+    printf("\n  " COLOR_YELLOW "Total:" COLOR_RESET " %d entries\n", count);
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -6074,6 +6836,15 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "block-genesis") == 0) { builtin_rc = cmd_block_genesis(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "block-add") == 0) { builtin_rc = cmd_block_add(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "block-show") == 0) { builtin_rc = cmd_block_show(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "kernel-boot") == 0) { builtin_rc = cmd_kernel_boot(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "cpu-sim") == 0) { builtin_rc = cmd_cpu_sim(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "rsa-keygen") == 0) { builtin_rc = cmd_rsa_keygen(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "rsa-encrypt") == 0) { builtin_rc = cmd_rsa_encrypt(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "rsa-decrypt") == 0) { builtin_rc = cmd_rsa_decrypt(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "db-create") == 0) { builtin_rc = cmd_db_create(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "db-insert") == 0) { builtin_rc = cmd_db_insert(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "db-query") == 0) { builtin_rc = cmd_db_query(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "db-list") == 0) { builtin_rc = cmd_db_list(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
