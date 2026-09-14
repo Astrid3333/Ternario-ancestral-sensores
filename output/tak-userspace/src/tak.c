@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <sys/sysinfo.h>
+#include <sys/select.h>
 #include <dirent.h>
 
 /* Subsystem APIs */
@@ -494,6 +495,25 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "who" COLOR_RESET "            Logged in users\n");
     printf("  " COLOR_CYAN "su [user]" COLOR_RESET "      Switch user\n");
     printf("  " COLOR_CYAN "passwd [user]" COLOR_RESET "  Change password\n");
+    printf("  " COLOR_CYAN "top" COLOR_RESET "            Process monitor\n");
+    printf("  " COLOR_CYAN "tar [-xvf] <arch>" COLOR_RESET " Archive\n");
+    printf("  " COLOR_CYAN "gzip <file>" COLOR_RESET "    Compress\n");
+    printf("  " COLOR_CYAN "ping <host>" COLOR_RESET "    Test network\n");
+    printf("  " COLOR_CYAN "traceroute <h>" COLOR_RESET " Route trace\n");
+    printf("  " COLOR_CYAN "nslookup <h>" COLOR_RESET "  DNS lookup\n");
+    printf("  " COLOR_CYAN "ifconfig" COLOR_RESET "       Network config\n");
+    printf("  " COLOR_CYAN "netstat" COLOR_RESET "        Network stats\n");
+    printf("  " COLOR_CYAN "chown <u> <f>" COLOR_RESET " Change owner\n");
+    printf("  " COLOR_CYAN "adduser <u>" COLOR_RESET "   Add user\n");
+    printf("  " COLOR_CYAN "groups [u]" COLOR_RESET "    Show groups\n");
+    printf("  " COLOR_CYAN "dmesg" COLOR_RESET "          Kernel messages\n");
+    printf("  " COLOR_CYAN "mount" COLOR_RESET "          Mount points\n");
+    printf("  " COLOR_CYAN "systemctl" COLOR_RESET "      System services\n");
+    printf("  " COLOR_CYAN "journalctl" COLOR_RESET "     System logs\n");
+    printf("  " COLOR_CYAN "lscpu" COLOR_RESET "          CPU info\n");
+    printf("  " COLOR_CYAN "lsusb" COLOR_RESET "          USB devices\n");
+    printf("  " COLOR_CYAN "locate <p>" COLOR_RESET "    Find files\n");
+    printf("  " COLOR_CYAN "nano <file>" COLOR_RESET "    Text editor\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -1511,9 +1531,338 @@ int cmd_kill_tak_full(int argc, char** argv) {
 }
 
 /* ═══════════════════════════════════════════════════════
-   TUI DESKTOP — Linux Mint ternario style
+   SYSTEM MONITORING
    ═══════════════════════════════════════════════════════ */
 
+int cmd_top(void) {
+    int rows, cols;
+    tui_get_size(&rows, &cols);
+    tui_hide_cursor();
+    tui_clear();
+
+    int running = 1;
+    while (running) {
+        /* Header */
+        tui_cursor(1, 1);
+        printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TOP " COLOR_RESET);
+        printf(COLOR_BG_BLUE COLOR_WHITE " Ternary Ancestral Kernel — Process Monitor " COLOR_RESET "                ");
+
+        /* System info */
+        struct sysinfo si;
+        sysinfo(&si);
+        unsigned long mem_used = (si.totalram - si.freeram) * si.mem_unit / 1024 / 1024;
+        unsigned long mem_total = si.totalram * si.mem_unit / 1024 / 1024;
+        tui_cursor(3, 1);
+        printf(COLOR_BOLD " Tasks: " COLOR_GREEN "%ld" COLOR_RESET COLOR_BOLD "  Mem: %lu/%luMB  Load: %ld.%ld %ld.%ld %ld.%ld  Uptime: %ldh%ldm" COLOR_RESET,
+               si.procs, mem_used, mem_total,
+               si.loads[0]/65536, (si.loads[0]/6553)%10,
+               si.loads[1]/65536, (si.loads[1]/6553)%10,
+               si.loads[2]/65536, (si.loads[2]/6553)%10,
+               si.uptime/3600, (si.uptime/60)%60);
+
+        /* Table header */
+        tui_cursor(5, 1);
+        printf(COLOR_BOLD COLOR_CYAN "  PID   USER     %%CPU  %%MEM    RSS    COMMAND" COLOR_RESET);
+
+        /* Read /proc for processes */
+        DIR* d = opendir("/proc");
+        if (d) {
+            struct dirent* ent;
+            int line = 6;
+            int shown = 0;
+            int max_lines = rows - 8;
+
+            while ((ent = readdir(d)) && line < 6 + max_lines) {
+                if (!isdigit(ent->d_name[0])) continue;
+                int pid = atoi(ent->d_name);
+                if (pid <= 0) continue;
+
+                char path[256], line_buf[1024];
+                snprintf(path, sizeof(path), "/proc/%d/stat", pid);
+                FILE* f = fopen(path, "r");
+                if (!f) continue;
+
+                if (fgets(line_buf, sizeof(line_buf), f)) {
+                    /* Parse stat: pid (comm) state ppid ... */
+                    char* p = strrchr(line_buf, ')');
+                    if (p) {
+                        char state = ' ';
+                        sscanf(p + 2, "%c", &state);
+
+                        /* Get command name */
+                        char* start = strchr(line_buf, '(');
+                        char comm[64] = "";
+                        if (start && p) {
+                            int len = p - start - 1;
+                            if (len > 63) len = 63;
+                            strncpy(comm, start + 1, len);
+                            comm[len] = 0;
+                        }
+
+                        /* Get RSS from /proc/pid/statm */
+                        char statm_path[256], statm_buf[256];
+                        snprintf(statm_path, sizeof(statm_path), "/proc/%d/statm", pid);
+                        FILE* fm = fopen(statm_path, "r");
+                        long rss = 0;
+                        if (fm) {
+                            long pages;
+                            if (fscanf(fm, "%*ld %ld", &pages) == 1)
+                                rss = pages * 4 / 1024; /* KB to MB approx */
+                            fclose(fm);
+                        }
+
+                        /* Get username */
+                        struct stat st;
+                        char uid_path[256];
+                        snprintf(uid_path, sizeof(uid_path), "/proc/%d", pid);
+                        stat(uid_path, &st);
+                        struct passwd* pw = getpwuid(st.st_uid);
+                        char user[32];
+                        snprintf(user, sizeof(user), "%s", pw ? pw->pw_name : "?");
+
+                        /* State color */
+                        const char* state_color = COLOR_GREEN;
+                        if (state == 'R') state_color = COLOR_GREEN;
+                        else if (state == 'S') state_color = COLOR_BLUE;
+                        else if (state == 'Z') state_color = COLOR_RED;
+                        else if (state == 'T') state_color = COLOR_YELLOW;
+
+                        tui_cursor(line, 1);
+                        if (shown == 0) /* highlight first */
+                            printf(COLOR_BG_CYAN COLOR_BOLD " %5d  %-8s  ?   ?  %5ld  %s" COLOR_RESET, pid, user, rss, comm);
+                        else
+                            printf(" %5d  %-8s  ?   ?  %5ld  %s" COLOR_RESET, pid, user, rss, comm);
+                        line++;
+                        shown++;
+                    }
+                }
+                fclose(f);
+            }
+            closedir(d);
+        }
+
+        /* Bottom bar */
+        tui_cursor(rows - 1, 1);
+        printf(COLOR_BG_BLUE COLOR_WHITE " Q: Quit  R: Refresh  P: Sort by PID  M: Sort by MEM " COLOR_RESET "        ");
+
+        /* Non-blocking input */
+        system("/bin/stty raw -echo 2>/dev/null");
+        fd_set fds;
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds);
+        struct timeval tv = {0, 100000}; /* 100ms refresh */
+        int ready = select(STDIN_FILENO + 1, &fds, NULL, NULL, &tv);
+
+        if (ready > 0) {
+            int ch = getchar();
+            if (ch == 'q' || ch == 'Q') running = 0;
+        }
+        system("/bin/stty cooked echo 2>/dev/null");
+        tui_clear();
+    }
+    tui_show_cursor();
+    tui_clear();
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ARCHIVE & COMPRESSION
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_tar(int argc, char** argv) {
+    if (argc < 3) {
+        fprintf(stderr, "  Usage: tar [-xvf] [-cvf] <archive> [files...]\n");
+        return 1;
+    }
+    int extract = 0, create = 0, verbose = 0;
+    char* archive = NULL;
+    char* files[256];
+    int nfiles = 0;
+
+    for (int i = 1; i < argc; i++) {
+        if (argv[i][0] == '-') {
+            for (int j = 1; argv[i][j]; j++) {
+                if (argv[i][j] == 'x') extract = 1;
+                if (argv[i][j] == 'c') create = 1;
+                if (argv[i][j] == 'v') verbose = 1;
+                if (argv[i][j] == 'f') { /* next arg is archive */ }
+            }
+        } else if (!archive) {
+            archive = argv[i];
+        } else {
+            files[nfiles++] = argv[i];
+        }
+    }
+    if (!archive) { fprintf(stderr, "  tar: no archive specified\n"); return 1; }
+
+    /* Use system tar */
+    char cmd[4096];
+    if (create) {
+        snprintf(cmd, sizeof(cmd), "tar -cf %s", archive);
+        for (int i = 0; i < nfiles; i++) { strcat(cmd, " "); strcat(cmd, files[i]); }
+    } else if (extract) {
+        snprintf(cmd, sizeof(cmd), "tar -xf %s", archive);
+    } else {
+        snprintf(cmd, sizeof(cmd), "tar -tf %s", archive);
+    }
+    system(cmd);
+    return 0;
+}
+
+int cmd_gzip(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: gzip <file>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "gzip %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_gunzip(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: gunzip <file.gz>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "gunzip %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NETWORK TOOLS
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_ping(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: ping <host> [-c count]\n"); return 1; }
+    int count = 4;
+    const char* host = argv[1];
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "-c") == 0 && i + 1 < argc) count = atoi(argv[++i]);
+    }
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "ping -c %d %s", count, host);
+    system(cmd);
+    return 0;
+}
+
+int cmd_traceroute(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: traceroute <host>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "traceroute %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_nslookup(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: nslookup <host>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "nslookup %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_ifconfig(void) {
+    system("ip addr show 2>/dev/null || ifconfig 2>/dev/null || echo '  No network tools'");
+    return 0;
+}
+
+int cmd_netstat(void) {
+    system("ss -tuln 2>/dev/null || netstat -tuln 2>/dev/null || echo '  No netstat'");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   USER MANAGEMENT
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_chown(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: chown <user> <file>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "chown %s %s", argv[1], argv[2]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_adduser(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: adduser <username>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "sudo adduser %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_groups(int argc, char** argv) {
+    const char* user = argc > 1 ? argv[1] : getenv("USER");
+    if (!user) user = "root";
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "groups %s", user);
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SYSTEM TOOLS
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_dmesg(void) {
+    system("dmesg 2>/dev/null | tail -20");
+    return 0;
+}
+
+int cmd_mount(void) {
+    system("mount 2>/dev/null | grep -E '^/' | head -20");
+    return 0;
+}
+
+int cmd_systemctl(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: systemctl <command> [service]\n"); return 1; }
+    char cmd[512] = "sudo systemctl";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_journalctl(int argc, char** argv) {
+    char cmd[512] = "journalctl";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    if (argc < 2) strcat(cmd, " -n 20");
+    system(cmd);
+    return 0;
+}
+
+int cmd_lscpu(void) {
+    system("lscpu 2>/dev/null || cat /proc/cpuinfo | head -20");
+    return 0;
+}
+
+int cmd_lsusb(void) {
+    system("lsusb 2>/dev/null || echo '  lsusb not available'");
+    return 0;
+}
+
+int cmd_locate(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: locate <pattern>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "locate %s 2>/dev/null || find / -name '*%s*' 2>/dev/null | head -20", argv[1], argv[1]);
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NANO TEXT EDITOR (simple TUI)
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_nano(int argc, char** argv) {
+    if (argc < 2) {
+        /* Run system nano if available */
+        system("nano 2>/dev/null || echo '  nano not installed, using vi'");
+        system("vi 2>/dev/null || echo '  No editor available'");
+        return 0;
+    }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "nano %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+/* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
     if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0) {
@@ -2293,6 +2642,26 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "who") == 0) { builtin_rc = cmd_who(); is_builtin = 1; }
         else if (strcmp(argv[0], "su") == 0) { builtin_rc = cmd_su(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "passwd") == 0) { builtin_rc = cmd_passwd(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "top") == 0) { builtin_rc = cmd_top(); is_builtin = 1; }
+        else if (strcmp(argv[0], "tar") == 0) { builtin_rc = cmd_tar(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "gzip") == 0) { builtin_rc = cmd_gzip(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "gunzip") == 0) { builtin_rc = cmd_gunzip(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ping") == 0) { builtin_rc = cmd_ping(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "traceroute") == 0) { builtin_rc = cmd_traceroute(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nslookup") == 0) { builtin_rc = cmd_nslookup(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ifconfig") == 0 || strcmp(argv[0], "ip") == 0) { builtin_rc = cmd_ifconfig(); is_builtin = 1; }
+        else if (strcmp(argv[0], "netstat") == 0) { builtin_rc = cmd_netstat(); is_builtin = 1; }
+        else if (strcmp(argv[0], "chown") == 0) { builtin_rc = cmd_chown(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "adduser") == 0) { builtin_rc = cmd_adduser(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "groups") == 0) { builtin_rc = cmd_groups(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "dmesg") == 0) { builtin_rc = cmd_dmesg(); is_builtin = 1; }
+        else if (strcmp(argv[0], "mount") == 0) { builtin_rc = cmd_mount(); is_builtin = 1; }
+        else if (strcmp(argv[0], "systemctl") == 0) { builtin_rc = cmd_systemctl(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "journalctl") == 0) { builtin_rc = cmd_journalctl(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "lscpu") == 0) { builtin_rc = cmd_lscpu(); is_builtin = 1; }
+        else if (strcmp(argv[0], "lsusb") == 0) { builtin_rc = cmd_lsusb(); is_builtin = 1; }
+        else if (strcmp(argv[0], "locate") == 0) { builtin_rc = cmd_locate(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nano") == 0) { builtin_rc = cmd_nano(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
