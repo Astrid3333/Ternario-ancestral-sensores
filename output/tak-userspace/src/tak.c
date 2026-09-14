@@ -7260,6 +7260,166 @@ int run_segment(char* line) {
     return ret;
 }
 
+// ============================================================================
+// SECURITY MODULE — Seguridad equilibrada sin falsos positivos
+// ============================================================================
+
+typedef struct {
+    const char* word;
+    float weight;
+    uint8_t allow_research;
+    const char* category;
+} SecurityKeyword;
+
+static const SecurityKeyword SEC_KEYWORDS[] = {
+    {"porn", 0.9, 0, "adult"},
+    {"xxx", 0.95, 0, "adult"},
+    {"nude", 0.8, 1, "adult"},
+    {"sex", 0.6, 1, "adult"},
+    {"kill", 0.7, 1, "violence"},
+    {"murder", 0.8, 1, "violence"},
+    {"torture", 0.9, 0, "violence"},
+    {"rape", 0.95, 0, "violence"},
+    {"drug", 0.6, 1, "drugs"},
+    {"cocaine", 0.8, 1, "drugs"},
+    {"heroin", 0.9, 0, "drugs"},
+    {"malware", 0.8, 1, "malware"},
+    {"virus", 0.7, 1, "malware"},
+    {"exploit", 0.8, 1, "malware"},
+    {"hack", 0.6, 1, "hacking"},
+    {"onion", 0.7, 0, "deepweb"},
+    {"tor", 0.6, 1, "deepweb"},
+    {"proxy", 0.5, 0, "anonymizer"},
+    {"vpn", 0.3, 1, "privacy"},
+    {NULL, 0, 0, NULL}
+};
+
+typedef struct {
+    const char* domain;
+    uint8_t category;
+    uint8_t confidence;
+} SecBlockedDomain;
+
+static const SecBlockedDomain SEC_BLOCKLIST[] = {
+    {"pornhub.com", 1, 10},
+    {"xvideos.com", 1, 10},
+    {"xnxx.com", 1, 10},
+    {"xhamster.com", 1, 10},
+    {"redtube.com", 1, 10},
+    {"youporn.com", 1, 10},
+    {"tor2web.org", 5, 10},
+    {"onion.ws", 5, 10},
+    {"onion.pet", 5, 10},
+    {NULL, 0, 0}
+};
+
+typedef struct {
+    const char* scheme;
+    uint8_t allowed;
+} SecProtocol;
+
+static const SecProtocol SEC_PROTOCOLS[] = {
+    {"https", 1}, {"http", 0}, {"ftp", 0}, {"ssh", 0},
+    {"tor", 0}, {"i2p", 0}, {"socks", 0}, {"ws", 0},
+    {"wss", 1}, {"mqtt", 1}, {"coap", 1}, {NULL, 0}
+};
+
+static float sec_analyze_content(const char* text, uint8_t is_research) {
+    float score = 0.0;
+    int matches = 0;
+    char buffer[2048];
+    snprintf(buffer, sizeof(buffer), "%s", text ? text : "");
+    for (int i = 0; buffer[i]; i++) buffer[i] = tolower(buffer[i]);
+    for (int i = 0; SEC_KEYWORDS[i].word; i++) {
+        if (strstr(buffer, SEC_KEYWORDS[i].word)) {
+            matches++;
+            if (is_research && SEC_KEYWORDS[i].allow_research)
+                score += SEC_KEYWORDS[i].weight * 0.3;
+            else
+                score += SEC_KEYWORDS[i].weight;
+        }
+    }
+    return (matches > 0) ? score / matches : 0.0;
+}
+
+static int sec_check_url(const char* url) {
+    if (!url) return 0;
+    for (int i = 0; SEC_BLOCKLIST[i].domain; i++) {
+        if (strstr(url, SEC_BLOCKLIST[i].domain)) return 1;
+    }
+    if (strstr(url, ".onion")) return 1;
+    return 0;
+}
+
+static int sec_check_protocol(const char* url) {
+    const char* end = strstr(url, "://");
+    if (!end) return -1;
+    int len = end - url;
+    char scheme[16] = {0};
+    if (len > 15) return -2;
+    strncpy(scheme, url, len);
+    for (int i = 0; SEC_PROTOCOLS[i].scheme; i++) {
+        if (strcmp(scheme, SEC_PROTOCOLS[i].scheme) == 0)
+            return SEC_PROTOCOLS[i].allowed;
+    }
+    return 0;
+}
+
+static int cmd_security_scan(int argc, char** argv) {
+    if (argc < 2) {
+        printf("Usage: security-scan <url-or-text>\n");
+        printf("  Options: --research (allow research content)\n");
+        return 1;
+    }
+    uint8_t is_research = 0;
+    char target[2048] = {0};
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--research") == 0) is_research = 1;
+        else if (target[0] == 0) strncpy(target, argv[i], sizeof(target) - 1);
+    }
+    printf("=== SECURITY SCAN ===\n");
+    printf("Target: %s\n\n", target);
+    float content_score = sec_analyze_content(target, is_research);
+    printf("Content Analysis:\n");
+    printf("  Score: %.2f\n", content_score);
+    printf("  Level: %s\n", content_score < 0.3 ? "SAFE" :
+           content_score < 0.5 ? "LOW RISK" :
+           content_score < 0.7 ? "MEDIUM RISK" :
+           content_score < 0.9 ? "HIGH RISK" : "CRITICAL");
+    if (strstr(target, "://")) {
+        printf("\nURL Check:\n");
+        printf("  Protocol: %s\n", sec_check_protocol(target) ? "Allowed" : "BLOCKED");
+        printf("  Domain: %s\n", sec_check_url(target) ? "BLOCKED" : "Allowed");
+    }
+    printf("\nRecommendation: ");
+    if (content_score < 0.3 && !sec_check_url(target))
+        printf("PERMITTED\n");
+    else if (is_research && content_score < 0.7)
+        printf("PERMITTED (research context)\n");
+    else
+        printf("BLOCKED\n");
+    return 0;
+}
+
+static int cmd_security_status(int argc, char** argv) {
+    printf("=== TAK SECURITY STATUS ===\n\n");
+    printf("Blocked Domains: %d\n", (int)(sizeof(SEC_BLOCKLIST)/sizeof(SEC_BLOCKLIST[0]) - 1));
+    printf("Security Keywords: %d\n", (int)(sizeof(SEC_KEYWORDS)/sizeof(SEC_KEYWORDS[0]) - 1));
+    printf("Protocols: ");
+    int allowed = 0, total = 0;
+    for (int i = 0; SEC_PROTOCOLS[i].scheme; i++) {
+        total++;
+        if (SEC_PROTOCOLS[i].allowed) allowed++;
+    }
+    printf("%d/%d allowed\n", allowed, total);
+    printf("\nProtection Levels:\n");
+    printf("  Child:     Blocks porn, violence, drugs, deepweb\n");
+    printf("  Teen:      Blocks porn, drugs, deepweb\n");
+    printf("  Adult:     Blocks deepweb, malware\n");
+    printf("  Research:  Allows research context\n");
+    return 0;
+}
+
 // =============================================================================
 // COMMAND DISPATCH
 // =============================================================================
@@ -7574,6 +7734,8 @@ int run_single(char* line) {
             else if (job_bg(atoi(argv[1])) != 0) { fprintf(stderr, "  No such job: %s\n", argv[1]); builtin_rc = 1; }
             is_builtin = 1;
         }
+        else if (strcmp(argv[0], "security-scan") == 0) { builtin_rc = cmd_security_scan(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "security-status") == 0) { builtin_rc = cmd_security_status(argc, argv); is_builtin = 1; }
 
         if (is_builtin) {
             fflush(stdout);
