@@ -3,7 +3,7 @@
 
 CC = gcc
 CFLAGS = -O2 -Wall -Wextra -std=c99 -D_XOPEN_SOURCE=500 -Iinclude
-LDFLAGS =
+LDFLAGS = -lm
 
 SRC = src/tak.c src/scheduler.c src/filesystem.c src/memory.c
 OBJ = $(SRC:.c=.o)
