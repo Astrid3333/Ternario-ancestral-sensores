@@ -2338,6 +2338,303 @@ int cmd_7z_wrap(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   SCHEDULING
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_crontab(int argc, char** argv) {
+    char cmd[512] = "crontab";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_at_wrap(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: at <time>\n  e.g.: at now + 1 hour\n"); return 1; }
+    char cmd[512] = "echo";
+    for (int i = 2; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    strcat(cmd, " | at ");
+    strcat(cmd, argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_batch(void) {
+    system("batch 2>/dev/null || echo '  Use: at now'");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   TEXT PROCESSING ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_awk_wrap(int argc, char** argv) {
+    char cmd[4096] = "awk";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_sed_wrap(int argc, char** argv) {
+    char cmd[4096] = "sed";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_column(int argc, char** argv) {
+    char cmd[2048] = "column";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_nl_wrap(int argc, char** argv) {
+    char cmd[2048] = "nl";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_fmt_wrap(int argc, char** argv) {
+    char cmd[2048] = "fmt";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_pr_wrap(int argc, char** argv) {
+    char cmd[2048] = "pr";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_fold_wrap(int argc, char** argv) {
+    char cmd[2048] = "fold";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmdPaste(int argc, char** argv) {
+    char cmd[2048] = "paste";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmdJoin(int argc, char** argv) {
+    char cmd[2048] = "join";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmdSplit(int argc, char** argv) {
+    char cmd[2048] = "split";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DEBUGGING
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_gdb_wrap(int argc, char** argv) {
+    char cmd[2048] = "gdb";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_strace_wrap(int argc, char** argv) {
+    char cmd[2048] = "strace";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_valgrind_wrap(int argc, char** argv) {
+    char cmd[2048] = "valgrind";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_ltrace_wrap(int argc, char** argv) {
+    char cmd[2048] = "ltrace";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_nm_wrap(int argc, char** argv) {
+    char cmd[2048] = "nm";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_objdump_wrap(int argc, char** argv) {
+    char cmd[2048] = "objdump";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_readelf_wrap(int argc, char** argv) {
+    char cmd[2048] = "readelf";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NETWORK ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_nmap_wrap(int argc, char** argv) {
+    char cmd[2048] = "nmap";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_dig_wrap(int argc, char** argv) {
+    char cmd[2048] = "dig";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_nc_wrap(int argc, char** argv) {
+    char cmd[2048] = "nc";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_socat_wrap(int argc, char** argv) {
+    char cmd[2048] = "socat";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_host_wrap(int argc, char** argv) {
+    char cmd[2048] = "host";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MONITORING ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_htop_wrap(void) {
+    system("htop 2>/dev/null || top");
+    return 0;
+}
+
+int cmd_nethogs_wrap(void) {
+    system("sudo nethogs 2>/dev/null || echo '  nethogs not available'");
+    return 0;
+}
+
+int cmd_iftop_wrap(void) {
+    system("sudo iftop 2>/dev/null || echo '  iftop not available'");
+    return 0;
+}
+
+int cmd_iotop_wrap(void) {
+    system("sudo iotop 2>/dev/null || echo '  iotop not available'");
+    return 0;
+}
+
+int cmd_dstat_wrap(void) {
+    system("dstat 2>/dev/null || echo '  dstat not available'");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DATABASE
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_mysql_wrap(int argc, char** argv) {
+    char cmd[2048] = "mysql";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_psql_wrap(int argc, char** argv) {
+    char cmd[2048] = "psql";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_sqlite3_wrap(int argc, char** argv) {
+    char cmd[2048] = "sqlite3";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_redis_cli(void) {
+    system("redis-cli 2>/dev/null || echo '  redis-cli not available'");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SYSTEM ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_locale(void) {
+    system("locale 2>/dev/null");
+    return 0;
+}
+
+int cmd_localectl(void) {
+    system("localectl 2>/dev/null || locale");
+    return 0;
+}
+
+int cmd_chgrp_wrap(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: chgrp <group> <file>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "chgrp %s %s", argv[1], argv[2]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_setfacl_wrap(int argc, char** argv) {
+    char cmd[512] = "setfacl";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_getfacl_wrap(int argc, char** argv) {
+    char cmd[512] = "getfacl";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_visudo(void) {
+    system("sudo visudo 2>/dev/null || echo '  visudo requires root'");
+    return 0;
+}
+
+int cmd_mkpasswd(void) {
+    system("mkpasswd 2>/dev/null || python3 -c 'import crypt; print(crypt.crypt(\"test\", crypt.mksalt(crypt.METHOD_SHA256)))'");
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -3190,6 +3487,47 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "unzip") == 0) { builtin_rc = cmd_unzip_wrap(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "unrar") == 0) { builtin_rc = cmd_unrar_wrap(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "7z") == 0) { builtin_rc = cmd_7z_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "crontab") == 0) { builtin_rc = cmd_crontab(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "at") == 0) { builtin_rc = cmd_at_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "batch") == 0) { builtin_rc = cmd_batch(); is_builtin = 1; }
+        else if (strcmp(argv[0], "awk") == 0) { builtin_rc = cmd_awk_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "sed") == 0) { builtin_rc = cmd_sed_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "column") == 0) { builtin_rc = cmd_column(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nl") == 0) { builtin_rc = cmd_nl_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "fmt") == 0) { builtin_rc = cmd_fmt_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "pr") == 0) { builtin_rc = cmd_pr_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "fold") == 0) { builtin_rc = cmd_fold_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "paste") == 0) { builtin_rc = cmdPaste(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "join") == 0) { builtin_rc = cmdJoin(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "split") == 0) { builtin_rc = cmdSplit(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "gdb") == 0) { builtin_rc = cmd_gdb_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "strace") == 0) { builtin_rc = cmd_strace_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "valgrind") == 0) { builtin_rc = cmd_valgrind_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ltrace") == 0) { builtin_rc = cmd_ltrace_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nm") == 0) { builtin_rc = cmd_nm_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "objdump") == 0) { builtin_rc = cmd_objdump_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "readelf") == 0) { builtin_rc = cmd_readelf_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nmap") == 0) { builtin_rc = cmd_nmap_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "dig") == 0) { builtin_rc = cmd_dig_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nc") == 0) { builtin_rc = cmd_nc_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "socat") == 0) { builtin_rc = cmd_socat_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "host") == 0) { builtin_rc = cmd_host_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "htop") == 0) { builtin_rc = cmd_htop_wrap(); is_builtin = 1; }
+        else if (strcmp(argv[0], "nethogs") == 0) { builtin_rc = cmd_nethogs_wrap(); is_builtin = 1; }
+        else if (strcmp(argv[0], "iftop") == 0) { builtin_rc = cmd_iftop_wrap(); is_builtin = 1; }
+        else if (strcmp(argv[0], "iotop") == 0) { builtin_rc = cmd_iotop_wrap(); is_builtin = 1; }
+        else if (strcmp(argv[0], "dstat") == 0) { builtin_rc = cmd_dstat_wrap(); is_builtin = 1; }
+        else if (strcmp(argv[0], "mysql") == 0) { builtin_rc = cmd_mysql_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "psql") == 0) { builtin_rc = cmd_psql_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "sqlite3") == 0) { builtin_rc = cmd_sqlite3_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "redis-cli") == 0) { builtin_rc = cmd_redis_cli(); is_builtin = 1; }
+        else if (strcmp(argv[0], "locale") == 0) { builtin_rc = cmd_locale(); is_builtin = 1; }
+        else if (strcmp(argv[0], "localectl") == 0) { builtin_rc = cmd_localectl(); is_builtin = 1; }
+        else if (strcmp(argv[0], "chgrp") == 0) { builtin_rc = cmd_chgrp_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "setfacl") == 0) { builtin_rc = cmd_setfacl_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "getfacl") == 0) { builtin_rc = cmd_getfacl_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "visudo") == 0) { builtin_rc = cmd_visudo(); is_builtin = 1; }
+        else if (strcmp(argv[0], "mkpasswd") == 0) { builtin_rc = cmd_mkpasswd(); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
