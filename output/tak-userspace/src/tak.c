@@ -7137,13 +7137,13 @@ void cmd_echo(int argc, char** argv) {
 }
 
 // =============================================================================
-// INNOVATION 15: OCTAVE MCP INTEGRATION
+// INNOVATION 15: OCTAVE MCP INTEGRATION — 200+ TOOLS
 // Scientific Research without Animal Experimentation
 // =============================================================================
 
 /* Helper: execute octave-mcp tool via CLI */
 static int octave_exec(const char* tool, const char* params, const char* input_file, const char* output_file) {
-    char cmd[2048];
+    char cmd[4096];
     if (input_file && output_file) {
         snprintf(cmd, sizeof(cmd), "octave-mcp %s %s --input %s --output %s 2>&1", tool, params ? params : "", input_file, output_file);
     } else if (input_file) {
@@ -7156,221 +7156,768 @@ static int octave_exec(const char* tool, const char* params, const char* input_f
     return system(cmd);
 }
 
-/* octave-sim: Run any Octave MCP scientific simulation */
-int cmd_octave_sim(int argc, char** argv) {
+/* octave-run: Generic command to run ANY Octave MCP tool */
+int cmd_octave_run(int argc, char** argv) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
-        fprintf(stderr, "  Usage: octave-sim --tool <tool_name> [--params \"...\"] [--input file] [--output file]\n\n");
-        fprintf(stderr, "  Run scientific simulations via Octave MCP.\n\n");
-        fprintf(stderr, "  Available tools:\n");
-        fprintf(stderr, "    Biological:  cell-fate, stem-cell, cardiac-regen, bacterial-growth, enzyme-kinetics\n");
-        fprintf(stderr, "    Viral:       viral-lattice, viral-spread\n");
-        fprintf(stderr, "    Pharma:      virtual-pharma, toxicity-predict, drug-delivery\n");
-        fprintf(stderr, "    Physics:     molecular-dynamics, dft, quantum-info, statmech, fem\n");
-        fprintf(stderr, "    Math:        wavelet, fractal-dim, chaos, reaction-diffusion\n");
-        fprintf(stderr, "    Statistics:  stats, ml, clustering, glm\n");
-        fprintf(stderr, "    Ternary:     ternary-arith, ternary-hamming, ternary-comb, landauer\n");
-        fprintf(stderr, "    Climate:     climate, biodiversity, forest-fire, flood-model\n");
-        fprintf(stderr, "\n  Example:\n");
-        fprintf(stderr, "    octave-sim --tool enzyme-kinetics --params \"S=0:0.1:10,Vmax=1,Km=2\" --output results.json\n");
+        fprintf(stderr, "  Usage: octave-run <tool_name> [tool_options...]\n\n");
+        fprintf(stderr, "  Run ANY Octave MCP tool directly. 200+ tools available.\n\n");
+        fprintf(stderr, "  Categories:\n");
+        fprintf(stderr, "    octave-ancient    Ancient math systems (Maya, Egyptian, Vedic, Quipu)\n");
+        fprintf(stderr, "    octave-bio        Biology (NO ANIMALS): cells, enzymes, virus, genome\n");
+        fprintf(stderr, "    octave-pharma     Pharmacology (NO ANIMALS): PBPK, toxicity, drugs\n");
+        fprintf(stderr, "    octave-physics    Physics: molecular dynamics, DFT, quantum, FEM\n");
+        fprintf(stderr, "    octave-stats      Statistics: regression, clustering, ML, bayesian\n");
+        fprintf(stderr, "    octave-signal     Signal: wavelet, filter, FFT, STFT, time-frequency\n");
+        fprintf(stderr, "    octave-earth      Earth: climate, seismic, flood, wildfire, erosion\n");
+        fprintf(stderr, "    octave-struct     Structural: FEM, thermal, vibration, buckling\n");
+        fprintf(stderr, "    octave-energy     Energy: solar, wind, battery, carbon footprint\n");
+        fprintf(stderr, "    octave-quantum    Quantum/cosmology: Schrodinger, dark energy, GW\n");
+        fprintf(stderr, "    octave-disaster   Disasters: risk, insurance, resilience, social\n");
+        fprintf(stderr, "    octave-ternary    Ternary: arithmetic, Hamming, combinatorics\n");
+        fprintf(stderr, "    octave-geo        Geometry: surface, projective, tensor, fractal\n");
+        fprintf(stderr, "    octave-network    Networks: graph algos, percolation, cascade\n");
+        fprintf(stderr, "    octave-extract    Extraction: bio, chemical, REE, biorefinery\n");
+        fprintf(stderr, "    octave-construct  Construction: budget, schedule, quantity\n");
+        fprintf(stderr, "    octave-survey     Survey: angles, distance, traverse, curves\n");
+        fprintf(stderr, "    octave-report     Generate scientific reports\n");
+        fprintf(stderr, "\n  Run <category> --help for details.\n");
+        fprintf(stderr, "  Run octave-tools for complete tool list.\n");
         return 1;
     }
 
-    char tool[128] = "";
-    char params[512] = "";
-    char input[256] = "";
-    char output[256] = "";
-
-    for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "--tool") == 0 && i + 1 < argc) strncpy(tool, argv[++i], 127);
-        else if (strcmp(argv[i], "--params") == 0 && i + 1 < argc) strncpy(params, argv[++i], 511);
-        else if (strcmp(argv[i], "--input") == 0 && i + 1 < argc) strncpy(input, argv[++i], 255);
-        else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+    char params[2048] = "";
+    for (int i = 2; i < argc; i++) {
+        if (i > 2) strcat(params, " ");
+        strcat(params, "\"");
+        strcat(params, argv[i]);
+        strcat(params, "\"");
     }
 
-    if (tool[0] == 0) {
-        fprintf(stderr, "  Error: --tool is required\n");
-        return 1;
-    }
-
-    printf(COLOR_CYAN "  ╔══════════════════════════════════════╗\n");
-    printf("  ║   OCTAVE MCP SIMULATION             ║\n");
-    printf("  ╚══════════════════════════════════════╝" COLOR_RESET "\n\n");
-    printf("  " COLOR_YELLOW "Tool:" COLOR_RESET "    %s\n", tool);
-    if (params[0]) printf("  " COLOR_YELLOW "Params:" COLOR_RESET "  %s\n", params);
-    if (input[0]) printf("  " COLOR_YELLOW "Input:" COLOR_RESET "   %s\n", input);
-    if (output[0]) printf("  " COLOR_YELLOW "Output:" COLOR_RESET "  %s\n", output);
-    printf("\n");
-
-    int rc = octave_exec(tool, params[0] ? params : NULL, input[0] ? input : NULL, output[0] ? output : NULL);
-
-    if (rc == 0) {
-        printf("\n  " COLOR_GREEN "Simulation complete!" COLOR_RESET "\n");
-        if (output[0]) printf("  Results saved to: %s\n", output);
-    } else {
-        printf("\n  " COLOR_RED "Simulation failed (rc=%d)" COLOR_RESET "\n", rc);
-    }
-    return rc;
+    printf(COLOR_CYAN "  [OCTAVE]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
 }
 
-/* octave-bio: Biological simulation shortcuts */
+/* octave-tools: List all available tools */
+int cmd_octave_tools(int argc, char** argv) {
+    printf(COLOR_CYAN "  ╔══════════════════════════════════════════════════════════════╗\n");
+    printf("  ║   OCTAVE MCP TOOLS — 200+ Scientific Tools                 ║\n");
+    printf("  ╚══════════════════════════════════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf(COLOR_BOLD "  ANCIENT MATH (octave-ancient):" COLOR_RESET "\n");
+    printf("    ethnomath           Algorithms from non-Western cultures\n");
+    printf("    ethnomath2          Egyptian, Babylonian, Greek algorithms\n");
+    printf("    ancient_calculator  Historical calculators (suanpan, soroban)\n");
+    printf("    ancestral_octave    Ancestral calculation methods\n");
+    printf("    levant              Canaanite/Hebrew math\n");
+    printf("    originarios         Indigenous number systems\n");
+    printf("    numeral_systems_embedding  Ancient numeral vectorization\n\n");
+
+    printf(COLOR_BOLD "  BIOLOGY — NO ANIMALS (octave-bio):" COLOR_RESET "\n");
+    printf("    stem_cell_lineage_tool    Stem cell lineage dynamics (ODE)\n");
+    printf("    stem_cell_niche_tool      Stem cell niche (Gillespie SSA)\n");
+    printf("    cell_fate_decision_tool   Cell fate Boolean network\n");
+    printf("    cardiac_regeneration_tool Cardiac regeneration post-infarct\n");
+    printf("    bacterial_growth_tool     Bacterial growth curves\n");
+    printf("    enzyme_kinetics           Enzyme kinetics (Michaelis-Menten)\n");
+    printf("    enzyme_stochastic         Enzyme kinetics (Gillespie SSA)\n");
+    printf("    viral_lattice_tool         Viral spread PDE simulation\n");
+    printf("    genome_signal_analysis     Genome signal analysis\n");
+    printf("    polarization_mapping       DNA/protein polarization\n");
+    printf("    geometric_algebra_protein  Protein structure (Clifford alg)\n");
+    printf("    bio_extraction_tool        Bio-molecular extraction\n");
+    printf("    antibiotic_diffusion       Kirby-Bauer diffusion\n");
+    printf("    rpa_kinetics_tool          RPA enzyme kinetics\n");
+    printf("    droop_kelp_tool            Kelp growth model\n\n");
+
+    printf(COLOR_BOLD "  PHARMACOLOGY — NO ANIMALS (octave-pharma):" COLOR_RESET "\n");
+    printf("    virtual_pharmacokinetics   PBPK simulation\n");
+    printf("    toxicity_predictor         Tox21 toxicity prediction\n");
+    printf("    drug_delivery_poiseuille_tool  Drug release via capillary\n\n");
+
+    printf(COLOR_BOLD "  PHYSICS/CHEMISTRY (octave-physics):" COLOR_RESET "\n");
+    printf("    molecular_dynamics_tool    N-particle MD (Lennard-Jones)\n");
+    printf("    dft_tool                   DFT/HF calculations\n");
+    printf("    statmech_tool              Statistical mechanics\n");
+    printf("    statmech_partition_tool    Partition function\n");
+    printf("    fem_electromagnetic_tool   FEM electromagnetics\n");
+    printf("    bem_electromagnetic_tool   BEM electromagnetics\n");
+    printf("    cfd_tool                   CFD lid-driven cavity\n");
+    printf("    electromagnetic_tool       FDTD EM simulation\n");
+    printf("    qm_potential_well          Schrodinger 1D\n");
+    printf("    nuclear_decay_chain        Nuclear decay (Bateman)\n");
+    printf("    synchrotron_radiation_tool Synchrotron radiation\n");
+    printf("    pair_production_tool       Pair production (γ→e+e-)\n");
+    printf("    pair_annihilation_tool     Pair annihilation (e+e-→γ)\n");
+    printf("    bremsstrahlung_radiation_tool  Bremsstrahlung\n");
+    printf("    electromagnetic_cascade_tool   EM cascade\n");
+    printf("    tight_binding_graphene_tool    Graphene band structure\n");
+    printf("    gas_tool                   Gas laws (ideal, Van der Waals)\n");
+    printf("    crystallography_tool       Crystal geometry\n");
+    printf("    statistical_physics_tool   Ising model (Monte Carlo)\n\n");
+
+    printf(COLOR_BOLD "  STATISTICS/ML (octave-stats):" COLOR_RESET "\n");
+    printf("    statistics                 Regression, hypothesis tests\n");
+    printf("    glm_tool                   GLM, logistic, regularized\n");
+    printf("    clustering_tool            K-means, PCA, DBSCAN\n");
+    printf("    machine_learning_math      Gradient descent, SVM math\n");
+    printf("    machine_learning_vector_tool  PCA, feature extraction\n");
+    printf("    multivariate_bayes_tool    Bayesian multivariate\n");
+    printf("    advanced_stochastic_tool   HMM, Kalman, particle filter\n");
+    printf("    stochastic_processes       Brownian, Poisson, renewal\n");
+    printf("    advanced_probability_tool  Distributions, Bayes\n");
+    printf("    spatial_statistics         Moran's I, Geary's C\n");
+    printf("    cross_validation           Cross-validation\n");
+    printf("    glm_tool                   GLM, logistic\n");
+    printf("    mcdm                       AHP, TOPSIS, VIKOR\n");
+    printf("    game_theory                Nash equilibria\n");
+    printf("    econometrics_tool           ARIMA, GARCH, panel data\n");
+    printf("    chemometrics_tool          PLS/PCR, DOE\n\n");
+
+    printf(COLOR_BOLD "  SIGNAL PROCESSING (octave-signal):" COLOR_RESET "\n");
+    printf("    wavelet                    CWT, DWT analysis\n");
+    printf("    filter_design_tool         IIR/FIR filter design\n");
+    printf("    fractional_fourier_tool    Fractional Fourier (FRFT)\n");
+    printf("    wave_propagation_tool      FDTD 2D wave propagation\n");
+    printf("    dispersion_relation_tool   Dispersion relations\n");
+    printf("    audio_processing_tool      Audio harmonic analysis\n");
+    printf("    time_frequency_tool        STFT spectrogram\n");
+    printf("    spectral_analysis_tool     FRF, PSD, coherence\n");
+    printf("    acoustics_tool             Acoustic pressure wave\n");
+    printf("    infrasound_tool            Infrasound propagation\n");
+    printf("    information_theory         Shannon entropy, KL divergence\n\n");
+
+    printf(COLOR_BOLD "  EARTH/ENVIRONMENT (octave-earth):" COLOR_RESET "\n");
+    printf("    climate_tool               Climate physics\n");
+    printf("    biodiversity_model_tool    Shannon, Simpson, Chao1\n");
+    printf("    deforestation_tool         Deforestation model\n");
+    printf("    poaching_tool              Poaching dynamics\n");
+    printf("    earthquake_analysis_tool   Seismic hazard\n");
+    printf("    wildfire_risk_tool         Wildfire spread (Rothermel)\n");
+    printf("    wildfire_intensity_model   Wildfire intensity (Byram)\n");
+    printf("    forest_fire_simulator      Cellular automaton fire\n");
+    printf("    flood_modeling_tool        SCS hydrograph\n");
+    printf("    flood_risk_narrator        Flood risk report\n");
+    printf("    flood_connectivity_tool    Priority-flood\n");
+    printf("    landslide_risk_tool        Slope stability\n");
+    printf("    disaster_early_warning_tool  Multi-hazard warning\n");
+    printf("    geospatial_risk_analysis   GIS risk index\n");
+    printf("    soil_erosion_tool          RUSLE erosion\n");
+    printf("    land_use_change_tool       Land use transition\n");
+    printf("    terrain_elevation_tool     Real terrain data\n");
+    printf("    hydrometeo_data            Rain/flow data\n");
+    printf("    tidal_harmonic_analysis_tool  Tidal analysis\n");
+    printf("    marine_ecosystem_impact_tool  Red tide risk\n");
+    printf("    carbon_footprint_tool      CO2 footprint\n");
+    printf("    solar_radiation_tool       Solar geometry\n");
+    printf("    wind_power_curve_tool      Wind power\n");
+    printf("    battery_sizing_tool        Battery sizing\n");
+    printf("    solar_heating_sizer        PV heating\n\n");
+
+    printf(COLOR_BOLD "  STRUCTURAL (octave-struct):" COLOR_RESET "\n");
+    printf("    finite_element_tool        Bar, beam, truss FEM\n");
+    printf("    fem_advanced_tool          Modal analysis\n");
+    printf("    plane_stress_tool          CST plane stress\n");
+    printf("    thermal_structural_tool    Thermal-structural\n");
+    printf("    thermal_conduction_tool    Heat conduction FEM\n");
+    printf("    thermal_advanced_tool      PCM, advanced heat\n");
+    printf("    nonlinear_buckling_tool    Snap-through\n");
+    printf("    forced_vibration_tool      Forced vibration\n");
+    printf("    fatigue_analysis_tool      Cyclic fatigue\n");
+    printf("    structural_analysis        Beam reactions\n");
+    printf("    structural_analysis_advanced  Euler buckling\n");
+    printf("    nonlinear_vibration_tool   Duffing oscillator\n");
+    printf("    multibody_dynamics_tool    Rigid body dynamics\n");
+    printf("    kinematics_simulator       Particle trajectory\n");
+    printf("    rf_network_advanced_tool   RF amplifier stability\n");
+    printf("    circuit_tool               MNA circuit analysis\n");
+    printf("    topology_optimization_tool SIMP topology\n");
+    printf("    socket_topology_tool       Socket topology\n\n");
+
+    printf(COLOR_BOLD "  TERNARY (octave-ternary):" COLOR_RESET "\n");
+    printf("    ternary_arithmetic_tool    Balanced ternary\n");
+    printf("    ternary_hamming_tool       Hamming GF(3)\n");
+    printf("    ternary_combinatorics_tool BTD designs\n");
+    printf("    ternary_id_scheme_tool     Hierarchical IDs\n");
+    printf("    landauer_ternary_tool      Landauer limit\n");
+    printf("    tritbraid                  TritBraid DSL\n");
+    printf("    braid_group                Fibonacci anyons\n");
+    printf("    ethnomath_comparative_tool Persian vs Ternary\n");
+    printf("    ethnomath_hybrid_tool      Persian+Hebrew\n\n");
+
+    printf(COLOR_BOLD "  GEOMETRY (octave-geo):" COLOR_RESET "\n");
+    printf("    surface_geometry           Differential geometry\n");
+    printf("    projective_geometry        Projective P2/P3\n");
+    printf("    space_curves               Frenet-Serret\n");
+    printf("    tensor_calculus            Riemann tensor\n");
+    printf("    morse_theory               Critical points\n");
+    printf("    algebraic_curve            Plane curves\n");
+    printf("    julia_mandelbrot           Mandelbrot/Julia sets\n");
+    printf("    voronoi_delaunay           Voronoi/Delaunay\n");
+    printf("    fractal_dimension          Box-counting\n");
+    printf("    persistent_homology        Topological features\n");
+    printf("    linear_transform_figure    Linear transforms\n");
+    printf("    sdf_tool                   Signed distance fields\n");
+    printf("    distmesh_tool              Mesh generation\n");
+    printf("    mesh_spectral_tool         Spectral fingerprint\n");
+    printf("    mesh_pde_tool              Adaptive meshing\n");
+    printf("    lscm_tool                  Conformal mapping\n");
+    printf("    plot_workspace_run         Visualize runs\n");
+    printf("    math_visualization         Function plots\n\n");
+
+    printf(COLOR_BOLD "  QUANTUM/COSMOLOGY (octave-quantum):" COLOR_RESET "\n");
+    printf("    quantum_information        Qubit simulation\n");
+    printf("    quantum_astro_tool         Quantum algebra\n");
+    printf("    semiclassical_cosmology_tool  Modified Friedmann\n");
+    printf("    cosmological_mcmc_tool     LCDM MCMC fit\n");
+    printf("    quantum_cosmology_tool     Wheeler-DeWitt\n");
+    printf("    scalar_field_cosmology_tool  Quintessence\n");
+    printf("    vacuum_energy_density_tool Vacuum energy\n");
+    printf("    unified_dark_sector_tool   Dark sector\n");
+    printf("    gravitational_waves        Binary GW\n\n");
+
+    printf(COLOR_BOLD "  NETWORKS (octave-network):" COLOR_RESET "\n");
+    printf("    graph_algorithms           Dijkstra, MST, cycles\n");
+    printf("    network_science            Centrality, community\n");
+    printf("    percolation_theory         Site/link percolation\n");
+    printf("    domino_effect_tool         Cascades\n");
+    printf("    cascade_orchestrator_tool  Multi-domain cascade\n");
+    printf("    cascading_outbreak_predictor  Outbreak prediction\n");
+    printf("    information_cascade_tool   Social cascade\n");
+    printf("    knowledge_graph_tool       Tool catalog\n");
+    printf("    semantic_bridge            Tool recommender\n\n");
+
+    printf(COLOR_BOLD "  DISASTERS (octave-disaster):" COLOR_RESET "\n");
+    printf("    infrastructure_resilience_tool  Fragility curves\n");
+    printf("    insurance_risk_tool        Catastrophe insurance\n");
+    printf("    natural_hazard_risk_tool   Multi-hazard R\n");
+    printf("    disaster_economics_tool    Economic impact\n");
+    printf("    social_impact_tool         Social impact\n");
+    printf("    bilevel_interdiction_tool  Defense optimization\n");
+    printf("    decision_support_tool      AHP/TOPSIS/VIKOR\n");
+    printf("    early_warning_tool         Time series alerts\n");
+    printf("    climate_scenario_tool      Climate scenarios\n\n");
+
+    printf(COLOR_BOLD "  EXTRACTION (octave-extract):" COLOR_RESET "\n");
+    printf("    bio_extraction_tool        DNA/RNA/protein\n");
+    printf("    chemical_extraction_tool   LLE/SPE/distillation\n");
+    printf("    ree_solvent_extraction_tool  Rare earth cascade\n");
+    printf("    electrowinning_faraday_tool  Electrodeposition\n");
+    printf("    biorefinery_tool           Biomass conversion\n\n");
+
+    printf(COLOR_BOLD "  CONSTRUCTION (octave-construct):" COLOR_RESET "\n");
+    printf("    quantity_takeoff           Concrete/steel/area\n");
+    printf("    structural_analysis        Beam analysis\n");
+    printf("    budgeting_tool             Cost estimation\n");
+    printf("    construction_scheduling_tool  CPM scheduling\n");
+    printf("    earthworks                 Volume calculation\n\n");
+
+    printf(COLOR_BOLD "  SURVEY (octave-survey):" COLOR_RESET "\n");
+    printf("    survey_angles_tool         Bearing/azimuth\n");
+    printf("    survey_distance_tool       EDM correction\n");
+    printf("    survey_curvature_tool      Earth curvature\n");
+    printf("    traverse_adjustment_tool   Bowditch/transit\n");
+    printf("    survey_curves_tool         Horizontal/vertical curves\n");
+    printf("    survey_area_volume_tool    Area/volume\n\n");
+
+    printf(COLOR_BOLD "  ENERGY (octave-energy):" COLOR_RESET "\n");
+    printf("    renewable_mpc_controller   MPC dispatch\n");
+    printf("    carbon_footprint_tool      CO2 comparison\n");
+    printf("    solar_radiation_tool       Solar geometry\n");
+    printf("    wind_power_curve_tool      Wind power\n");
+    printf("    battery_sizing_tool        Battery sizing\n");
+    printf("    solar_heating_sizer        PV heating\n");
+    printf("    heating_value_tool         HHV/LHV fuels\n\n");
+
+    printf(COLOR_BOLD "  MATH CORE:" COLOR_RESET "\n");
+    printf("    linear_algebra             Eigen, SVD, LU, QR\n");
+    printf("    symbolic                   SymPy algebra\n");
+    printf("    optimization               LP/QP/NLP\n");
+    printf("    pde                        PDE solver\n");
+    printf("    compute_gradient_hessian   Gradient/Hessian\n");
+    printf("    compute_jacobian           Jacobian\n");
+    printf("    compute_lyapunov_exponent  Lyapunov\n");
+    printf("    compute_bifurcation_diagram  Bifurcation\n");
+    printf("    compute_hilbert_transform  Hilbert transform\n");
+    printf("    run_math_pipeline          Chained math\n");
+    printf("    run_pipeline               Dependency pipeline\n");
+    printf("    parallel_task_runner_tool  Parallel execution\n\n");
+
+    printf(COLOR_BOLD "  DATA/REPORT:" COLOR_RESET "\n");
+    printf("    workspace_save/load/list   Workspace management\n");
+    printf("    workspace_describe/delete/link  Workspace ops\n");
+    printf("    workspace_validate         Validation\n");
+    printf("    data_file_reader_tool      CSV/TSV reader\n");
+    printf("    report_generator_tool      PDF/HTML reports\n");
+    printf("    plot_workspace_run         Visualize runs\n");
+    printf("    arxiv_tool                 arXiv search\n");
+    printf("    nasa_tool                  NASA API\n");
+    printf("    health_check_tool          Tool validation\n\n");
+
+    printf(COLOR_BOLD "  FINANCIAL (octave-finance):" COLOR_RESET "\n");
+    printf("    credit_simulation_tool     Credit amortization\n");
+    printf("    debt_snowball_tool         Debt payoff\n");
+    printf("    retirement_planner_tool    Retirement planning\n");
+    printf("    life_insurance_math_tool   Life insurance\n");
+    printf("    education_funding_tool     Education savings\n");
+    printf("    emergency_fund_tool        Emergency fund\n");
+    printf("    savings_goal_tool          Savings goals\n");
+    printf("    investment_portfolio_tool  Portfolio analysis\n");
+    printf("    tax_estimation_tool        Tax estimation\n");
+    printf("    financial_literacy_score_tool  Health score\n");
+    printf("    personal_budget_tool       Budget tracking\n");
+    printf("    spending_pattern_tool      Spending patterns\n");
+    printf("    savings_rate_tool          Savings rate\n");
+    printf("    habit_streak_tool          Habit consistency\n");
+    printf("    financial_math             Black-Scholes\n");
+    printf("    refinance_analysis_tool    Refinance comparison\n\n");
+
+    printf(COLOR_BOLD "  OTHER:" COLOR_RESET "\n");
+    printf("    custody_chain_tool         Forensic chain\n");
+    printf("    paleography                Paleography metrics\n");
+    printf("    color_math_tool            RGB/HSL/XYZ/Lab\n");
+    printf("    music_math                 Musical math\n");
+    printf("    archaeoastronomy           Archaeoastronomy\n");
+    printf("    text_analysis_math         Edit distance\n");
+    printf("    units_constants_tool       Unit conversion\n");
+    printf("    dynamic_kill_calculator_tool  Well kill\n");
+    printf("    teaching_strategies_simulator  Learning sim\n");
+    printf("    femur_biomechanics_tool    Femur data\n");
+    printf("    gait_analysis_tool         Gait analysis\n\n");
+
+    printf("  " COLOR_YELLOW "Total: 200+ tools. Run: octave-run <tool_name> [options]" COLOR_RESET "\n");
+    printf("  " COLOR_YELLOW "Get tool help: octave-run <tool_name> --help" COLOR_RESET "\n");
+    return 0;
+}
+
+/* octave-ancient: Ancient math systems */
+int cmd_octave_ancient(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-ancient <model> [options]\n\n");
+        fprintf(stderr, "  Ancient mathematical systems.\n\n");
+        fprintf(stderr, "  Models:\n");
+        fprintf(stderr, "    ethnomath         Non-Western algorithms\n");
+        fprintf(stderr, "    ethnomath2        Egyptian, Babylonian, Greek\n");
+        fprintf(stderr, "    ancient_calculator  Suanpan, soroban, etc.\n");
+        fprintf(stderr, "    ancestral_octave  Ancestral calculation\n");
+        fprintf(stderr, "    levant            Canaanite/Hebrew math\n");
+        fprintf(stderr, "    originarios       Indigenous number systems\n");
+        fprintf(stderr, "    numeral_systems_embedding  Numeral vectorization\n");
+        fprintf(stderr, "    ethnomath_comparative  Persian vs Ternary\n");
+        fprintf(stderr, "    ethnomath_hybrid  Persian+Hebrew hybrid\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [ANCIENT]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-bio: Biological simulations (NO ANIMALS) */
 int cmd_octave_bio(int argc, char** argv) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
         fprintf(stderr, "  Usage: octave-bio <model> [options]\n\n");
-        fprintf(stderr, "  Biological simulations (NO ANIMALS).\n\n");
+        fprintf(stderr, "  Biological simulations — NO ANIMALS.\n\n");
         fprintf(stderr, "  Models:\n");
-        fprintf(stderr, "    cell-fate        Cell fate Boolean network\n");
-        fprintf(stderr, "    stem-cell        Stem cell lineage dynamics (Gillespie)\n");
-        fprintf(stderr, "    cardiac-regen    Cardiac regeneration post-infarct\n");
-        fprintf(stderr, "    bacterial-growth Bacterial growth curves\n");
-        fprintf(stderr, "    enzyme           Enzyme kinetics (Michaelis-Menten)\n");
-        fprintf(stderr, "    viral-lattice    Viral spread PDE simulation\n");
-        fprintf(stderr, "    genome           Genome signal analysis\n");
-        fprintf(stderr, "    protein          Protein structure (geometric algebra)\n");
-        fprintf(stderr, "\n  Example:\n");
-        fprintf(stderr, "    octave-bio enzyme --S 0:0.1:10 --Vmax 1 --Km 2 --output enzyme.json\n");
-        fprintf(stderr, "    octave-bio bacterial-growth --N0 1e6 --mu 0.5 --K 1e9\n");
+        fprintf(stderr, "    cell-fate          Cell fate Boolean network\n");
+        fprintf(stderr, "    stem-cell          Stem cell lineage (ODE)\n");
+        fprintf(stderr, "    stem-niche         Stem cell niche (Gillespie)\n");
+        fprintf(stderr, "    cardiac-regen      Cardiac regeneration\n");
+        fprintf(stderr, "    bacterial-growth   Bacterial growth curves\n");
+        fprintf(stderr, "    enzyme             Enzyme kinetics\n");
+        fprintf(stderr, "    enzyme-stoch       Enzyme kinetics (Gillespie)\n");
+        fprintf(stderr, "    viral-lattice      Viral spread PDE\n");
+        fprintf(stderr, "    genome             Genome signal analysis\n");
+        fprintf(stderr, "    protein            Protein structure\n");
+        fprintf(stderr, "    bio-extract        Bio extraction\n");
+        fprintf(stderr, "    antibiotic         Antibiotic diffusion\n");
+        fprintf(stderr, "    rpa                RPA kinetics\n");
+        fprintf(stderr, "    kelp               Kelp growth (Droop)\n");
         return 1;
     }
-
-    const char* model = argv[1];
     char params[512] = "";
     char output[256] = "";
-
     for (int i = 2; i < argc; i++) {
         if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
-        else {
-            if (params[0]) strcat(params, ",");
-            strcat(params, argv[i]);
-            if (i + 1 < argc && argv[i+1][0] != '-') {
-                strcat(params, "=");
-                strcat(params, argv[++i]);
-            }
-        }
+        else { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
     }
-
-    printf(COLOR_CYAN "  [BIO]" COLOR_RESET " Simulating: %s\n", model);
-    int rc = octave_exec(model, params[0] ? params : NULL, NULL, output[0] ? output : NULL);
+    printf(COLOR_CYAN "  [BIO]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    int rc = octave_exec(argv[1], params[0] ? params : NULL, NULL, output[0] ? output : NULL);
     if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
     return rc;
 }
 
-/* octave-pharma: Pharmacology simulation (NO ANIMALS) */
+/* octave-pharma: Pharmacology (NO ANIMALS) */
 int cmd_octave_pharma(int argc, char** argv) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
         fprintf(stderr, "  Usage: octave-pharma <model> [options]\n\n");
-        fprintf(stderr, "  Virtual pharmacology (NO ANIMALS).\n\n");
+        fprintf(stderr, "  Pharmacology — NO ANIMALS.\n\n");
         fprintf(stderr, "  Models:\n");
-        fprintf(stderr, "    pbpk             Physiologically-based pharmacokinetic\n");
-        fprintf(stderr, "    toxicity         Toxicity prediction (Tox21-inspired)\n");
-        fprintf(stderr, "    drug-delivery    Drug release (Poiseuille flow)\n");
-        fprintf(stderr, "    dose-response    Dose-response curve\n");
-        fprintf(stderr, "\n  Example:\n");
-        fprintf(stderr, "    octave-pharma pbpk --dose 500 --weight 70 --output pbpk.json\n");
-        fprintf(stderr, "    octave-pharma toxicity --compound aspirin --dose 500\n");
+        fprintf(stderr, "    pbpk             PBPK simulation\n");
+        fprintf(stderr, "    toxicity         Tox21 prediction\n");
+        fprintf(stderr, "    drug-delivery    Drug release\n");
         return 1;
     }
-
-    const char* model = argv[1];
     char params[512] = "";
-    char output[256] = "";
-
-    for (int i = 2; i < argc; i++) {
-        if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
-        else {
-            if (params[0]) strcat(params, ",");
-            strcat(params, argv[i]);
-            if (i + 1 < argc && argv[i+1][0] != '-') {
-                strcat(params, "=");
-                strcat(params, argv[++i]);
-            }
-        }
-    }
-
-    printf(COLOR_CYAN "  [PHARMA]" COLOR_RESET " Virtual pharmacology: %s\n", model);
-    printf("  " COLOR_YELLOW "Note:" COLOR_RESET " No animals used - fully computational\n\n");
-    int rc = octave_exec(model, params[0] ? params : NULL, NULL, output[0] ? output : NULL);
-    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
-    return rc;
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [PHARMA]" COLOR_RESET " Running: %s\n", argv[1]);
+    printf("  " COLOR_YELLOW "Note:" COLOR_RESET " NO ANIMALS — fully computational\n\n");
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
 }
 
-/* octave-stats: Statistical analysis and ML */
-int cmd_octave_stats(int argc, char** argv) {
+/* octave-physics: Physics/Chemistry */
+int cmd_octave_physics(int argc, char** argv) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
-        fprintf(stderr, "  Usage: octave-stats <analysis> [options]\n\n");
-        fprintf(stderr, "  Statistical analysis and machine learning.\n\n");
-        fprintf(stderr, "  Analyses:\n");
-        fprintf(stderr, "    describe         Descriptive statistics\n");
-        fprintf(stderr, "    regress          Linear regression\n");
-        fprintf(stderr, "    glm              Generalized linear model\n");
-        fprintf(stderr, "    cluster          K-means clustering\n");
-        fprintf(stderr, "    pca              Principal component analysis\n");
-        fprintf(stderr, "    hypothesis       Hypothesis testing\n");
-        fprintf(stderr, "    correlation      Correlation analysis\n");
-        fprintf(stderr, "    timeseries       Time series analysis\n");
-        fprintf(stderr, "\n  Example:\n");
-        fprintf(stderr, "    octave-stats describe --input data.csv\n");
-        fprintf(stderr, "    octave-stats regress --y response --x \"x1,x2,x3\" --input data.csv\n");
+        fprintf(stderr, "  Usage: octave-physics <model> [options]\n\n");
+        fprintf(stderr, "  Physics and Chemistry.\n\n");
+        fprintf(stderr, "  Models:\n");
+        fprintf(stderr, "    md               Molecular dynamics\n");
+        fprintf(stderr, "    dft              DFT/HF calculations\n");
+        fprintf(stderr, "    statmech         Statistical mechanics\n");
+        fprintf(stderr, "    fem-em           FEM electromagnetics\n");
+        fprintf(stderr, "    bem-em           BEM electromagnetics\n");
+        fprintf(stderr, "    cfd              CFD simulation\n");
+        fprintf(stderr, "    em               FDTD electromagnetics\n");
+        fprintf(stderr, "    schrodinger      Schrodinger 1D\n");
+        fprintf(stderr, "    nuclear          Nuclear decay\n");
+        fprintf(stderr, "    synchrotron      Synchrotron radiation\n");
+        fprintf(stderr, "    graphene         Graphene band structure\n");
+        fprintf(stderr, "    gas              Gas laws\n");
+        fprintf(stderr, "    crystal          Crystal geometry\n");
+        fprintf(stderr, "    ising            Ising model\n");
         return 1;
     }
-
-    const char* analysis = argv[1];
     char params[512] = "";
-    char input[256] = "";
-    char output[256] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [PHYSICS]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
 
-    for (int i = 2; i < argc; i++) {
-        if (strcmp(argv[i], "--input") == 0 && i + 1 < argc) strncpy(input, argv[++i], 255);
-        else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
-        else {
-            if (params[0]) strcat(params, ",");
-            strcat(params, argv[i]);
-            if (i + 1 < argc && argv[i+1][0] != '-') {
-                strcat(params, "=");
-                strcat(params, argv[++i]);
-            }
-        }
+/* octave-stats: Statistics/ML */
+int cmd_octave_stats(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-stats <tool> [options]\n\n");
+        fprintf(stderr, "  Statistics and Machine Learning.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    statistics        Regression, tests\n");
+        fprintf(stderr, "    glm               GLM, logistic\n");
+        fprintf(stderr, "    clustering        K-means, PCA, DBSCAN\n");
+        fprintf(stderr, "    ml                Gradient descent, SVM\n");
+        fprintf(stderr, "    bayesian          Bayesian multivariate\n");
+        fprintf(stderr, "    stochastic        HMM, Kalman, particle\n");
+        fprintf(stderr, "    probability       Distributions, Bayes\n");
+        fprintf(stderr, "    spatial           Moran's I, Geary's C\n");
+        fprintf(stderr, "    mcdm              AHP, TOPSIS, VIKOR\n");
+        fprintf(stderr, "    game-theory       Nash equilibria\n");
+        fprintf(stderr, "    econometrics      ARIMA, GARCH\n");
+        fprintf(stderr, "    chemometrics      PLS/PCR\n");
+        return 1;
     }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [STATS]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
 
-    printf(COLOR_CYAN "  [STATS]" COLOR_RESET " Analysis: %s\n", analysis);
-    int rc = octave_exec(analysis, params[0] ? params : NULL, input[0] ? input : NULL, output[0] ? output : NULL);
-    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
-    return rc;
+/* octave-signal: Signal processing */
+int cmd_octave_signal(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-signal <tool> [options]\n\n");
+        fprintf(stderr, "  Signal Processing.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    wavelet          CWT, DWT\n");
+        fprintf(stderr, "    filter           IIR/FIR design\n");
+        fprintf(stderr, "    frft             Fractional Fourier\n");
+        fprintf(stderr, "    wave             FDTD wave 2D\n");
+        fprintf(stderr, "    dispersion       Dispersion relations\n");
+        fprintf(stderr, "    audio            Audio harmonics\n");
+        fprintf(stderr, "    stft             Time-frequency\n");
+        fprintf(stderr, "    spectral         FRF, PSD, coherence\n");
+        fprintf(stderr, "    acoustics        Pressure wave\n");
+        fprintf(stderr, "    infrasound       Infrasound\n");
+        fprintf(stderr, "    information      Shannon, KL, JS\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [SIGNAL]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-earth: Earth/Environment */
+int cmd_octave_earth(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-earth <tool> [options]\n\n");
+        fprintf(stderr, "  Earth and Environment.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    climate          Climate physics\n");
+        fprintf(stderr, "    biodiversity     Diversity indices\n");
+        fprintf(stderr, "    deforestation    Deforestation model\n");
+        fprintf(stderr, "    earthquake       Seismic hazard\n");
+        fprintf(stderr, "    wildfire         Wildfire risk\n");
+        fprintf(stderr, "    forest-fire      Fire cellular automaton\n");
+        fprintf(stderr, "    flood            Flood modeling\n");
+        fprintf(stderr, "    landslide        Slope stability\n");
+        fprintf(stderr, "    erosion          RUSLE erosion\n");
+        fprintf(stderr, "    land-use         Land use change\n");
+        fprintf(stderr, "    terrain          Real terrain data\n");
+        fprintf(stderr, "    hydrometeo       Rain/flow data\n");
+        fprintf(stderr, "    tidal            Tidal analysis\n");
+        fprintf(stderr, "    marine           Marine ecosystem\n");
+        fprintf(stderr, "    carbon           CO2 footprint\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [EARTH]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-struct: Structural engineering */
+int cmd_octave_struct(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-struct <tool> [options]\n\n");
+        fprintf(stderr, "  Structural Engineering.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    fem              FEM bar/beam/truss\n");
+        fprintf(stderr, "    fem-adv          Modal analysis\n");
+        fprintf(stderr, "    plane-stress     CST plane stress\n");
+        fprintf(stderr, "    thermal          Thermal-structural\n");
+        fprintf(stderr, "    heat-conduct     Heat conduction\n");
+        fprintf(stderr, "    heat-adv         PCM, advanced heat\n");
+        fprintf(stderr, "    buckling         Snap-through\n");
+        fprintf(stderr, "    vibration        Forced vibration\n");
+        fprintf(stderr, "    fatigue          Cyclic fatigue\n");
+        fprintf(stderr, "    beam             Beam analysis\n");
+        fprintf(stderr, "    euler            Euler buckling\n");
+        fprintf(stderr, "    duffing          Duffing oscillator\n");
+        fprintf(stderr, "    multibody        Rigid body\n");
+        fprintf(stderr, "    kinematics       Particle trajectory\n");
+        fprintf(stderr, "    circuit          MNA analysis\n");
+        fprintf(stderr, "    topology         SIMP topology\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [STRUCT]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
 }
 
 /* octave-ternary: Ternary-specific analysis */
 int cmd_octave_ternary(int argc, char** argv) {
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
-        fprintf(stderr, "  Usage: octave-ternary <analysis> [options]\n\n");
+        fprintf(stderr, "  Usage: octave-ternary <tool> [options]\n\n");
         fprintf(stderr, "  Ternary-specific analysis.\n\n");
-        fprintf(stderr, "  Analyses:\n");
-        fprintf(stderr, "    arith            Ternary arithmetic operations\n");
-        fprintf(stderr, "    hamming          Ternary Hamming code\n");
-        fprintf(stderr, "    combinatorics    Ternary combinatorics\n");
-        fprintf(stderr, "    landauer         Landauer limit (ternary)\n");
-        fprintf(stderr, "    encoding         Ternary encoding/decoding\n");
-        fprintf(stderr, "    compression      Ternary compression analysis\n");
-        fprintf(stderr, "\n  Example:\n");
-        fprintf(stderr, "    octave-ternary arith --op add --a 121 --b 202\n");
-        fprintf(stderr, "    octave-ternary hamming --data 10101\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    arith            Balanced ternary\n");
+        fprintf(stderr, "    hamming          Hamming GF(3)\n");
+        fprintf(stderr, "    combinatorics    BTD designs\n");
+        fprintf(stderr, "    id               Hierarchical IDs\n");
+        fprintf(stderr, "    landauer         Landauer limit\n");
+        fprintf(stderr, "    tritbraid        TritBraid DSL\n");
+        fprintf(stderr, "    braid            Fibonacci anyons\n");
+        fprintf(stderr, "    comparative      Persian vs Ternary\n");
+        fprintf(stderr, "    hybrid           Persian+Hebrew\n");
         return 1;
     }
-
-    const char* analysis = argv[1];
     char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [TERNARY]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
 
-    for (int i = 2; i < argc; i++) {
-        if (params[0]) strcat(params, ",");
-        strcat(params, argv[i]);
-        if (i + 1 < argc && argv[i+1][0] != '-') {
-            strcat(params, "=");
-            strcat(params, argv[++i]);
-        }
+/* octave-geo: Geometry */
+int cmd_octave_geo(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-geo <tool> [options]\n\n");
+        fprintf(stderr, "  Geometry and Visualization.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    surface          Differential geometry\n");
+        fprintf(stderr, "    projective       Projective P2/P3\n");
+        fprintf(stderr, "    curves           Frenet-Serret\n");
+        fprintf(stderr, "    tensor           Riemann tensor\n");
+        fprintf(stderr, "    morse            Critical points\n");
+        fprintf(stderr, "    algebraic        Plane curves\n");
+        fprintf(stderr, "    mandelbrot       Mandelbrot/Julia\n");
+        fprintf(stderr, "    voronoi          Voronoi/Delaunay\n");
+        fprintf(stderr, "    fractal          Box-counting\n");
+        fprintf(stderr, "    homology         Persistent homology\n");
+        fprintf(stderr, "    sdf              Signed distance\n");
+        fprintf(stderr, "    mesh             Mesh generation\n");
+        return 1;
     }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [GEO]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
 
-    printf(COLOR_CYAN "  [TERNARY]" COLOR_RESET " Analysis: %s\n", analysis);
-    int rc = octave_exec(analysis, params[0] ? params : NULL, NULL, NULL);
-    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
-    return rc;
+/* octave-network: Networks */
+int cmd_octave_network(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-network <tool> [options]\n\n");
+        fprintf(stderr, "  Network Science.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    graph            Dijkstra, MST, cycles\n");
+        fprintf(stderr, "    science          Centrality, community\n");
+        fprintf(stderr, "    percolation      Site/link percolation\n");
+        fprintf(stderr, "    cascade          Cascade models\n");
+        fprintf(stderr, "    outbreak         Outbreak prediction\n");
+        fprintf(stderr, "    information      Social cascade\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [NETWORK]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-disaster: Disasters */
+int cmd_octave_disaster(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-disaster <tool> [options]\n\n");
+        fprintf(stderr, "  Disaster Modeling.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    resilience       Infrastructure\n");
+        fprintf(stderr, "    insurance        Catastrophe\n");
+        fprintf(stderr, "    hazard           Multi-hazard\n");
+        fprintf(stderr, "    economics        Economic impact\n");
+        fprintf(stderr, "    social           Social impact\n");
+        fprintf(stderr, "    interdiction     Defense\n");
+        fprintf(stderr, "    decision         AHP/TOPSIS\n");
+        fprintf(stderr, "    early-warning    Time alerts\n");
+        fprintf(stderr, "    climate-scenario Climate scenarios\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [DISASTER]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-extract: Extraction */
+int cmd_octave_extract(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-extract <tool> [options]\n\n");
+        fprintf(stderr, "  Bio/Chemical Extraction.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    bio              DNA/RNA/protein\n");
+        fprintf(stderr, "    chemical         LLE/SPE/distillation\n");
+        fprintf(stderr, "    ree              Rare earth cascade\n");
+        fprintf(stderr, "    electrowinning   Electrodeposition\n");
+        fprintf(stderr, "    biorefinery      Biomass conversion\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [EXTRACT]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-construct: Construction */
+int cmd_octave_construct(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-construct <tool> [options]\n\n");
+        fprintf(stderr, "  Construction.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    quantity         Concrete/steel/area\n");
+        fprintf(stderr, "    budget           Cost estimation\n");
+        fprintf(stderr, "    schedule         CPM scheduling\n");
+        fprintf(stderr, "    earthworks       Volume calculation\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [CONSTRUCT]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-survey: Survey */
+int cmd_octave_survey(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-survey <tool> [options]\n\n");
+        fprintf(stderr, "  Survey and Topography.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    angles           Bearing/azimuth\n");
+        fprintf(stderr, "    distance         EDM correction\n");
+        fprintf(stderr, "    curvature        Earth curvature\n");
+        fprintf(stderr, "    traverse         Bowditch/transit\n");
+        fprintf(stderr, "    curves           H/V curves\n");
+        fprintf(stderr, "    area-volume      Area/volume\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [SURVEY]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-energy: Energy */
+int cmd_octave_energy(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-energy <tool> [options]\n\n");
+        fprintf(stderr, "  Energy Systems.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    mpc              MPC dispatch\n");
+        fprintf(stderr, "    solar            Solar geometry\n");
+        fprintf(stderr, "    wind             Wind power\n");
+        fprintf(stderr, "    battery          Battery sizing\n");
+        fprintf(stderr, "    heating-value    Fuel HHV/LHV\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [ENERGY]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-quantum: Quantum/Cosmology */
+int cmd_octave_quantum(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-quantum <tool> [options]\n\n");
+        fprintf(stderr, "  Quantum and Cosmology.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    qubits           Qubit simulation\n");
+        fprintf(stderr, "    algebra          Quantum algebra\n");
+        fprintf(stderr, "    friedmann        Modified Friedmann\n");
+        fprintf(stderr, "    mcmc             LCDM MCMC fit\n");
+        fprintf(stderr, "    wheeler          Wheeler-DeWitt\n");
+        fprintf(stderr, "    quintessence     Scalar field\n");
+        fprintf(stderr, "    vacuum           Vacuum energy\n");
+        fprintf(stderr, "    dark-sector      Dark sector\n");
+        fprintf(stderr, "    gw               Gravitational waves\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [QUANTUM]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
+}
+
+/* octave-finance: Financial tools */
+int cmd_octave_finance(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-finance <tool> [options]\n\n");
+        fprintf(stderr, "  Financial Tools.\n\n");
+        fprintf(stderr, "  Tools:\n");
+        fprintf(stderr, "    credit           Amortization\n");
+        fprintf(stderr, "    debt             Debt payoff\n");
+        fprintf(stderr, "    retirement       Retirement planning\n");
+        fprintf(stderr, "    insurance        Life insurance\n");
+        fprintf(stderr, "    education        Education savings\n");
+        fprintf(stderr, "    emergency        Emergency fund\n");
+        fprintf(stderr, "    savings          Savings goals\n");
+        fprintf(stderr, "    portfolio        Portfolio analysis\n");
+        fprintf(stderr, "    tax              Tax estimation\n");
+        fprintf(stderr, "    health-score     Financial health\n");
+        fprintf(stderr, "    budget           Budget tracking\n");
+        fprintf(stderr, "    spending         Spending patterns\n");
+        fprintf(stderr, "    black-scholes    Options pricing\n");
+        return 1;
+    }
+    char params[512] = "";
+    for (int i = 2; i < argc; i++) { if (params[0]) strcat(params, " "); strcat(params, argv[i]); }
+    printf(COLOR_CYAN "  [FINANCE]" COLOR_RESET " Running: %s\n\n", argv[1]);
+    return octave_exec(argv[1], params[0] ? params : NULL, NULL, NULL);
 }
 
 /* octave-report: Generate scientific report */
@@ -7383,31 +7930,20 @@ int cmd_octave_report(int argc, char** argv) {
         fprintf(stderr, "    octave-report --input results.json --format html\n");
         return 1;
     }
-
     char input[256] = "";
     char output[256] = "";
     char format[32] = "pdf";
-
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--input") == 0 && i + 1 < argc) strncpy(input, argv[++i], 255);
         else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
         else if (strcmp(argv[i], "--format") == 0 && i + 1 < argc) strncpy(format, argv[++i], 31);
     }
-
-    if (input[0] == 0) {
-        fprintf(stderr, "  Error: --input is required\n");
-        return 1;
-    }
-    if (output[0] == 0) {
-        snprintf(output, sizeof(output), "report.%s", format);
-    }
-
-    printf(COLOR_CYAN "  [REPORT]" COLOR_RESET " Generating report from: %s\n", input);
-    printf("  Format: %s → %s\n\n", format, output);
-
+    if (input[0] == 0) { fprintf(stderr, "  Error: --input is required\n"); return 1; }
+    if (output[0] == 0) snprintf(output, sizeof(output), "report.%s", format);
+    printf(COLOR_CYAN "  [REPORT]" COLOR_RESET " Generating: %s → %s\n\n", input, output);
     char params[512];
     snprintf(params, sizeof(params), "--format %s", format);
-    int rc = octave_exec("report-generator", params, input, output);
+    int rc = octave_exec("report-generator-tool", params, input, output);
     if (rc == 0) printf("  " COLOR_GREEN "Report generated: %s" COLOR_RESET "\n", output);
     return rc;
 }
@@ -8135,12 +8671,27 @@ int run_single(char* line) {
         }
         else if (strcmp(argv[0], "security-scan") == 0) { builtin_rc = cmd_security_scan(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "security-status") == 0) { builtin_rc = cmd_security_status(argc, argv); is_builtin = 1; }
-        /* Octave MCP Integration */
-        else if (strcmp(argv[0], "octave-sim") == 0) { builtin_rc = cmd_octave_sim(argc, argv); is_builtin = 1; }
+        /* Octave MCP Integration — 200+ Tools */
+        else if (strcmp(argv[0], "octave-run") == 0) { builtin_rc = cmd_octave_run(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-tools") == 0) { builtin_rc = cmd_octave_tools(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-ancient") == 0) { builtin_rc = cmd_octave_ancient(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "octave-bio") == 0) { builtin_rc = cmd_octave_bio(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "octave-pharma") == 0) { builtin_rc = cmd_octave_pharma(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-physics") == 0) { builtin_rc = cmd_octave_physics(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "octave-stats") == 0) { builtin_rc = cmd_octave_stats(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-signal") == 0) { builtin_rc = cmd_octave_signal(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-earth") == 0) { builtin_rc = cmd_octave_earth(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-struct") == 0) { builtin_rc = cmd_octave_struct(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "octave-ternary") == 0) { builtin_rc = cmd_octave_ternary(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-geo") == 0) { builtin_rc = cmd_octave_geo(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-network") == 0) { builtin_rc = cmd_octave_network(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-disaster") == 0) { builtin_rc = cmd_octave_disaster(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-extract") == 0) { builtin_rc = cmd_octave_extract(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-construct") == 0) { builtin_rc = cmd_octave_construct(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-survey") == 0) { builtin_rc = cmd_octave_survey(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-energy") == 0) { builtin_rc = cmd_octave_energy(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-quantum") == 0) { builtin_rc = cmd_octave_quantum(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-finance") == 0) { builtin_rc = cmd_octave_finance(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "octave-report") == 0) { builtin_rc = cmd_octave_report(argc, argv); is_builtin = 1; }
         /* Virtual Sensor Simulation */
         else if (strcmp(argv[0], "sensor-sim") == 0) { builtin_rc = cmd_sensor_sim(argc, argv); is_builtin = 1; }
