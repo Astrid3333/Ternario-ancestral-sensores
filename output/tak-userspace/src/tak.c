@@ -16,6 +16,9 @@
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/statfs.h>
+#include <sys/time.h>
+#include <termios.h>
+#include <utmp.h>
 #include <fcntl.h>
 
 /* Subsystem APIs */
@@ -481,6 +484,11 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "ln [-s] <t> <l>" COLOR_RESET " Create link\n");
     printf("  " COLOR_CYAN "stat <file>" COLOR_RESET "     File info\n");
     printf("  " COLOR_CYAN "time <cmd>" COLOR_RESET "      Measure time\n");
+    printf("  " COLOR_CYAN "gcc <file.c>" COLOR_RESET "   Compile C code\n");
+    printf("  " COLOR_CYAN "curl <url>" COLOR_RESET "     HTTP request\n");
+    printf("  " COLOR_CYAN "who" COLOR_RESET "            Logged in users\n");
+    printf("  " COLOR_CYAN "su [user]" COLOR_RESET "      Switch user\n");
+    printf("  " COLOR_CYAN "passwd [user]" COLOR_RESET "  Change password\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -1344,6 +1352,159 @@ int cmd_time(int argc, char** argv) {
     return 0;
 }
 
+int cmd_gcc(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: gcc <file.c> [-o output]\n"); return 1; }
+    /* Auto-append -lm if no -l flags */
+    int has_l = 0;
+    for (int i = 1; i < argc; i++) if (strncmp(argv[i], "-l", 2) == 0) has_l = 1;
+
+    char* cmd_argv[128];
+    int n = 0;
+    cmd_argv[n++] = "gcc";
+    cmd_argv[n++] = "-Wall";
+    cmd_argv[n++] = "-O2";
+    for (int i = 1; i < argc && n < 120; i++) cmd_argv[n++] = argv[i];
+    if (!has_l) { cmd_argv[n++] = "-lm"; }
+    cmd_argv[n] = NULL;
+
+    struct timespec t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execvp("gcc", cmd_argv);
+        fprintf(stderr, "  gcc: %s\n", strerror(errno));
+        _exit(127);
+    } else if (pid > 0) {
+        int status;
+        waitpid(pid, &status, 0);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        double elapsed = (t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1e9;
+        if (WEXITSTATUS(status) == 0)
+            printf("  " COLOR_GREEN "✓" COLOR_RESET " Compiled in %.3fs\n", elapsed);
+        else
+            printf("  " COLOR_RED "✗" COLOR_RESET " Compilation failed\n");
+        return WEXITSTATUS(status);
+    }
+    return 1;
+}
+
+int cmd_curl(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: curl <url> [-o file]\n"); return 1; }
+    /* Check if output file is specified */
+    int pipe_mode = 0;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+            /* Pass through to real curl */
+            char* cmd_argv[128];
+            int n = 0;
+            cmd_argv[n++] = "curl";
+            for (int j = 1; j < argc && n < 120; j++) cmd_argv[n++] = argv[j];
+            cmd_argv[n] = NULL;
+            pid_t pid = fork();
+            if (pid == 0) { execvp("curl", cmd_argv); _exit(127); }
+            else { int s; waitpid(pid, &s, 0); return WEXITSTATUS(s); }
+        }
+        if (strcmp(argv[i], "-s") == 0) pipe_mode = 1;
+    }
+    /* Default: curl and show output */
+    char* cmd_argv[128];
+    int n = 0;
+    cmd_argv[n++] = "curl";
+    cmd_argv[n++] = "-s";
+    for (int i = 1; i < argc && n < 120; i++) cmd_argv[n++] = argv[i];
+    cmd_argv[n] = NULL;
+
+    int pipefd[2];
+    pipe(pipefd);
+    pid_t pid = fork();
+    if (pid == 0) {
+        close(pipefd[0]);
+        dup2(pipefd[1], STDOUT_FILENO);
+        close(pipefd[1]);
+        execvp("curl", cmd_argv);
+        _exit(127);
+    } else {
+        close(pipefd[1]);
+        char buf[4096];
+        ssize_t r;
+        while ((r = read(pipefd[0], buf, sizeof(buf))) > 0) write(STDOUT_FILENO, buf, r);
+        close(pipefd[0]);
+        int s; waitpid(pid, &s, 0);
+        return WEXITSTATUS(s);
+    }
+}
+
+int cmd_who(void) {
+    FILE* fp = fopen("/var/run/utmp", "r");
+    if (!fp) { fprintf(stderr, "  who: cannot open utmp\n"); return 1; }
+    struct utmp entry;
+    while (fread(&entry, sizeof(entry), 1, fp) == 1) {
+        if (entry.ut_type == USER_PROCESS) {
+            printf("  %-10s %s\n", entry.ut_user, entry.ut_line);
+        }
+    }
+    fclose(fp);
+    return 0;
+}
+
+int cmd_su(int argc, char** argv) {
+    const char* user = argc > 1 ? argv[1] : "root";
+    char prompt[256];
+    snprintf(prompt, sizeof(prompt), "  Password for %s: ", user);
+    printf("%s", prompt);
+    fflush(stdout);
+
+    /* Read password (no echo) */
+    struct termios oldt, newt;
+    tcgetattr(STDIN_FILENO, &oldt);
+    newt = oldt;
+    newt.c_lflag &= ~ECHO;
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+    char pass[256];
+    fgets(pass, sizeof(pass), stdin);
+    pass[strcspn(pass, "\n")] = 0;
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    printf("\n");
+
+    /* Try su */
+    pid_t pid = fork();
+    if (pid == 0) {
+        char* cmd_argv[] = {"su", "-", user, NULL};
+        setenv("TERM", "xterm", 1);
+        execvp("su", cmd_argv);
+        _exit(127);
+    } else {
+        int s; waitpid(pid, &s, 0);
+        return WEXITSTATUS(s);
+    }
+}
+
+int cmd_passwd(int argc, char** argv) {
+    const char* user = argc > 1 ? argv[1] : getenv("USER");
+    if (!user) user = "root";
+    pid_t pid = fork();
+    if (pid == 0) {
+        char* cmd_argv[] = {"passwd", (char*)user, NULL};
+        execvp("passwd", cmd_argv);
+        _exit(127);
+    } else {
+        int s; waitpid(pid, &s, 0);
+        return WEXITSTATUS(s);
+    }
+}
+
+int cmd_kill_tak_full(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: kill <pid> [-signal]\n"); return 1; }
+    int sig = SIGTERM;
+    int pid = atoi(argv[1]);
+    if (pid <= 0) { fprintf(stderr, "  kill: invalid pid\n"); return 1; }
+    if (argc > 2 && strcmp(argv[2], "-9") == 0) sig = SIGKILL;
+    if (argc > 2 && strcmp(argv[2], "-TERM") == 0) sig = SIGTERM;
+    if (kill(pid, sig) < 0) { fprintf(stderr, "  kill: %s\n", strerror(errno)); return 1; }
+    printf("  Sent signal %d to pid %d\n", sig, pid);
+    return 0;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -1720,6 +1881,13 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "ln") == 0) { builtin_rc = cmd_ln(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "stat") == 0) { builtin_rc = cmd_stat(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "time") == 0) { builtin_rc = cmd_time(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "gcc") == 0) { builtin_rc = cmd_gcc(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "cc") == 0) { builtin_rc = cmd_gcc(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "curl") == 0) { builtin_rc = cmd_curl(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "wget") == 0) { builtin_rc = cmd_curl(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "who") == 0) { builtin_rc = cmd_who(); is_builtin = 1; }
+        else if (strcmp(argv[0], "su") == 0) { builtin_rc = cmd_su(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "passwd") == 0) { builtin_rc = cmd_passwd(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }
@@ -2088,7 +2256,8 @@ int main(int argc, char* argv[]) {
     getcwd(cwd, sizeof(cwd));
 
     /* Init */
-    printf(COLOR_GRAY "  [init] %s/" COLOR_RESET "\n", tak_home);
+    if (argc < 3 || (strcmp(argv[1], "-c") != 0 && strcmp(argv[1], "-f") != 0))
+        printf(COLOR_GRAY "  [init] %s/" COLOR_RESET "\n", tak_home);
     fs_init();
     mem_init();
     sched_init();
