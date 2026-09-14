@@ -474,6 +474,13 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "sleep <n>" COLOR_RESET "       Sleep N seconds\n");
     printf("  " COLOR_CYAN "which <cmd>" COLOR_RESET "     Find command path\n");
     printf("  " COLOR_CYAN "diff <f1> <f2>" COLOR_RESET " Compare two files\n");
+    printf("  " COLOR_CYAN "xargs <cmd>" COLOR_RESET "    Build cmd from stdin\n");
+    printf("  " COLOR_CYAN "cut -d'\\t' -f1,2" COLOR_RESET " Cut fields\n");
+    printf("  " COLOR_CYAN "uniq [-c] [file]" COLOR_RESET " Unique lines\n");
+    printf("  " COLOR_CYAN "tr <from> <to>" COLOR_RESET " Translate chars\n");
+    printf("  " COLOR_CYAN "ln [-s] <t> <l>" COLOR_RESET " Create link\n");
+    printf("  " COLOR_CYAN "stat <file>" COLOR_RESET "     File info\n");
+    printf("  " COLOR_CYAN "time <cmd>" COLOR_RESET "      Measure time\n");
     printf("  " COLOR_CYAN "cal" COLOR_RESET "             Maya calendar\n");
     printf("  " COLOR_CYAN "trit <n>" COLOR_RESET "        Number in ternary\n");
     printf("  " COLOR_CYAN "b60 <n>" COLOR_RESET "         Number in Base 60\n");
@@ -1173,6 +1180,170 @@ int cmd_diff(int argc, char** argv) {
     return diffs == 0 ? 0 : 1;
 }
 
+int cmd_xargs(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: xargs <cmd> [args...]\n"); return 1; }
+    char line[4096];
+    while (fgets(line, sizeof(line), stdin)) {
+        line[strcspn(line, "\n")] = 0;
+        if (strlen(line) == 0) continue;
+        /* Build command: argv[1] ... original_args ... line */
+        char* cmd_argv[256];
+        int n = 0;
+        for (int i = 1; i < argc && n < 250; i++) cmd_argv[n++] = argv[i];
+        /* Split line on spaces */
+        char* tok = strtok(line, " \t");
+        while (tok && n < 250) { cmd_argv[n++] = tok; tok = strtok(NULL, " \t"); }
+        cmd_argv[n] = NULL;
+        if (n == 0) continue;
+        pid_t pid = fork();
+        if (pid == 0) { execvp(cmd_argv[0], cmd_argv); _exit(127); }
+        else { int s; waitpid(pid, &s, 0); }
+    }
+    return 0;
+}
+
+int cmd_cut(int argc, char** argv) {
+    char delimiter = '\t';
+    int f1 = -1, f2 = -1;
+    int ai = 1;
+    while (ai < argc && argv[ai][0] == '-') {
+        if (strcmp(argv[ai], "-d") == 0 && ai + 1 < argc) { delimiter = argv[++ai][0]; ai++; }
+        else if (strncmp(argv[ai], "-f", 2) == 0) {
+            char* p = argv[ai] + 2;
+            if (*p == 0 && ai + 1 < argc) p = argv[++ai];
+            f1 = atoi(p);
+            char* comma = strchr(p, ',');
+            if (comma) f2 = atoi(comma + 1);
+            ai++;
+        } else ai++;
+    }
+    if (f1 < 1) { fprintf(stderr, "  Usage: cut -d'\\t' -f1,2 [file]\n"); return 1; }
+
+    FILE* fp = stdin;
+    if (ai < argc) { fp = fopen(argv[ai], "r"); if (!fp) { fprintf(stderr, "  cut: %s: %s\n", argv[ai], strerror(errno)); return 1; } }
+
+    char line[4096];
+    while (fgets(line, sizeof(line), fp)) {
+        line[strcspn(line, "\n")] = 0;
+        int field = 1;
+        char* p = line;
+        int printing = 0;
+        while (*p) {
+            if (*p == delimiter) {
+                field++;
+                if (printing) printf("%c", delimiter);
+                printing = 0;
+            } else {
+                if (field == f1 || (f2 > 0 && field >= f1 && field <= f2)) {
+                    printf("%c", *p);
+                    printing = 1;
+                }
+            }
+            p++;
+        }
+        printf("\n");
+    }
+    if (fp != stdin) fclose(fp);
+    return 0;
+}
+
+int cmd_uniq(int argc, char** argv) {
+    int count = 0;
+    int ai = 1;
+    if (ai < argc && strcmp(argv[ai], "-c") == 0) { count = 1; ai++; }
+
+    FILE* fp = stdin;
+    if (ai < argc) { fp = fopen(argv[ai], "r"); if (!fp) { fprintf(stderr, "  uniq: %s: %s\n", argv[ai], strerror(errno)); return 1; } }
+
+    char prev[4096] = "";
+    int n = 0;
+    char line[4096];
+    while (fgets(line, sizeof(line), fp)) {
+        if (strcmp(line, prev) == 0) {
+            n++;
+        } else {
+            if (prev[0] && n > 0) {
+                if (count) printf("%d %s", n, prev);
+                else printf("%s", prev);
+            }
+            strcpy(prev, line);
+            n = 1;
+        }
+    }
+    if (prev[0]) {
+        if (count) printf("%d %s", n, prev);
+        else printf("%s", prev);
+    }
+    if (fp != stdin) fclose(fp);
+    return 0;
+}
+
+int cmd_tr(int argc, char** argv) {
+    if (argc < 3) { fprintf(stderr, "  Usage: tr <from> <to>\n"); return 1; }
+    const char* from = argv[1];
+    const char* to = argv[2];
+    char map[256];
+    for (int i = 0; i < 256; i++) map[i] = i;
+    for (int i = 0; from[i] && to[i]; i++) map[(unsigned char)from[i]] = to[i];
+
+    char buf[4096];
+    ssize_t n;
+    while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0) {
+        for (ssize_t i = 0; i < n; i++) buf[i] = map[(unsigned char)buf[i]];
+        write(STDOUT_FILENO, buf, n);
+    }
+    return 0;
+}
+
+int cmd_ln(int argc, char** argv) {
+    int sym = 0;
+    int ai = 1;
+    if (ai < argc && strcmp(argv[ai], "-s") == 0) { sym = 1; ai++; }
+    if (ai + 1 >= argc) { fprintf(stderr, "  Usage: ln [-s] <target> <link>\n"); return 1; }
+    int rc;
+    if (sym) rc = symlink(argv[ai], argv[ai + 1]);
+    else rc = link(argv[ai], argv[ai + 1]);
+    if (rc < 0) { fprintf(stderr, "  ln: %s\n", strerror(errno)); return 1; }
+    return 0;
+}
+
+int cmd_stat(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: stat <file>\n"); return 1; }
+    struct stat st;
+    if (lstat(argv[1], &st) < 0) { fprintf(stderr, "  stat: %s: %s\n", argv[1], strerror(errno)); return 1; }
+    printf("  File: %s\n", argv[1]);
+    printf("  Size: %ld\t", (long)st.st_size);
+    if (S_ISREG(st.st_mode)) printf("regular file\n");
+    else if (S_ISDIR(st.st_mode)) printf("directory\n");
+    else if (S_ISLNK(st.st_mode)) printf("symbolic link\n");
+    else if (S_ISCHR(st.st_mode)) printf("character device\n");
+    else if (S_ISBLK(st.st_mode)) printf("block device\n");
+    else if (S_ISFIFO(st.st_mode)) printf("FIFO\n");
+    else if (S_ISSOCK(st.st_mode)) printf("socket\n");
+    printf("  Mode: %04o\n", st.st_mode & 07777);
+    printf("  Uid:  %d\tGid: %d\n", st.st_uid, st.st_gid);
+    return 0;
+}
+
+int cmd_time(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: time <cmd> [args...]\n"); return 1; }
+    struct timespec t1, t2;
+    clock_gettime(CLOCK_MONOTONIC, &t1);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execvp(argv[1], argv + 1);
+        fprintf(stderr, "  time: %s: %s\n", argv[1], strerror(errno));
+        _exit(127);
+    } else if (pid > 0) {
+        int status;
+        waitpid(pid, &status, 0);
+        clock_gettime(CLOCK_MONOTONIC, &t2);
+        double elapsed = (t2.tv_sec - t1.tv_sec) + (t2.tv_nsec - t1.tv_nsec) / 1e9;
+        printf("\nreal\t%.3fs\n", elapsed);
+    }
+    return 0;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -1542,6 +1713,13 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "sleep") == 0) { builtin_rc = cmd_sleep(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "which") == 0) { builtin_rc = cmd_which(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "diff") == 0) { builtin_rc = cmd_diff(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "xargs") == 0) { builtin_rc = cmd_xargs(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "cut") == 0) { builtin_rc = cmd_cut(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "uniq") == 0) { builtin_rc = cmd_uniq(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tr") == 0) { builtin_rc = cmd_tr(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ln") == 0) { builtin_rc = cmd_ln(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "stat") == 0) { builtin_rc = cmd_stat(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "time") == 0) { builtin_rc = cmd_time(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }
