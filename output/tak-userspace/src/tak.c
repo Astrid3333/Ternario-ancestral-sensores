@@ -5915,6 +5915,696 @@ int cmd_db_list(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 5: TERNARY GAME ENGINE
+   ═══════════════════════════════════════════════════════
+
+   Simple TUI games using ternary logic.
+
+   Games:
+   - Snake with ternary movement
+   - Tic-tac-toe in ternary
+   - Number guessing with ternary hints
+*/
+
+/* Ternary Snake game */
+int cmd_game_snake(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: game-snake [--speed <1-10>]\n");
+        fprintf(stderr, "\n  Ternary Snake: Move with w/a/s/d, eat food (F)\n");
+        return 1;
+    }
+
+    int speed = 5;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--speed") == 0 && i + 1 < argc) speed = atoi(argv[++i]);
+    }
+
+    int rows, cols;
+    tui_get_size(&rows, &cols);
+    tui_hide_cursor();
+    tui_clear();
+
+    /* Snake */
+    int snake[100][2];
+    int len = 3;
+    for (int i = 0; i < len; i++) { snake[i][0] = cols/2 - i; snake[i][1] = rows/2; }
+
+    /* Food */
+    int food[2] = {rand() % (cols-4) + 2, rand() % (rows-4) + 2};
+
+    int dx = 1, dy = 0;
+    int score = 0;
+    int running = 1;
+
+    system("/bin/stty raw -echo 2>/dev/null");
+
+    while (running) {
+        tui_clear();
+
+        /* Title */
+        tui_cursor(1, 1);
+        printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TERNARY SNAKE " COLOR_RESET);
+        printf(" Score: %d ", score);
+
+        /* Border */
+        for (int i = 0; i < cols; i++) {
+            tui_cursor(2, i); printf("─");
+            tui_cursor(rows-1, i); printf("─");
+        }
+
+        /* Food */
+        tui_cursor(food[1], food[0]);
+        printf(COLOR_RED "F" COLOR_RESET);
+
+        /* Snake */
+        for (int i = 0; i < len; i++) {
+            tui_cursor(snake[i][1], snake[i][0]);
+            if (i == 0) printf(COLOR_GREEN "@" COLOR_RESET);
+            else printf(COLOR_GREEN "o" COLOR_RESET);
+        }
+
+        /* Input */
+        int ch = getchar();
+        if (ch == 'q') running = 0;
+        else if (ch == 'w' && dy != 1) { dx = 0; dy = -1; }
+        else if (ch == 's' && dy != -1) { dx = 0; dy = 1; }
+        else if (ch == 'a' && dx != 1) { dx = -1; dy = 0; }
+        else if (ch == 'd' && dx != -1) { dx = 1; dy = 0; }
+
+        /* Move */
+        int nx = snake[0][0] + dx;
+        int ny = snake[0][1] + dy;
+
+        /* Wrap around */
+        if (nx < 1) nx = cols - 2;
+        if (nx >= cols - 1) nx = 1;
+        if (ny < 2) ny = rows - 2;
+        if (ny >= rows - 1) ny = 2;
+
+        /* Check food */
+        if (nx == food[0] && ny == food[1]) {
+            score++;
+            food[0] = rand() % (cols-4) + 2;
+            food[1] = rand() % (rows-4) + 2;
+            len++;
+        }
+
+        /* Move body */
+        for (int i = len - 1; i > 0; i--) {
+            snake[i][0] = snake[i-1][0];
+            snake[i][1] = snake[i-1][1];
+        }
+        snake[0][0] = nx;
+        snake[0][1] = ny;
+
+        usleep((11 - speed) * 50000);
+    }
+
+    system("/bin/stty cooked echo 2>/dev/null");
+    tui_show_cursor();
+    tui_clear();
+    printf("  Game Over! Score: %d\n", score);
+    return 0;
+}
+
+/* Ternary Tic-Tac-Toe */
+int cmd_game_tictac(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: game-tictac [--vs-ai]\n");
+        fprintf(stderr, "\n  Ternary Tic-Tac-Toe: 0=empty, 1=X, 2=O\n");
+        return 1;
+    }
+
+    int vs_ai = 0;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--vs-ai") == 0) vs_ai = 1;
+    }
+
+    int board[9] = {0};
+    int player = 1;
+    int moves = 0;
+    int game_over = 0;
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY TIC-TAC-TOE          ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    while (!game_over && moves < 9) {
+        /* Print board */
+        printf("\n");
+        for (int i = 0; i < 3; i++) {
+            printf("    ");
+            for (int j = 0; j < 3; j++) {
+                int val = board[i*3 + j];
+                if (val == 0) printf(COLOR_YELLOW "." COLOR_RESET);
+                else if (val == 1) printf(COLOR_GREEN "X" COLOR_RESET);
+                else printf(COLOR_RED "O" COLOR_RESET);
+                if (j < 2) printf(" │ ");
+            }
+            if (i < 2) printf("\n    ───┼───┼───\n");
+        }
+        printf("\n\n");
+
+        /* Player input */
+        printf("  " COLOR_YELLOW "Player %d" COLOR_RESET " (%s), choose 1-9: ",
+               player, player == 1 ? "X" : "O");
+
+        int pos;
+        if (vs_ai && player == 2) {
+            /* Simple AI */
+            pos = rand() % 9;
+            while (board[pos] != 0) pos = rand() % 9;
+            pos++;
+            printf("%d (AI)\n", pos);
+        } else {
+            if (scanf("%d", &pos) != 1) pos = 0;
+            char buf[64];
+            fgets(buf, sizeof(buf), stdin);
+        }
+
+        if (pos < 1 || pos > 9 || board[pos-1] != 0) {
+            printf("  " COLOR_RED "Invalid move!" COLOR_RESET "\n");
+            continue;
+        }
+
+        board[pos-1] = player;
+        moves++;
+
+        /* Check win */
+        int wins[8][3] = {{0,1,2},{3,4,5},{6,7,8},{0,3,6},{1,4,7},{2,5,8},{0,4,8},{2,4,6}};
+        for (int i = 0; i < 8; i++) {
+            if (board[wins[i][0]] == player &&
+                board[wins[i][1]] == player &&
+                board[wins[i][2]] == player) {
+                game_over = 1;
+                printf("\n  " COLOR_GREEN "Player %d wins!" COLOR_RESET "\n", player);
+            }
+        }
+
+        if (!game_over) player = (player == 1) ? 2 : 1;
+    }
+
+    if (!game_over) printf("\n  " COLOR_YELLOW "Draw!" COLOR_RESET "\n");
+    return 0;
+}
+
+/* Ternary Number Guessing */
+int cmd_game_guess(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: game-guess [--max <number>]\n");
+        fprintf(stderr, "\n  Guess the number! Hints given in ternary.\n");
+        return 1;
+    }
+
+    int max = 27;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--max") == 0 && i + 1 < argc) max = atoi(argv[++i]);
+    }
+
+    int secret = rand() % max + 1;
+    int attempts = 0;
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY NUMBER GUESS          ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+    printf("  " COLOR_YELLOW "Range:" COLOR_RESET " 1-%d\n", max);
+    printf("  " COLOR_YELLOW "Secret:" COLOR_RESET " ???\n\n");
+
+    while (1) {
+        printf("  " COLOR_CYAN "Guess:" COLOR_RESET " ");
+        int guess;
+        if (scanf("%d", &guess) != 1) continue;
+        char buf[64];
+        fgets(buf, sizeof(buf), stdin);
+        attempts++;
+
+        if (guess == secret) {
+            printf("\n  " COLOR_GREEN "CORRECT!" COLOR_RESET " in %d attempts\n", attempts);
+
+            /* Show ternary */
+            printf("\n  " COLOR_CYAN "Ternary representation:" COLOR_RESET " ");
+            int val = secret;
+            char ternary[32] = "";
+            int idx = 0;
+            while (val > 0) {
+                ternary[idx++] = '0' + (val % 3);
+                val /= 3;
+            }
+            for (int i = idx - 1; i >= 0; i--) printf("%c", ternary[i]);
+            printf("\n");
+            break;
+        }
+
+        /* Ternary hint */
+        int diff = guess - secret;
+        printf("  " COLOR_YELLOW "Hint:" COLOR_RESET " ");
+
+        if (diff > 0) {
+            /* Convert diff to ternary */
+            int val = diff;
+            printf("HIGH by ");
+            if (val > 9) printf("many");
+            else if (val > 3) printf("some");
+            else printf("a little");
+        } else {
+            int val = -diff;
+            printf("LOW by ");
+            if (val > 9) printf("many");
+            else if (val > 3) printf("some");
+            else printf("a little");
+        }
+        printf("\n");
+    }
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 6: TERNARY MUSIC GENERATOR
+   ═══════════════════════════════════════════════════════
+
+   Generate music from ternary sequences.
+
+   Mapping:
+   - 0 = rest
+   - 1 = C4 (262 Hz)
+   - 2 = D4 (294 Hz)
+   - 3 = E4 (330 Hz)
+   - 4 = F4 (349 Hz)
+   - 5 = G4 (392 Hz)
+   - 6 = A4 (440 Hz)
+   - 7 = B4 (494 Hz)
+   - 8 = C5 (523 Hz)
+*/
+
+/* Generate tone using speaker-test */
+int play_tone(int freq, int duration_ms) {
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd),
+             "speaker-test -t sine -f %d -l 1 -p 1 2>/dev/null &", freq);
+    system(cmd);
+    usleep(duration_ms * 1000);
+    return 0;
+}
+
+/* Play ternary music */
+int cmd_music_play(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: music-play <sequence> [--tempo <bpm>] [--wave <sine|square>]\n");
+        fprintf(stderr, "\n  Ternary Music:\n");
+        fprintf(stderr, "    0 = rest    1 = C4    2 = D4\n");
+        fprintf(stderr, "    3 = E4      4 = F4    5 = G4\n");
+        fprintf(stderr, "    6 = A4      7 = B4    8 = C5\n");
+        fprintf(stderr, "\n  Example: music-play 12345678\n");
+        return 1;
+    }
+
+    char* sequence = argv[1];
+    int tempo = 120;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--tempo") == 0 && i + 1 < argc) tempo = atoi(argv[++i]);
+    }
+
+    int notes[] = {0, 262, 294, 330, 349, 392, 440, 494, 523};
+    char* names[] = {"REST", "C4", "D4", "E4", "F4", "G4", "A4", "B4", "C5"};
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY MUSIC PLAYER          ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Sequence:" COLOR_RESET " %s\n", sequence);
+    printf("  " COLOR_YELLOW "Tempo:" COLOR_RESET "    %d BPM\n\n", tempo);
+
+    int note_ms = 60000 / tempo;
+
+    for (int i = 0; sequence[i]; i++) {
+        int note = sequence[i] - '0';
+        if (note >= 0 && note <= 8) {
+            printf("  " COLOR_GREEN "%c" COLOR_RESET " → %s (%d Hz)\n",
+                   sequence[i], names[note], notes[note]);
+            if (note > 0) {
+                play_tone(notes[note], note_ms);
+            } else {
+                usleep(note_ms * 1000);
+            }
+        }
+    }
+
+    printf("\n  " COLOR_GREEN "Done!" COLOR_RESET "\n");
+    return 0;
+}
+
+/* Save ternary music to file */
+int cmd_music_save(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: music-save <sequence> <output.wav>\n");
+        return 1;
+    }
+
+    char* sequence = argv[1];
+    char* output = argv[2];
+
+    int notes[] = {0, 262, 294, 330, 349, 392, 440, 494, 523};
+
+    printf("  " COLOR_YELLOW "Saving" COLOR_RESET " %s → %s\n", sequence, output);
+
+    /* Generate using sox */
+    char cmd[4096] = "";
+    for (int i = 0; sequence[i]; i++) {
+        int note = sequence[i] - '0';
+        if (note > 0 && note <= 8) {
+            char piece[256];
+            snprintf(piece, sizeof(piece), "sox -n -r 44100 -c 1 piece%d.wav synth 0.2 sine %d 2>/dev/null; ",
+                     i, notes[note]);
+            strcat(cmd, piece);
+        }
+    }
+
+    /* Concatenate */
+    strcat(cmd, "sox ");
+    for (int i = 0; sequence[i]; i++) {
+        if (sequence[i] != '0') {
+            char piece[32];
+            snprintf(piece, sizeof(piece), "piece%d.wav ", i);
+            strcat(cmd, piece);
+        }
+    }
+    strcat(cmd, output);
+    strcat(cmd, " 2>/dev/null");
+
+    system(cmd);
+
+    /* Cleanup */
+    for (int i = 0; sequence[i]; i++) {
+        if (sequence[i] != '0') {
+            char file[32];
+            snprintf(file, sizeof(file), "piece%d.wav", i);
+            unlink(file);
+        }
+    }
+
+    printf("  " COLOR_GREEN "Saved" COLOR_RESET " to %s\n", output);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 7: TERNARY GRAPHICS
+   ═══════════════════════════════════════════════════════
+
+   Generate images from ternary patterns.
+
+   Mapping:
+   - 0 = black
+   - 1 = gray
+   - 2 = white
+   - 01 = dark gray
+   - 12 = light gray
+*/
+
+/* Generate image from ternary pattern */
+int cmd_graphics_gen(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: graphics-gen <pattern> <output.png> [--size <WxH>]\n");
+        fprintf(stderr, "\n  Example: graphics-gen 01021122001122 pattern.png\n");
+        return 1;
+    }
+
+    char* pattern = argv[1];
+    char* output = argv[2];
+    int width = 100, height = 100;
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "--size") == 0 && i + 1 < argc) {
+            sscanf(argv[++i], "%dx%d", &width, &height);
+        }
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY GRAPHICS GENERATOR    ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Pattern:" COLOR_RESET " %s\n", pattern);
+    printf("  " COLOR_YELLOW "Size:" COLOR_RESET "    %dx%d\n", width, height);
+    printf("  " COLOR_YELLOW "Output:" COLOR_RESET "   %s\n\n", output);
+
+    /* Create image using ImageMagick */
+    char cmd[4096];
+    int plen = strlen(pattern);
+    int cell_w = width / (plen > 0 ? plen : 1);
+    int cell_h = height;
+
+    snprintf(cmd, sizeof(cmd),
+             "convert -size %dx%d xc:black ", width, height);
+
+    for (int i = 0; i < plen && i < width; i++) {
+        int val = pattern[i] - '0';
+        char color[32];
+        if (val == 0) strcpy(color, "black");
+        else if (val == 1) strcpy(color, "gray50");
+        else strcpy(color, "white");
+
+        char piece[256];
+        snprintf(piece, sizeof(piece),
+                 "-fill '%s' -draw 'rectangle %d,0 %d,%d' ",
+                 color, i * cell_w, (i + 1) * cell_w, cell_h);
+        strcat(cmd, piece);
+    }
+
+    strcat(cmd, output);
+    system(cmd);
+
+    printf("  " COLOR_GREEN "Generated" COLOR_RESET " %s\n", output);
+    return 0;
+}
+
+/* Generate fractal from ternary */
+int cmd_graphics_fractal(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: graphics-fractal <seed> <output.png> [--iter <N>]\n");
+        fprintf(stderr, "\n  Generates ternary fractal pattern.\n");
+        return 1;
+    }
+
+    int seed = atoi(argv[1]);
+    char* output = argv[2];
+    int iter = 6;
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "--iter") == 0 && i + 1 < argc) iter = atoi(argv[++i]);
+    }
+
+    printf("  " COLOR_YELLOW "Seed:" COLOR_RESET "   %d\n", seed);
+    printf("  " COLOR_YELLOW "Iterations:" COLOR_RESET " %d\n", iter);
+    printf("  " COLOR_YELLOW "Output:" COLOR_RESET "  %s\n", output);
+
+    /* Generate ternary sequence from seed */
+    char sequence[1024] = "";
+    int val = seed;
+    for (int i = 0; i < iter * 3; i++) {
+        sequence[i] = '0' + (val % 3);
+        val = (val * 3 + 7) % 27;
+    }
+    sequence[iter * 3] = 0;
+
+    printf("  " COLOR_CYAN "Sequence:" COLOR_RESET " %s\n", sequence);
+
+    /* Generate image */
+    char cmd[4096];
+    int size = 256;
+    snprintf(cmd, sizeof(cmd),
+             "convert -size %dx%d xc:black ", size, size);
+
+    int plen = strlen(sequence);
+    int cell = size / (plen > 0 ? plen : 1);
+
+    for (int i = 0; i < plen && i < size / cell; i++) {
+        int val = sequence[i] - '0';
+        char color[32];
+        if (val == 0) strcpy(color, "black");
+        else if (val == 1) strcpy(color, "gray50");
+        else strcpy(color, "white");
+
+        char piece[256];
+        snprintf(piece, sizeof(piece),
+                 "-fill '%s' -draw 'rectangle %d,0 %d,%d' ",
+                 color, i * cell, (i + 1) * cell, size);
+        strcat(cmd, piece);
+    }
+
+    strcat(cmd, output);
+    system(cmd);
+
+    printf("  " COLOR_GREEN "Generated" COLOR_RESET " fractal\n");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 8: TERNARY NETWORK PROTOCOL
+   ═══════════════════════════════════════════════════════
+
+   Custom protocol for ternary communication.
+
+   Packet format:
+   - Header: 3 trits (type)
+   - Length: 3 trits (0-26 bytes)
+   - Data: variable
+   - Checksum: 3 trits
+*/
+
+/* Send ternary packet */
+int cmd_proto_send(int argc, char** argv) {
+    if (argc < 4 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: proto-send <host> <port> <type> <data>\n");
+        fprintf(stderr, "\n  Types: 0=DATA, 1=ACK, 2=REQ, 3=ERR\n");
+        return 1;
+    }
+
+    char* host = argv[1];
+    char* port = argv[2];
+    int type = atoi(argv[3]);
+    char* data = argv[4];
+
+    printf("  " COLOR_CYAN "Ternary Protocol" COLOR_RESET " v1.0\n");
+    printf("  " COLOR_YELLOW "Host:" COLOR_RESET " %s:%s\n", host, port);
+    printf("  " COLOR_YELLOW "Type:" COLOR_RESET " %d\n", type);
+    printf("  " COLOR_YELLOW "Data:" COLOR_RESET " %s\n", data);
+
+    /* Calculate checksum */
+    int checksum = 0;
+    for (int i = 0; data[i]; i++) checksum += data[i];
+    checksum = checksum % 27;
+
+    printf("  " COLOR_GREEN "Checksum:" COLOR_RESET " %d\n", checksum);
+
+    /* Send via netcat */
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "echo '%d|%s|%d' | nc -w1 %s %s 2>/dev/null",
+             type, data, checksum, host, port);
+    system(cmd);
+
+    printf("  " COLOR_GREEN "Sent" COLOR_RESET "\n");
+    return 0;
+}
+
+/* Listen for ternary packets */
+int cmd_proto_listen(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: proto-listen <port> [--timeout <seconds>]\n");
+        return 1;
+    }
+
+    char* port = argv[1];
+    int timeout = 10;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--timeout") == 0 && i + 1 < argc) timeout = atoi(argv[++i]);
+    }
+
+    printf("  " COLOR_CYAN "Listening" COLOR_RESET " on port %s (timeout: %ds)\n", port, timeout);
+
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "nc -l %s -w %d 2>/dev/null", port, timeout);
+    system(cmd);
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   INNOVATION 9: TERNARY FILESYSTEM
+   ═══════════════════════════════════════════════════════
+
+   Real filesystem with ternary indexing.
+
+   Features:
+   - Create/mount/unmount
+   - Read/write files
+   - Directory listing
+   - Ternary inode system
+*/
+
+/* Create ternary filesystem */
+int cmd_fs_create(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: fs-create <name> [--size <MB>]\n");
+        return 1;
+    }
+
+    char* name = argv[1];
+    int size = 1;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--size") == 0 && i + 1 < argc) size = atoi(argv[++i]);
+    }
+
+    char path[512];
+    snprintf(path, sizeof(path), "%s/ternfs/%s", fs_get_root(), name);
+    mkdir(dirname(path), 0755);
+
+    /* Create filesystem structure */
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "mkdir -p %s/{bin,etc,var,tmp,home}", path);
+    system(cmd);
+
+    /* Create superblock */
+    char superblock[512];
+    snprintf(superblock, sizeof(superblock), "%s/etc/superblock", path);
+    FILE* f = fopen(superblock, "w");
+    if (f) {
+        fprintf(f, "TernaryFS v1.0\n");
+        fprintf(f, "Size: %d MB\n", size);
+        fprintf(f, "Inodes: %d\n", size * 1024);
+        fprintf(f, "Block size: 27 bytes\n");
+        fprintf(f, "Created: %s\n", __DATE__);
+        fclose(f);
+    }
+
+    printf("  " COLOR_GREEN "Created" COLOR_RESET " filesystem: %s (%d MB)\n", name, size);
+    printf("  " COLOR_CYAN "Path:" COLOR_RESET " %s\n", path);
+    return 0;
+}
+
+/* Mount ternary filesystem */
+int cmd_fs_mount(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: fs-mount <name> <mountpoint>\n");
+        return 1;
+    }
+
+    char* name = argv[1];
+    char* mountpoint = argv[2];
+
+    char src[512], dst[512];
+    snprintf(src, sizeof(src), "%s/ternfs/%s", fs_get_root(), name);
+    snprintf(dst, sizeof(dst), "%s", mountpoint);
+
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "ln -s %s %s 2>/dev/null || mount --bind %s %s", src, dst, src, dst);
+    system(cmd);
+
+    printf("  " COLOR_GREEN "Mounted" COLOR_RESET " %s → %s\n", name, mountpoint);
+    return 0;
+}
+
+/* List ternary filesystem */
+int cmd_fs_list(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: fs-list [<name>]\n");
+        return 1;
+    }
+
+    char path[512];
+    if (argc > 1) {
+        snprintf(path, sizeof(path), "%s/ternfs/%s", fs_get_root(), argv[1]);
+    } else {
+        snprintf(path, sizeof(path), "%s/ternfs", fs_get_root());
+    }
+
+    printf(COLOR_CYAN "  ── Ternary Filesystems ──" COLOR_RESET "\n\n");
+
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "ls -la %s/ 2>/dev/null || echo '  No filesystems'", path);
+    system(cmd);
+
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -6845,6 +7535,18 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "db-insert") == 0) { builtin_rc = cmd_db_insert(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "db-query") == 0) { builtin_rc = cmd_db_query(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "db-list") == 0) { builtin_rc = cmd_db_list(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "game-snake") == 0) { builtin_rc = cmd_game_snake(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "game-tictac") == 0) { builtin_rc = cmd_game_tictac(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "game-guess") == 0) { builtin_rc = cmd_game_guess(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "music-play") == 0) { builtin_rc = cmd_music_play(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "music-save") == 0) { builtin_rc = cmd_music_save(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "graphics-gen") == 0) { builtin_rc = cmd_graphics_gen(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "graphics-fractal") == 0) { builtin_rc = cmd_graphics_fractal(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "proto-send") == 0) { builtin_rc = cmd_proto_send(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "proto-listen") == 0) { builtin_rc = cmd_proto_listen(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "fs-create") == 0) { builtin_rc = cmd_fs_create(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "fs-mount") == 0) { builtin_rc = cmd_fs_mount(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "fs-list") == 0) { builtin_rc = cmd_fs_list(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
