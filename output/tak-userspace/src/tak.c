@@ -26,6 +26,9 @@
 #include <sys/sysinfo.h>
 #include <sys/select.h>
 #include <dirent.h>
+#include <grp.h>
+
+extern char** environ;
 
 /* Subsystem APIs */
 extern void sched_init(void);
@@ -2097,6 +2100,244 @@ int cmd_lsof_wrap(void) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   SYSTEM INFO ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_hostname(void) {
+    char buf[256];
+    if (gethostname(buf, sizeof(buf)) == 0)
+        printf("  %s\n", buf);
+    else
+        printf("  unknown\n");
+    return 0;
+}
+
+int cmd_timedatectl(void) {
+    system("timedatectl 2>/dev/null || date");
+    return 0;
+}
+
+int cmd_id_info(void) {
+    uid_t uid = getuid();
+    gid_t gid = getgid();
+    struct passwd* pw = getpwuid(uid);
+    struct group* gr = getgrgid(gid);
+    printf("  uid=%d(%s) gid=%d(%s)", uid, pw ? pw->pw_name : "?", gid, gr ? gr->gr_name : "?");
+
+    /* Supplementary groups */
+    gid_t groups[64];
+    int ngroups = getgroups(64, groups);
+    if (ngroups > 0) {
+        printf(" groups=");
+        for (int i = 0; i < ngroups; i++) {
+            struct group* g = getgrgid(groups[i]);
+            printf("%d(%s)", groups[i], g ? g->gr_name : "?");
+            if (i < ngroups - 1) printf(",");
+        }
+    }
+    printf("\n");
+    return 0;
+}
+
+int cmd_w_info(void) {
+    system("w 2>/dev/null || who");
+    return 0;
+}
+
+int cmd_last(void) {
+    system("last -n 10 2>/dev/null || echo '  last not available'");
+    return 0;
+}
+
+int cmd_who_full(void) {
+    system("who -a 2>/dev/null || who");
+    return 0;
+}
+
+int cmd_printenv(void) {
+    char** env = environ;
+    while (*env) { printf("  %s\n", *env); env++; }
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROCESS MANAGEMENT
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_pgrep(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: pgrep <pattern>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "pgrep %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_pkill(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: pkill <pattern>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "pkill %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_nice_wrap(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: nice <cmd> [args...]\n"); return 1; }
+    char cmd[2048] = "nice";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_nohup_wrap(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: nohup <cmd> [args...]\n"); return 1; }
+    char cmd[2048] = "nohup";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    strcat(cmd, " &");
+    system(cmd);
+    return 0;
+}
+
+int cmd_pidof(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: pidof <name>\n"); return 1; }
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "pidof %s", argv[1]);
+    system(cmd);
+    return 0;
+}
+
+int cmd_wait_wrap(int argc, char** argv) {
+    if (argc < 2) { fprintf(stderr, "  Usage: wait <pid>\n"); return 1; }
+    int pid = atoi(argv[1]);
+    int status;
+    waitpid(pid, &status, 0);
+    printf("  Process %d exited with status %d\n", pid, WEXITSTATUS(status));
+    return WEXITSTATUS(status);
+}
+
+/* ═══════════════════════════════════════════════════════
+   TERMINAL multiplexers
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_screen_wrap(int argc, char** argv) {
+    char cmd[2048] = "screen";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_tmux_wrap(int argc, char** argv) {
+    char cmd[2048] = "tmux";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DISPLAY & AUDIO
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_xrandr(void) {
+    system("xrandr 2>/dev/null || echo '  xrandr not available (no X11?)'");
+    return 0;
+}
+
+int cmd_amixer(void) {
+    system("amixer 2>/dev/null || pactl info 2>/dev/null || echo '  No audio tools'");
+    return 0;
+}
+
+int cmd_speaker_test(void) {
+    system("speaker-test -t sine -f 440 -l 1 2>/dev/null || echo '  speaker-test not available'");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   POWER & HARDWARE
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_poweroff(void) {
+    fprintf(stderr, "  WARNING: This will power off the system!\n  Use: sudo poweroff\n");
+    system("sudo poweroff");
+    return 0;
+}
+
+int cmd_reboot_cmd(void) {
+    fprintf(stderr, "  WARNING: This will reboot the system!\n  Use: sudo reboot\n");
+    system("sudo reboot");
+    return 0;
+}
+
+int cmd_hwclock(void) {
+    system("hwclock 2>/dev/null || echo '  hwclock not available'");
+    return 0;
+}
+
+int cmd_umask_wrap(int argc, char** argv) {
+    if (argc < 2) {
+        mode_t m = umask(0);
+        umask(m);
+        printf("  %04o\n", m);
+    } else {
+        int mask = strtol(argv[1], NULL, 8);
+        umask(mask);
+        printf("  umask set to %04o\n", mask);
+    }
+    return 0;
+}
+
+int cmd_lscpu_full(void) {
+    system("lscpu 2>/dev/null");
+    return 0;
+}
+
+int cmd_lsusb_full(void) {
+    system("lsusb 2>/dev/null");
+    return 0;
+}
+
+int cmd_lspci(void) {
+    system("lspci 2>/dev/null | head -20 || echo '  lspci not available'");
+    return 0;
+}
+
+int cmd_lsblk_full(void) {
+    system("lsblk -f 2>/dev/null || lsblk");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   ARCHIVE ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_xz_wrap(int argc, char** argv) {
+    char cmd[256] = "xz";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_unzip_wrap(int argc, char** argv) {
+    char cmd[256] = "unzip";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_unrar_wrap(int argc, char** argv) {
+    char cmd[256] = "unrar";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_7z_wrap(int argc, char** argv) {
+    char cmd[256] = "7z";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -2925,6 +3166,30 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "sysctl") == 0) { builtin_rc = cmd_sysctl_wrap(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "lsmod") == 0) { builtin_rc = cmd_lsmod(); is_builtin = 1; }
         else if (strcmp(argv[0], "lsof") == 0) { builtin_rc = cmd_lsof_wrap(); is_builtin = 1; }
+        else if (strcmp(argv[0], "hostname") == 0) { builtin_rc = cmd_hostname(); is_builtin = 1; }
+        else if (strcmp(argv[0], "timedatectl") == 0) { builtin_rc = cmd_timedatectl(); is_builtin = 1; }
+        else if (strcmp(argv[0], "id") == 0) { builtin_rc = cmd_id_info(); is_builtin = 1; }
+        else if (strcmp(argv[0], "w") == 0) { builtin_rc = cmd_w_info(); is_builtin = 1; }
+        else if (strcmp(argv[0], "last") == 0) { builtin_rc = cmd_last(); is_builtin = 1; }
+        else if (strcmp(argv[0], "printenv") == 0) { builtin_rc = cmd_printenv(); is_builtin = 1; }
+        else if (strcmp(argv[0], "pgrep") == 0) { builtin_rc = cmd_pgrep(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "pkill") == 0) { builtin_rc = cmd_pkill(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nice") == 0) { builtin_rc = cmd_nice_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "nohup") == 0) { builtin_rc = cmd_nohup_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "pidof") == 0) { builtin_rc = cmd_pidof(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "screen") == 0) { builtin_rc = cmd_screen_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tmux") == 0) { builtin_rc = cmd_tmux_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "xrandr") == 0) { builtin_rc = cmd_xrandr(); is_builtin = 1; }
+        else if (strcmp(argv[0], "amixer") == 0) { builtin_rc = cmd_amixer(); is_builtin = 1; }
+        else if (strcmp(argv[0], "poweroff") == 0) { builtin_rc = cmd_poweroff(); is_builtin = 1; }
+        else if (strcmp(argv[0], "reboot") == 0) { builtin_rc = cmd_reboot_cmd(); is_builtin = 1; }
+        else if (strcmp(argv[0], "hwclock") == 0) { builtin_rc = cmd_hwclock(); is_builtin = 1; }
+        else if (strcmp(argv[0], "umask") == 0) { builtin_rc = cmd_umask_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "lspci") == 0) { builtin_rc = cmd_lspci(); is_builtin = 1; }
+        else if (strcmp(argv[0], "xz") == 0) { builtin_rc = cmd_xz_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "unzip") == 0) { builtin_rc = cmd_unzip_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "unrar") == 0) { builtin_rc = cmd_unrar_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "7z") == 0) { builtin_rc = cmd_7z_wrap(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
