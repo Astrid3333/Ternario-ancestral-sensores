@@ -13,6 +13,7 @@
  * - Visualización 3D (Blender)
  * - Audio ternario
  * - Compresión optimizada para sensores
+ * - Render ternario para impresión 3D (STL)
  * 
  * Uso: ./tritos_science <comando> [opciones]
  */
@@ -36,6 +37,7 @@ extern int compression_main(int argc, char* argv[]);
 extern int main(int argc, char* argv[]);  /* blender_ternary */
 extern int audio_main(int argc, char* argv[]);
 extern int compress_opt_main(int argc, char* argv[]);
+extern int render_main(int argc, char* argv[]);
 
 void print_help() {
     printf("Tritos Science Suite\n");
@@ -75,6 +77,13 @@ void print_help() {
     printf("Visualization & Audio:\n");
     printf("  blender      - Generate Blender 3D scripts\n");
     printf("  audio        - Audio ternary processing\n");
+    printf("\n");
+    
+    printf("3D Printing (STL):\n");
+    printf("  render lga    - LGA density field as heightmap STL\n");
+    printf("  render ising  - Ising spin lattice as voxel STL\n");
+    printf("  render md     - MD particles as sphere mesh STL\n");
+    printf("  render sensor - Sensor network as heightmap STL\n");
     printf("\n");
     
     printf("Use '<command> -h' for help on each command.\n");
@@ -120,6 +129,8 @@ int main(int argc, char* argv[]) {
         return blender_main(argc, argv);
     } else if (strcmp(cmd, "audio") == 0) {
         return audio_main(argc, argv);
+    } else if (strcmp(cmd, "render") == 0) {
+        return render_main(argc, argv);
     } else if (strcmp(cmd, "help") == 0 || strcmp(cmd, "-h") == 0) {
         print_help();
         return 0;
