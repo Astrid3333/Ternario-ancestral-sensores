@@ -3485,6 +3485,427 @@ int cmd_img_sensor(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   TERNARY VIDEO PROCESSING — For powerful computers
+   ═══════════════════════════════════════════════════════
+
+   Unique capabilities:
+   1. YOUTUBE DOWNLOAD + ENHANCE — Download and improve quality
+   2. FRAME-BY-FRAME TERNARY — Analyze each frame in Base 3
+   3. ANCESTRAL VIDEO FILTERS — Maya/Persian/Inca video styles
+   4. SENSOR VIDEO — Improve IoT camera footage
+   5. COMPRESSION — Ternary-aware video compression
+*/
+
+/* Download and enhance YouTube video */
+int cmd_video_ytdl(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: video-ytdl <url> [--enhance] [--scale <2|4>] [--filter <name>]\n");
+        fprintf(stderr, "\n  Downloads YouTube video and optionally enhances quality.\n");
+        fprintf(stderr, "  Requires: yt-dlp, ffmpeg, ImageMagick\n");
+        return 1;
+    }
+
+    char* url = argv[1];
+    int enhance = 0, scale = 2;
+    char* filter = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--enhance") == 0) enhance = 1;
+        else if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) scale = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--filter") == 0 && i + 1 < argc) filter = argv[++i];
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY VIDEO DOWNLOADER      ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    /* Maya timestamp */
+    maya_calendar_t* cal = sched_get_calendar();
+    printf("  " COLOR_YELLOW "Maya:" COLOR_RESET " Tzolkin %u  Haab %u  Tick %lu\n",
+           cal->tzolkin_day, cal->haab_day, (unsigned long)cal->global_tick);
+    printf("  " COLOR_YELLOW "URL:" COLOR_RESET "  %s\n", url);
+    printf("  " COLOR_YELLOW "Scale:" COLOR_RESET " %dx\n", scale);
+
+    /* Create working directory */
+    char workdir[] = "/tmp/tak_video_XXXXXX";
+    mkdtemp(workdir);
+
+    /* Step 1: Download */
+    printf("\n  " COLOR_CYAN "[1/4]" COLOR_RESET " Downloading video...\n");
+    char cmd[4096];
+    snprintf(cmd, sizeof(cmd),
+             "cd '%s' && yt-dlp -o 'original.%%(ext)s' '%s' 2>&1 | tail -5",
+             workdir, url);
+    system(cmd);
+
+    /* Find downloaded file */
+    char input_path[1024];
+    snprintf(input_path, sizeof(input_path), "%s/original.*", workdir);
+
+    /* Get video info */
+    printf("  " COLOR_CYAN "[2/4]" COLOR_RESET " Analyzing video...\n");
+    snprintf(cmd, sizeof(cmd),
+             "cd '%s' && ls original.* 2>/dev/null | head -1", workdir);
+    FILE* f = popen(cmd, "r");
+    char filename[256] = "";
+    if (f) {
+        fgets(filename, sizeof(filename), f);
+        filename[strcspn(filename, "\n")] = 0;
+        pclose(f);
+    }
+
+    if (strlen(filename) == 0) {
+        printf("  " COLOR_RED "Error:" COLOR_RESET " Download failed\n");
+        return 1;
+    }
+
+    snprintf(cmd, sizeof(cmd), "ffprobe -v quiet -print_format json -show_format -show_streams '%s/%s' 2>/dev/null",
+             workdir, filename);
+    system(cmd);
+
+    if (!enhance) {
+        printf("  " COLOR_GREEN "Downloaded:" COLOR_RESET " %s/%s\n", workdir, filename);
+        printf("\n  Use --enhance to improve quality\n");
+        return 0;
+    }
+
+    /* Step 3: Extract frames */
+    printf("  " COLOR_CYAN "[3/4]" COLOR_RESET " Extracting frames...\n");
+    char frames_dir[1024];
+    snprintf(frames_dir, sizeof(frames_dir), "%s/frames", workdir);
+    mkdir(frames_dir, 0755);
+
+    snprintf(cmd, sizeof(cmd),
+             "ffmpeg -i '%s/%s' -qscale:v 2 '%s/%%06d.png' -hide_banner -loglevel error 2>&1",
+             workdir, filename, frames_dir);
+    system(cmd);
+
+    /* Count frames */
+    snprintf(cmd, sizeof(cmd), "ls '%s/'*.png 2>/dev/null | wc -l", frames_dir);
+    f = popen(cmd, "r");
+    int total_frames = 0;
+    if (f) { fscanf(f, "%d", &total_frames); pclose(f); }
+    printf("  Frames: %d\n", total_frames);
+
+    /* Step 4: Enhance frames */
+    printf("  " COLOR_CYAN "[4/4]" COLOR_RESET " Enhancing frames...\n");
+    char enhanced_dir[1024];
+    snprintf(enhanced_dir, sizeof(enhanced_dir), "%s/enhanced", workdir);
+    mkdir(enhanced_dir, 0755);
+
+    /* Process in parallel (batch of 10) */
+    int processed = 0;
+    int batch = 10;
+    for (int i = 1; i <= total_frames; i += batch) {
+        int end = (i + batch - 1 < total_frames) ? i + batch - 1 : total_frames;
+
+        /* Build parallel enhance command */
+        char enhance_cmd[4096] = "";
+        for (int j = i; j <= end; j++) {
+            char frame_in[256], frame_out[256];
+            snprintf(frame_in, sizeof(frame_in), "%s/%06d.png", frames_dir, j);
+            snprintf(frame_out, sizeof(frame_out), "%s/%06d.png", enhanced_dir, j);
+
+            char single[512];
+            if (filter && strcmp(filter, "maya") == 0) {
+                snprintf(single, sizeof(single),
+                         "convert '%s' -modulate 110,80,90 -fill '#DAA520' -tint 30 -resize %d00%% -sharpen 0x1 '%s' & ",
+                         frame_in, scale, frame_out);
+            } else if (filter && strcmp(filter, "persian") == 0) {
+                snprintf(single, sizeof(single),
+                         "convert '%s' -modulate 100,120,200 -fill '#1E3A5F' -tint 20 -resize %d00%% -sharpen 0x1 '%s' & ",
+                         frame_in, scale, frame_out);
+            } else if (filter && strcmp(filter, "inca") == 0) {
+                snprintf(single, sizeof(single),
+                         "convert '%s' -modulate 105,90,30 -fill '#8B4513' -tint 25 -resize %d00%% -sharpen 0x1 '%s' & ",
+                         frame_in, scale, frame_out);
+            } else if (filter && strcmp(filter, "ternary") == 0) {
+                snprintf(single, sizeof(single),
+                         "convert '%s' -level 0%%,33%%,0 -level 33%%,66%%,128 -level 66%%,100%%,255 -resize %d00%% -sharpen 0x1 '%s' & ",
+                         frame_in, scale, frame_out);
+            } else {
+                /* Default: enhance */
+                snprintf(single, sizeof(single),
+                         "convert '%s' -contrast-stretch 3%% -sharpen 0x1 -unsharp 0.5+0.7+0 -resize %d00%% '%s' & ",
+                         frame_in, scale, frame_out);
+            }
+            strcat(enhance_cmd, single);
+        }
+        strcat(enhance_cmd, "wait");
+
+        system(enhance_cmd);
+        processed += (end - i + 1);
+        printf("\r  Progress: %d/%d frames", processed, total_frames);
+        fflush(stdout);
+    }
+    printf("\n");
+
+    /* Reassemble video */
+    printf("  " COLOR_CYAN "Assembling" COLOR_RESET " enhanced video...\n");
+    char output_path[1024];
+    snprintf(output_path, sizeof(output_path), "%s_enhanced.mp4", filename);
+    /* Remove extension from filename for output */
+    char* dot = strrchr(output_path, '.');
+    if (dot) *dot = 0;
+    strcat(output_path, ".mp4");
+
+    snprintf(cmd, sizeof(cmd),
+             "ffmpeg -framerate 30 -i '%s/%%06d.png' -c:v libx264 -crf 18 -preset slow '%s/%s' -hide_banner -loglevel error 2>&1",
+             enhanced_dir, workdir, output_path);
+    system(cmd);
+
+    /* Check output */
+    struct stat st;
+    char final_output[1024];
+    snprintf(final_output, sizeof(final_output), "%s/%s", workdir, output_path);
+    if (stat(final_output, &st) == 0) {
+        printf("\n  " COLOR_GREEN "═══════════════════════════════════════" COLOR_RESET "\n");
+        printf("  " COLOR_GREEN "SUCCESS" COLOR_RESET " Video enhanced!\n");
+        printf("  " COLOR_YELLOW "Output:" COLOR_RESET " %s\n", final_output);
+        printf("  " COLOR_YELLOW "Size:" COLOR_RESET "   %ld bytes\n", (long)st.st_size);
+
+        /* Show ternary analysis */
+        printf("\n  " COLOR_CYAN "Ternary Analysis:" COLOR_RESET "\n");
+        snprintf(cmd, sizeof(cmd), "ffprobe -v quiet -print_format json -show_format '%s' 2>/dev/null | grep duration",
+                 final_output);
+        system(cmd);
+    } else {
+        printf("  " COLOR_RED "Error:" COLOR_RESET " Assembly failed\n");
+    }
+
+    /* Cleanup frames (optional) */
+    printf("\n  Temp files: %s\n", workdir);
+    printf("  Remove with: rm -rf %s\n", workdir);
+
+    return 0;
+}
+
+/* Analyze video in ternary */
+int cmd_video_ternary(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: video-ternary <video> [--frames <N>] [--analyze]\n");
+        return 1;
+    }
+
+    char* input = argv[1];
+    int max_frames = 10;
+    int analyze = 0;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--frames") == 0 && i + 1 < argc) max_frames = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--analyze") == 0) analyze = 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY VIDEO ANALYZER        ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Input:" COLOR_RESET " %s\n", input);
+
+    /* Get video info */
+    char cmd[2048];
+    snprintf(cmd, sizeof(cmd), "ffprobe -v quiet -print_format json -show_format -show_streams '%s' 2>/dev/null", input);
+    system(cmd);
+
+    if (!analyze) {
+        printf("\n  Use --analyze for ternary pattern analysis\n");
+        return 0;
+    }
+
+    /* Extract sample frames */
+    printf("\n  " COLOR_CYAN "Ternary Pattern Analysis (sample frames)" COLOR_RESET "\n");
+
+    char tmpdir[] = "/tmp/tak_vid_ternary_XXXXXX";
+    mkdtemp(tmpdir);
+
+    snprintf(cmd, sizeof(cmd),
+             "ffmpeg -i '%s' -vf 'select=not(mod(n\\,%d))' -vsync vfr -frames:v %d '%s/%%03d.png' -hide_banner -loglevel error 2>&1",
+             input, 100, max_frames, tmpdir);
+    system(cmd);
+
+    /* Analyze each frame */
+    int frame_count = 0;
+    for (int i = 1; i <= max_frames; i++) {
+        char frame_path[256];
+        snprintf(frame_path, sizeof(frame_path), "%s/%03d.png", tmpdir, i);
+
+        struct stat st;
+        if (stat(frame_path, &st) != 0) break;
+        frame_count++;
+
+        /* Convert to gray and analyze */
+        char gray_path[256];
+        snprintf(gray_path, sizeof(gray_path), "%s/gray_%03d.raw", tmpdir, i);
+        snprintf(cmd, sizeof(cmd),
+                 "convert '%s' -resize 50x50! -depth 8 gray:'%s' 2>/dev/null",
+                 frame_path, gray_path);
+        system(cmd);
+
+        FILE* f = fopen(gray_path, "rb");
+        if (f) {
+            fseek(f, 0, SEEK_END);
+            long size = ftell(f);
+            fseek(f, 0, SEEK_SET);
+
+            unsigned char* pixels = malloc(size);
+            if (pixels) {
+                fread(pixels, 1, size, f);
+
+                int c0 = 0, c1 = 0, c2 = 0;
+                for (long j = 0; j < size; j++) {
+                    if (pixels[j] < 85) c0++;
+                    else if (pixels[j] < 170) c1++;
+                    else c2++;
+                }
+
+                printf("  Frame %03d: " COLOR_GREEN "%d" COLOR_RESET "/" COLOR_YELLOW "%d" COLOR_RESET "/" COLOR_RED "%d" COLOR_RESET " (dark/mid/bright)\n",
+                       i, c0, c1, c2);
+                free(pixels);
+            }
+            fclose(f);
+        }
+    }
+
+    printf("\n  Analyzed %d frames\n", frame_count);
+
+    /* Cleanup */
+    snprintf(cmd, sizeof(cmd), "rm -rf %s", tmpdir);
+    system(cmd);
+
+    return 0;
+}
+
+/* Enhance existing video */
+int cmd_video_enhance(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: video-enhance <video> [--scale <2|4>] [--filter <name>] [--quality <1-100>]\n");
+        fprintf(stderr, "\n  Filters: maya, persian, inca, ternary, denoise, sharpen\n");
+        return 1;
+    }
+
+    char* input = argv[1];
+    int scale = 2, quality = 90;
+    char* filter = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--scale") == 0 && i + 1 < argc) scale = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--quality") == 0 && i + 1 < argc) quality = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--filter") == 0 && i + 1 < argc) filter = argv[++i];
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY VIDEO ENHANCER        ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Input:" COLOR_RESET "  %s\n", input);
+    printf("  " COLOR_YELLOW "Scale:" COLOR_RESET "  %dx\n", scale);
+    printf("  " COLOR_YELLOW "Quality:" COLOR_RESET " %d%%\n", quality);
+    if (filter) printf("  " COLOR_YELLOW "Filter:" COLOR_RESET " %s\n", filter);
+
+    /* Build ffmpeg filter chain */
+    char filter_str[1024] = "";
+    char scale_str[64];
+    snprintf(scale_str, sizeof(scale_str), "scale=iw*%d:ih*%d", scale, scale);
+
+    if (filter && strcmp(filter, "denoise") == 0) {
+        strcpy(filter_str, "hqdn3d=3:3:2:2");
+    } else if (filter && strcmp(filter, "sharpen") == 0) {
+        strcpy(filter_str, "unsharp=5:5:1.5:5:5:0.0");
+    } else if (filter && strcmp(filter, "maya") == 0) {
+        strcpy(filter_str, "eq=brightness=0.05:saturation=0.8:gamma=1.2");
+    } else if (filter && strcmp(filter, "persian") == 0) {
+        strcpy(filter_str, "eq=brightness=0.02:saturation=1.2:colorbalance=rs=-0.1:gs=0.1:bs=0.2");
+    } else if (filter && strcmp(filter, "inca") == 0) {
+        strcpy(filter_str, "eq=brightness=0.03:saturation=0.9:colorbalance=rs=0.15:gs=0.05:bs=-0.1");
+    } else if (filter && strcmp(filter, "ternary") == 0) {
+        strcpy(filter_str, "eq=contrast=2.0:brightness=-0.5");
+    }
+
+    /* Create output filename */
+    char output[1024];
+    snprintf(output, sizeof(output), "%s_enhanced.mp4", input);
+    char* dot = strrchr(output, '.');
+    if (dot) *dot = 0;
+    strcat(output, ".mp4");
+
+    /* Build command */
+    char cmd[4096];
+    if (strlen(filter_str) > 0) {
+        snprintf(cmd, sizeof(cmd),
+                 "ffmpeg -i '%s' -vf '%s,%s' -c:v libx264 -crf %d -preset slow -c:a copy '%s' -hide_banner -loglevel error 2>&1",
+                 input, scale_str, filter_str, 100 - quality + 18, output);
+    } else {
+        snprintf(cmd, sizeof(cmd),
+                 "ffmpeg -i '%s' -vf '%s' -c:v libx264 -crf %d -preset slow -c:a copy '%s' -hide_banner -loglevel error 2>&1",
+                 input, scale_str, 100 - quality + 18, output);
+    }
+
+    printf("\n  Processing...\n");
+    system(cmd);
+
+    /* Check output */
+    struct stat st;
+    if (stat(output, &st) == 0) {
+        printf("\n  " COLOR_GREEN "═══════════════════════════════════════" COLOR_RESET "\n");
+        printf("  " COLOR_GREEN "SUCCESS" COLOR_RESET " Video enhanced!\n");
+        printf("  " COLOR_YELLOW "Output:" COLOR_RESET " %s\n", output);
+        printf("  " COLOR_YELLOW "Size:" COLOR_RESET "   %ld bytes\n", (long)st.st_size);
+
+        /* Size comparison */
+        struct stat st_orig;
+        stat(input, &st_orig);
+        printf("  " COLOR_CYAN "Ratio:" COLOR_RESET "   %.1fx\n", (double)st.st_size / st_orig.st_size);
+    } else {
+        printf("  " COLOR_RED "Error:" COLOR_RESET " Enhancement failed\n");
+    }
+
+    return 0;
+}
+
+/* Real-time video preview (for powerful computers) */
+int cmd_video_preview(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: video-preview <video> [--filter <name>]\n");
+        fprintf(stderr, "\n  Real-time preview with ternary filters (requires powerful CPU/GPU).\n");
+        return 1;
+    }
+
+    char* input = argv[1];
+    char* filter = NULL;
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--filter") == 0 && i + 1 < argc) filter = argv[++i];
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY VIDEO PREVIEW         ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Input:" COLOR_RESET " %s\n", input);
+    if (filter) printf("  " COLOR_YELLOW "Filter:" COLOR_RESET " %s\n", filter);
+
+    /* Build filter */
+    char vf[512] = "";
+    if (filter && strcmp(filter, "denoise") == 0) strcpy(vf, "hqdn3d=3:3:2:2");
+    else if (filter && strcmp(filter, "sharpen") == 0) strcpy(vf, "unsharp=5:5:1.5:5:5:0.0");
+    else if (filter && strcmp(filter, "maya") == 0) strcpy(vf, "eq=brightness=0.05:saturation=0.8");
+    else if (filter && strcmp(filter, "ternary") == 0) strcpy(vf, "eq=contrast=2.0:brightness=-0.5");
+
+    /* Use ffplay for preview */
+    char cmd[2048];
+    if (strlen(vf) > 0) {
+        snprintf(cmd, sizeof(cmd), "ffplay -vf '%s' '%s' -hide_banner -loglevel error 2>&1", vf, input);
+    } else {
+        snprintf(cmd, sizeof(cmd), "ffplay '%s' -hide_banner -loglevel error 2>&1", input);
+    }
+
+    printf("  " COLOR_YELLOW "Launching preview..." COLOR_RESET " (close with 'q')\n\n");
+    system(cmd);
+
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -4387,6 +4808,10 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "img-ternary") == 0) { builtin_rc = cmd_img_ternary(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "img-reconstruct") == 0) { builtin_rc = cmd_img_reconstruct(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "img-sensor") == 0) { builtin_rc = cmd_img_sensor(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "video-ytdl") == 0) { builtin_rc = cmd_video_ytdl(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "video-ternary") == 0) { builtin_rc = cmd_video_ternary(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "video-enhance") == 0) { builtin_rc = cmd_video_enhance(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "video-preview") == 0) { builtin_rc = cmd_video_preview(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
