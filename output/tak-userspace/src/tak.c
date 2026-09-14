@@ -3906,6 +3906,402 @@ int cmd_video_preview(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   BINARY & TERNARY PROGRAMMING
+   ═══════════════════════════════════════════════════════
+
+   Write and execute programs in binary (base 2) and ternary (base 3).
+
+   Binary instruction set (2-bit):
+     00 = NOP (no operation)
+     01 = INC (increment accumulator)
+     10 = DEC (decrement accumulator)
+     11 = OUT (output accumulator)
+
+   Ternary instruction set (2-trit):
+     00 = NOP
+     01 = INC
+     02 = DEC
+     10 = ADD (add next value)
+     11 = SUB
+     12 = MUL
+     20 = OUT
+     21 = IN (input to accumulator)
+     22 = HALT
+*/
+
+/* Execute binary program */
+int cmd_bin_run(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: bin-run <binary_string|file>\n");
+        fprintf(stderr, "  Example: bin-run 010111000011\n");
+        fprintf(stderr, "  Example: bin-run program.bin\n\n");
+        fprintf(stderr, "  Instructions (2-bit):\n");
+        fprintf(stderr, "    00 = NOP    01 = INC\n");
+        fprintf(stderr, "    10 = DEC    11 = OUT\n");
+        return 1;
+    }
+
+    char* input = argv[1];
+    char program[1024] = "";
+
+    /* Check if input is a file */
+    struct stat st;
+    if (stat(input, &st) == 0 && S_ISREG(st.st_mode)) {
+        FILE* f = fopen(input, "r");
+        if (f) {
+            fgets(program, sizeof(program), f);
+            fclose(f);
+            /* Remove whitespace */
+            int j = 0;
+            for (int i = 0; program[i]; i++) {
+                if (program[i] == '0' || program[i] == '1') program[j++] = program[i];
+            }
+            program[j] = 0;
+        }
+    } else {
+        /* Direct binary string */
+        int j = 0;
+        for (int i = 0; input[i]; i++) {
+            if (input[i] == '0' || input[i] == '1') program[j++] = input[i];
+        }
+        program[j] = 0;
+    }
+
+    if (strlen(program) == 0) {
+        fprintf(stderr, "  Error: No valid binary program\n");
+        return 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   BINARY PROGRAM EXECUTOR       ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Program:" COLOR_RESET " %s (%d bits)\n", program, (int)strlen(program));
+
+    /* Execute */
+    int acc = 0;  /* Accumulator */
+    int pc = 0;   /* Program counter */
+
+    printf("  " COLOR_CYAN "Executing..." COLOR_RESET "\n\n");
+
+    while (pc + 1 < (int)strlen(program)) {
+        int opcode = (program[pc] - '0') * 2 + (program[pc + 1] - '0');
+        pc += 2;
+
+        switch (opcode) {
+            case 0: /* NOP */
+                break;
+            case 1: /* INC */
+                acc++;
+                printf("  " COLOR_GREEN "INC" COLOR_RESET " → acc = %d\n", acc);
+                break;
+            case 2: /* DEC */
+                acc--;
+                printf("  " COLOR_RED "DEC" COLOR_RESET " → acc = %d\n", acc);
+                break;
+            case 3: /* OUT */
+                printf("  " COLOR_YELLOW "OUT" COLOR_RESET " → %d\n", acc);
+                break;
+        }
+    }
+
+    printf("\n  " COLOR_CYAN "═══════════════════════════════════" COLOR_RESET "\n");
+    printf("  " COLOR_GREEN "HALT" COLOR_RESET " — Final accumulator: %d\n", acc);
+    printf("  Instructions: %d\n", (int)strlen(program) / 2);
+    return 0;
+}
+
+/* Execute ternary program */
+int cmd_tern_run(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: tern-run <ternary_string|file>\n");
+        fprintf(stderr, "  Example: tern-run 01021122\n");
+        fprintf(stderr, "  Example: tern-run program.tern\n\n");
+        fprintf(stderr, "  Instructions (2-trit):\n");
+        fprintf(stderr, "    00 = NOP    01 = INC    02 = DEC\n");
+        fprintf(stderr, "    10 = ADD    11 = SUB    12 = MUL\n");
+        fprintf(stderr, "    20 = OUT    21 = IN     22 = HALT\n");
+        return 1;
+    }
+
+    char* input = argv[1];
+    char program[1024] = "";
+
+    /* Check if input is a file */
+    struct stat st;
+    if (stat(input, &st) == 0 && S_ISREG(st.st_mode)) {
+        FILE* f = fopen(input, "r");
+        if (f) {
+            fgets(program, sizeof(program), f);
+            fclose(f);
+            /* Remove non-ternary chars */
+            int j = 0;
+            for (int i = 0; program[i]; i++) {
+                if (program[i] >= '0' && program[i] <= '2') program[j++] = program[i];
+            }
+            program[j] = 0;
+        }
+    } else {
+        /* Direct ternary string */
+        int j = 0;
+        for (int i = 0; input[i]; i++) {
+            if (input[i] >= '0' && input[i] <= '2') program[j++] = input[i];
+        }
+        program[j] = 0;
+    }
+
+    if (strlen(program) == 0) {
+        fprintf(stderr, "  Error: No valid ternary program\n");
+        return 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY PROGRAM EXECUTOR      ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Program:" COLOR_RESET " %s (%d trits)\n", program, (int)strlen(program));
+
+    /* Execute */
+    int acc = 0;  /* Accumulator */
+    int pc = 0;   /* Program counter */
+    int running = 1;
+
+    printf("  " COLOR_CYAN "Executing..." COLOR_RESET "\n\n");
+
+    while (pc + 1 < (int)strlen(program) && running) {
+        int opcode = (program[pc] - '0') * 3 + (program[pc + 1] - '0');
+        pc += 2;
+
+        switch (opcode) {
+            case 0: /* NOP */
+                break;
+            case 1: /* INC */
+                acc++;
+                printf("  " COLOR_GREEN "INC" COLOR_RESET " → acc = %d\n", acc);
+                break;
+            case 2: /* DEC */
+                acc--;
+                printf("  " COLOR_RED "DEC" COLOR_RESET " → acc = %d\n", acc);
+                break;
+            case 3: /* ADD */
+                if (pc < (int)strlen(program)) {
+                    int val = program[pc++] - '0';
+                    acc += val;
+                    printf("  " COLOR_GREEN "ADD %d" COLOR_RESET " → acc = %d\n", val, acc);
+                }
+                break;
+            case 4: /* SUB */
+                if (pc < (int)strlen(program)) {
+                    int val = program[pc++] - '0';
+                    acc -= val;
+                    printf("  " COLOR_RED "SUB %d" COLOR_RESET " → acc = %d\n", val, acc);
+                }
+                break;
+            case 5: /* MUL */
+                if (pc < (int)strlen(program)) {
+                    int val = program[pc++] - '0';
+                    acc *= val;
+                    printf("  " COLOR_YELLOW "MUL %d" COLOR_RESET " → acc = %d\n", val, acc);
+                }
+                break;
+            case 6: /* OUT */
+                printf("  " COLOR_CYAN "OUT" COLOR_RESET " → %d\n", acc);
+                break;
+            case 7: /* IN */
+                printf("  " COLOR_MAGENTA "IN" COLOR_RESET " → ");
+                if (scanf("%d", &acc) != 1) acc = 0;
+                break;
+            case 8: /* HALT */
+                printf("  " COLOR_RED "HALT" COLOR_RESET "\n");
+                running = 0;
+                break;
+        }
+    }
+
+    printf("\n  " COLOR_CYAN "═══════════════════════════════════" COLOR_RESET "\n");
+    printf("  " COLOR_GREEN "STOPPED" COLOR_RESET " — Final accumulator: %d\n", acc);
+    printf("  Instructions: %d\n", (int)strlen(program) / 2);
+    return 0;
+}
+
+/* Compile C to binary/ternary */
+int cmd_bin_compile(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: bin-compile <binary|ternary> <program> [-o output]\n");
+        fprintf(stderr, "  Example: bin-compile binary 010111000011 -o program.bin\n");
+        fprintf(stderr, "  Example: bin-compile ternary 01021122 -o program.tern\n");
+        return 1;
+    }
+
+    char* type = argv[1];
+    char* program = argv[2];
+    char output[256] = "output";
+
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) {
+            strcpy(output, argv[++i]);
+        }
+    }
+
+    if (strcmp(type, "binary") == 0) {
+        /* Validate binary */
+        for (int i = 0; program[i]; i++) {
+            if (program[i] != '0' && program[i] != '1') {
+                fprintf(stderr, "  Error: Invalid binary digit '%c'\n", program[i]);
+                return 1;
+            }
+        }
+
+        /* Save binary file */
+        char path[512];
+        snprintf(path, sizeof(path), "%s.bin", output);
+        FILE* f = fopen(path, "w");
+        if (f) {
+            fprintf(f, "%s", program);
+            fclose(f);
+            printf("  " COLOR_GREEN "Compiled" COLOR_RESET " → %s (%d bits)\n", path, (int)strlen(program));
+        }
+
+    } else if (strcmp(type, "ternary") == 0) {
+        /* Validate ternary */
+        for (int i = 0; program[i]; i++) {
+            if (program[i] < '0' || program[i] > '2') {
+                fprintf(stderr, "  Error: Invalid ternary digit '%c'\n", program[i]);
+                return 1;
+            }
+        }
+
+        /* Save ternary file */
+        char path[512];
+        snprintf(path, sizeof(path), "%s.tern", output);
+        FILE* f = fopen(path, "w");
+        if (f) {
+            fprintf(f, "%s", program);
+            fclose(f);
+            printf("  " COLOR_GREEN "Compiled" COLOR_RESET " → %s (%d trits)\n", path, (int)strlen(program));
+        }
+
+    } else {
+        fprintf(stderr, "  Error: Unknown type '%s' (use binary or ternary)\n", type);
+        return 1;
+    }
+
+    return 0;
+}
+
+/* Show binary/ternary program info */
+int cmd_bin_info(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: bin-info <binary|ternary> <program>\n");
+        fprintf(stderr, "  Example: bin-info binary 010111000011\n");
+        fprintf(stderr, "  Example: bin-info ternary 01021122\n");
+        return 1;
+    }
+
+    char* type = argv[1];
+    char* program = argv[2];
+
+    printf(COLOR_CYAN "  ── Program Analysis ──" COLOR_RESET "\n\n");
+
+    if (strcmp(type, "binary") == 0) {
+        int len = strlen(program);
+        printf("  Type:    Binary (base 2)\n");
+        printf("  Length:  %d bits (%d bytes)\n", len, len / 8);
+        printf("  Ops:     %d instructions\n", len / 2);
+
+        /* Count instructions */
+        int counts[4] = {0};
+        for (int i = 0; i + 1 < len; i += 2) {
+            int op = (program[i] - '0') * 2 + (program[i + 1] - '0');
+            counts[op]++;
+        }
+
+        printf("\n  " COLOR_CYAN "Instructions:" COLOR_RESET "\n");
+        printf("    NOP: %d\n", counts[0]);
+        printf("    INC: %d\n", counts[1]);
+        printf("    DEC: %d\n", counts[2]);
+        printf("    OUT: %d\n", counts[3]);
+
+    } else if (strcmp(type, "ternary") == 0) {
+        int len = strlen(program);
+        printf("  Type:    Ternary (base 3)\n");
+        printf("  Length:  %d trits (%.1f bytes)\n", len, (double)len * log2(3) / 8);
+        printf("  Ops:     %d instructions\n", len / 2);
+
+        /* Count instructions */
+        int counts[9] = {0};
+        for (int i = 0; i + 1 < len; i += 2) {
+            int op = (program[i] - '0') * 3 + (program[i + 1] - '0');
+            counts[op]++;
+        }
+
+        printf("\n  " COLOR_CYAN "Instructions:" COLOR_RESET "\n");
+        printf("    NOP: %d\n", counts[0]);
+        printf("    INC: %d\n", counts[1]);
+        printf("    DEC: %d\n", counts[2]);
+        printf("    ADD: %d\n", counts[3]);
+        printf("    SUB: %d\n", counts[4]);
+        printf("    MUL: %d\n", counts[5]);
+        printf("    OUT: %d\n", counts[6]);
+        printf("    IN:  %d\n", counts[7]);
+        printf("    HALT:%d\n", counts[8]);
+    }
+
+    return 0;
+}
+
+/* Convert between binary and ternary */
+int cmd_bin_convert(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: bin-convert <to_type> <program>\n");
+        fprintf(stderr, "  Example: bin-convert ternary 010111000011\n");
+        fprintf(stderr, "  Example: bin-convert binary 01021122\n");
+        return 1;
+    }
+
+    char* to_type = argv[1];
+    char* program = argv[2];
+
+    printf(COLOR_CYAN "  ── Conversion ──" COLOR_RESET "\n\n");
+    printf("  Input: %s\n", program);
+
+    /* Check if input is binary or ternary */
+    int is_binary = 1, is_ternary = 1;
+    for (int i = 0; program[i]; i++) {
+        if (program[i] != '0' && program[i] != '1') is_binary = 0;
+        if (program[i] < '0' || program[i] > '2') is_ternary = 0;
+    }
+
+    if (strcmp(to_type, "ternary") == 0 && is_binary) {
+        /* Binary to ternary: convert each 2-bit to 2-trit */
+        printf("  " COLOR_YELLOW "Binary → Ternary:" COLOR_RESET "\n  ");
+        for (int i = 0; i + 1 < (int)strlen(program); i += 2) {
+            int val = (program[i] - '0') * 2 + (program[i + 1] - '0');
+            /* Simple mapping: 0→00, 1→01, 2→02, 3→10 */
+            printf(COLOR_GREEN "%d%d" COLOR_RESET, val / 3, val % 3);
+        }
+        printf("\n");
+
+    } else if (strcmp(to_type, "binary") == 0 && is_ternary) {
+        /* Ternary to binary */
+        printf("  " COLOR_YELLOW "Ternary → Binary:" COLOR_RESET "\n  ");
+        for (int i = 0; i + 1 < (int)strlen(program); i += 2) {
+            int val = (program[i] - '0') * 3 + (program[i + 1] - '0');
+            /* Map back to 2-bit (approximate) */
+            int bin = val < 4 ? val : 3;
+            printf(COLOR_GREEN "%02d" COLOR_RESET, bin);
+        }
+        printf("\n");
+
+    } else {
+        fprintf(stderr, "  Error: Invalid conversion\n");
+        return 1;
+    }
+
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -4812,6 +5208,11 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "video-ternary") == 0) { builtin_rc = cmd_video_ternary(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "video-enhance") == 0) { builtin_rc = cmd_video_enhance(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "video-preview") == 0) { builtin_rc = cmd_video_preview(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "bin-run") == 0) { builtin_rc = cmd_bin_run(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tern-run") == 0) { builtin_rc = cmd_tern_run(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "bin-compile") == 0) { builtin_rc = cmd_bin_compile(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "bin-info") == 0) { builtin_rc = cmd_bin_info(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "bin-convert") == 0) { builtin_rc = cmd_bin_convert(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
