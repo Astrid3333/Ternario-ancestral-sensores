@@ -1862,6 +1862,241 @@ int cmd_nano(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   PERFORMANCE MONITORING
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_free(void) {
+    struct sysinfo si;
+    sysinfo(&si);
+    unsigned long total = si.totalram * si.mem_unit / 1024;
+    unsigned long used = (si.totalram - si.freeram - si.bufferram) * si.mem_unit / 1024;
+    unsigned long free_mem = si.freeram * si.mem_unit / 1024;
+    unsigned long buf = si.bufferram * si.mem_unit / 1024;
+    unsigned long swap_total = si.totalswap * si.mem_unit / 1024;
+    unsigned long swap_used = (si.totalswap - si.freeswap) * si.mem_unit / 1024;
+
+    printf("  " COLOR_BOLD "              total        used        free      shared  buff/cache   available" COLOR_RESET "\n");
+    printf("  Mem:    %10lu  %10lu  %10lu  %10lu  %10lu  %10lu\n", total, used, free_mem, 0UL, buf, free_mem + buf);
+    printf("  Swap:   %10lu  %10lu  %10lu\n", swap_total, swap_used, si.freeswap * si.mem_unit / 1024);
+    return 0;
+}
+
+int cmd_vmstat(void) {
+    system("vmstat 1 3 2>/dev/null || echo '  vmstat not available'");
+    return 0;
+}
+
+int cmd_iostat(void) {
+    system("iostat 1 3 2>/dev/null || echo '  iostat not available'");
+    return 0;
+}
+
+int cmd_uptime_info(void) {
+    struct sysinfo si;
+    sysinfo(&si);
+    time_t now = time(NULL);
+    struct tm* t = localtime(&now);
+    char timebuf[64];
+    strftime(timebuf, sizeof(timebuf), "%H:%M:%S", t);
+    unsigned long h = si.uptime / 3600;
+    unsigned long m = (si.uptime / 60) % 60;
+    printf(" %s up %luh%lum, 1 user,  load average: %ld.%02ld, %ld.%02ld, %ld.%02ld\n",
+           timebuf, h, m,
+           si.loads[0]/65536, (si.loads[0]*100/65536)%100,
+           si.loads[1]/65536, (si.loads[1]*100/65536)%100,
+           si.loads[2]/65536, (si.loads[2]*100/65536)%100);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DEVELOPMENT TOOLS
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_git_wrap(int argc, char** argv) {
+    char cmd[2048] = "git";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_make_wrap(int argc, char** argv) {
+    char cmd[2048] = "make";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_python(int argc, char** argv) {
+    char cmd[2048] = "python3";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_node_wrap(int argc, char** argv) {
+    char cmd[2048] = "node";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_docker_wrap(int argc, char** argv) {
+    char cmd[2048] = "docker";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   DISK & BACKUP
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_rsync(int argc, char** argv) {
+    char cmd[4096] = "rsync -avz";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_dd_wrap(int argc, char** argv) {
+    char cmd[2048] = "dd";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_lsblk(void) {
+    system("lsblk 2>/dev/null || echo '  lsblk not available'");
+    return 0;
+}
+
+int cmd_fdisk(void) {
+    system("sudo fdisk -l 2>/dev/null | head -30 || echo '  fdisk not available'");
+    return 0;
+}
+
+int cmd_fsck(void) {
+    fprintf(stderr, "  fsck requires root and unmounted filesystem. Use: sudo fsck <device>\n");
+    return 1;
+}
+
+int cmd_mkfs(void) {
+    fprintf(stderr, "  mkfs requires root. Use: sudo mkfs.ext4 <device>\n");
+    return 1;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PACKAGE MANAGEMENT
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_apt_wrap(int argc, char** argv) {
+    char cmd[2048] = "sudo apt";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_snap_wrap(int argc, char** argv) {
+    char cmd[2048] = "sudo snap";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_pip_wrap(int argc, char** argv) {
+    char cmd[2048] = "pip3";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MEDIA & CLIPBOARD
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_ffmpeg_wrap(int argc, char** argv) {
+    char cmd[4096] = "ffmpeg";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_convert_wrap(int argc, char** argv) {
+    char cmd[4096] = "convert";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_xclip(int argc, char** argv) {
+    char cmd[256] = "xclip";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_screenshot(void) {
+    system("scrot ~/screenshot_%Y%m%d_%H%M%S.png 2>/dev/null || maim ~/screenshot_$(date +%s).png 2>/dev/null || echo '  Install scrot or maim'");
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   NETWORK ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_scp_wrap(int argc, char** argv) {
+    char cmd[4096] = "scp";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_ssh_wrap(int argc, char** argv) {
+    char cmd[4096] = "ssh";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmdwget_wrap(int argc, char** argv) {
+    char cmd[4096] = "wget";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   SYSTEM ADVANCED
+   ═══════════════════════════════════════════════════════ */
+
+int cmd_iptables(void) {
+    system("sudo iptables -L -n 2>&1 | head -20");
+    return 0;
+}
+
+int cmd_logrotate(void) {
+    system("sudo logrotate -d /etc/logrotate.conf 2>/dev/null | tail -5 || echo '  logrotate not available'");
+    return 0;
+}
+
+int cmd_sysctl_wrap(int argc, char** argv) {
+    char cmd[2048] = "sudo sysctl";
+    for (int i = 1; i < argc; i++) { strcat(cmd, " "); strcat(cmd, argv[i]); }
+    system(cmd);
+    return 0;
+}
+
+int cmd_lsmod(void) {
+    system("lsmod 2>/dev/null | head -20 || echo '  lsmod not available'");
+    return 0;
+}
+
+int cmd_lsof_wrap(void) {
+    system("sudo lsof 2>/dev/null | head -20 || echo '  lsof not available'");
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -2605,7 +2840,6 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "ls") == 0) { builtin_rc = cmd_ls(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "mem") == 0) { cmd_mem(); is_builtin = 1; }
         else if (strcmp(argv[0], "malloc") == 0) { cmd_malloc(argc, argv); is_builtin = 1; }
-        else if (strcmp(argv[0], "free") == 0) { cmd_free_block(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "fs") == 0) { cmd_fs(); is_builtin = 1; }
         else if (strcmp(argv[0], "touch") == 0) { cmd_touch(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "cat") == 0) { cmd_cat(argc, argv); is_builtin = 1; }
@@ -2662,6 +2896,35 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "lsusb") == 0) { builtin_rc = cmd_lsusb(); is_builtin = 1; }
         else if (strcmp(argv[0], "locate") == 0) { builtin_rc = cmd_locate(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "nano") == 0) { builtin_rc = cmd_nano(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "free") == 0) { builtin_rc = cmd_free(); is_builtin = 1; }
+        else if (strcmp(argv[0], "vmstat") == 0) { builtin_rc = cmd_vmstat(); is_builtin = 1; }
+        else if (strcmp(argv[0], "iostat") == 0) { builtin_rc = cmd_iostat(); is_builtin = 1; }
+        else if (strcmp(argv[0], "git") == 0) { builtin_rc = cmd_git_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "make") == 0) { builtin_rc = cmd_make_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "python") == 0 || strcmp(argv[0], "python3") == 0) { builtin_rc = cmd_python(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "node") == 0) { builtin_rc = cmd_node_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "docker") == 0) { builtin_rc = cmd_docker_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "rsync") == 0) { builtin_rc = cmd_rsync(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "dd") == 0) { builtin_rc = cmd_dd_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "lsblk") == 0) { builtin_rc = cmd_lsblk(); is_builtin = 1; }
+        else if (strcmp(argv[0], "fdisk") == 0) { builtin_rc = cmd_fdisk(); is_builtin = 1; }
+        else if (strcmp(argv[0], "fsck") == 0) { builtin_rc = cmd_fsck(); is_builtin = 1; }
+        else if (strcmp(argv[0], "mkfs") == 0) { builtin_rc = cmd_mkfs(); is_builtin = 1; }
+        else if (strcmp(argv[0], "apt") == 0 || strcmp(argv[0], "apt-get") == 0) { builtin_rc = cmd_apt_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "snap") == 0) { builtin_rc = cmd_snap_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "pip") == 0 || strcmp(argv[0], "pip3") == 0) { builtin_rc = cmd_pip_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ffmpeg") == 0) { builtin_rc = cmd_ffmpeg_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "convert") == 0) { builtin_rc = cmd_convert_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "xclip") == 0) { builtin_rc = cmd_xclip(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "screenshot") == 0) { builtin_rc = cmd_screenshot(); is_builtin = 1; }
+        else if (strcmp(argv[0], "scp") == 0) { builtin_rc = cmd_scp_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "ssh") == 0) { builtin_rc = cmd_ssh_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "wget2") == 0) { builtin_rc = cmdwget_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "iptables") == 0) { builtin_rc = cmd_iptables(); is_builtin = 1; }
+        else if (strcmp(argv[0], "logrotate") == 0) { builtin_rc = cmd_logrotate(); is_builtin = 1; }
+        else if (strcmp(argv[0], "sysctl") == 0) { builtin_rc = cmd_sysctl_wrap(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "lsmod") == 0) { builtin_rc = cmd_lsmod(); is_builtin = 1; }
+        else if (strcmp(argv[0], "lsof") == 0) { builtin_rc = cmd_lsof_wrap(); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
