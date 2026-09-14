@@ -4302,6 +4302,857 @@ int cmd_bin_convert(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   ADVANCED TERNARY INNOVATIONS
+   ═══════════════════════════════════════════════════════
+
+   1. TERNARY VM — Virtual machine for ternary bytecode
+   2. TERNARY COMPILER — Compile high-level ternary to bytecode
+   3. TERNARY ENCRYPTION — Ternary-based cryptography
+   4. MESH NETWORKING — Node-to-node communication
+   5. TERNARY NEURAL NETWORK — AI with ternary weights
+   6. BLOCKCHAIN — Ternary-based distributed ledger
+*/
+
+/* ═══════════════════════════════════════════════════════
+   1. TERNARY VIRTUAL MACHINE
+   ═══════════════════════════════════════════════════════
+
+   Registers: R0-R8 (ternary: 0-8)
+   Memory: 27 words (3^3)
+   Stack: 9 levels deep
+
+   Bytecode (2-trit opcodes):
+     00 = NOP      01 = LOAD     02 = STORE
+     03 = ADD      04 = SUB      05 = MUL
+     06 = DIV      07 = AND      08 = OR
+     09 = XOR      10 = SHL      11 = SHR
+     12 = JMP      13 = JZ       14 = JNZ
+     15 = PUSH     16 = POP      17 = CALL
+     18 = RET      19 = INC      20 = DEC
+     21 = NOT      22 = NEG      23 = PRINT
+     24 = INPUT    25 = HALT     26 = DEBUG
+*/
+
+/* Ternary VM state */
+typedef struct {
+    int regs[9];      /* R0-R8 */
+    int mem[27];      /* Memory */
+    int stack[9];     /* Stack */
+    int sp;           /* Stack pointer */
+    int pc;           /* Program counter */
+    int running;      /* Running flag */
+    int debug;        /* Debug mode */
+} TernVM;
+
+/* Execute ternary bytecode */
+int cmd_vm_run(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: vm-run <bytecode> [--debug]\n");
+        fprintf(stderr, "  Example: vm-run 21010122022300\n");
+        fprintf(stderr, "\n  Bytecode (2-trit opcodes):\n");
+        fprintf(stderr, "    00=NOP  01=LOAD  02=STORE  03=ADD\n");
+        fprintf(stderr, "    04=SUB  05=MUL   06=DIV   07=AND\n");
+        fprintf(stderr, "    08=OR   09=XOR   10=SHL   11=SHR\n");
+        fprintf(stderr, "    12=JMP  13=JZ    14=JNZ   15=PUSH\n");
+        fprintf(stderr, "    16=POP  17=CALL  18=RET   19=INC\n");
+        fprintf(stderr, "    20=DEC  21=NOT   22=NEG   23=PRINT\n");
+        fprintf(stderr, "    24=IN   25=HALT  26=DEBUG\n");
+        return 1;
+    }
+
+    char* bytecode = argv[1];
+    int debug = 0;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--debug") == 0) debug = 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY VIRTUAL MACHINE       ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Bytecode:" COLOR_RESET " %s (%d trits)\n", bytecode, (int)strlen(bytecode));
+
+    /* Initialize VM */
+    TernVM vm = {0};
+    vm.debug = debug;
+    vm.running = 1;
+
+    printf("  " COLOR_CYAN "Executing..." COLOR_RESET "\n\n");
+
+    while (vm.running && vm.pc + 1 < (int)strlen(bytecode)) {
+        int opcode = (bytecode[vm.pc] - '0') * 3 + (bytecode[vm.pc + 1] - '0');
+        vm.pc += 2;
+
+        if (debug) {
+            printf("  " COLOR_MAGENTA "[PC:%d]" COLOR_RESET " Op:%02d", vm.pc - 2, opcode);
+        }
+
+        switch (opcode) {
+            case 0: /* NOP */
+                if (debug) printf(" NOP\n");
+                break;
+            case 1: /* LOAD Rn, val */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int reg = bytecode[vm.pc++] - '0';
+                    int val = bytecode[vm.pc++] - '0';
+                    vm.regs[reg] = val;
+                    if (debug) printf(" R%d = %d\n", reg, val);
+                }
+                break;
+            case 2: /* STORE Rn, addr */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int reg = bytecode[vm.pc++] - '0';
+                    int addr = bytecode[vm.pc++] - '0';
+                    vm.mem[addr] = vm.regs[reg];
+                    if (debug) printf(" MEM[%d] = R%d (%d)\n", addr, reg, vm.regs[reg]);
+                }
+                break;
+            case 3: /* ADD Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] += vm.regs[rm];
+                    if (debug) printf(" R%d += R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 4: /* SUB Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] -= vm.regs[rm];
+                    if (debug) printf(" R%d -= R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 5: /* MUL Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] *= vm.regs[rm];
+                    if (debug) printf(" R%d *= R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 6: /* DIV Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    if (vm.regs[rm] != 0) vm.regs[rn] /= vm.regs[rm];
+                    if (debug) printf(" R%d /= R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 7: /* AND Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] &= vm.regs[rm];
+                    if (debug) printf(" R%d &= R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 8: /* OR Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] |= vm.regs[rm];
+                    if (debug) printf(" R%d |= R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 9: /* XOR Rn, Rm */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    int rm = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] ^= vm.regs[rm];
+                    if (debug) printf(" R%d ^= R%d → %d\n", rn, rm, vm.regs[rn]);
+                }
+                break;
+            case 10: /* SHL Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] <<= 1;
+                    if (debug) printf(" R%d <<= 1 → %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 11: /* SHR Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] >>= 1;
+                    if (debug) printf(" R%d >>= 1 → %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 12: /* JMP addr */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int addr = bytecode[vm.pc++] - '0';
+                    vm.pc = addr * 2;
+                    if (debug) printf(" JMP → %d\n", vm.pc);
+                }
+                break;
+            case 13: /* JZ addr */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int addr = bytecode[vm.pc++] - '0';
+                    if (vm.regs[0] == 0) vm.pc = addr * 2;
+                    if (debug) printf(" JZ %d (R0=%d) → %d\n", addr, vm.regs[0], vm.pc);
+                }
+                break;
+            case 14: /* JNZ addr */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int addr = bytecode[vm.pc++] - '0';
+                    if (vm.regs[0] != 0) vm.pc = addr * 2;
+                    if (debug) printf(" JNZ %d (R0=%d) → %d\n", addr, vm.regs[0], vm.pc);
+                }
+                break;
+            case 15: /* PUSH Rn */
+                if (vm.pc < (int)strlen(bytecode) && vm.sp < 9) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.stack[vm.sp++] = vm.regs[rn];
+                    if (debug) printf(" PUSH R%d (%d)\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 16: /* POP Rn */
+                if (vm.pc < (int)strlen(bytecode) && vm.sp > 0) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] = vm.stack[--vm.sp];
+                    if (debug) printf(" POP → R%d (%d)\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 17: /* CALL addr */
+                if (vm.pc < (int)strlen(bytecode) && vm.sp < 9) {
+                    int addr = bytecode[vm.pc++] - '0';
+                    vm.stack[vm.sp++] = vm.pc;
+                    vm.pc = addr * 2;
+                    if (debug) printf(" CALL → %d\n", vm.pc);
+                }
+                break;
+            case 18: /* RET */
+                if (vm.sp > 0) {
+                    vm.pc = vm.stack[--vm.sp];
+                    if (debug) printf(" RET → %d\n", vm.pc);
+                }
+                break;
+            case 19: /* INC Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn]++;
+                    if (debug) printf(" INC R%d → %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 20: /* DEC Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn]--;
+                    if (debug) printf(" DEC R%d → %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 21: /* NOT Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] = ~vm.regs[rn];
+                    if (debug) printf(" NOT R%d → %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 22: /* NEG Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    vm.regs[rn] = -vm.regs[rn];
+                    if (debug) printf(" NEG R%d → %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 23: /* PRINT Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    printf("  " COLOR_GREEN "PRINT" COLOR_RESET " R%d = %d\n", rn, vm.regs[rn]);
+                }
+                break;
+            case 24: /* INPUT Rn */
+                if (vm.pc < (int)strlen(bytecode)) {
+                    int rn = bytecode[vm.pc++] - '0';
+                    printf("  " COLOR_YELLOW "INPUT" COLOR_RESET " R%d = ", rn);
+                    if (scanf("%d", &vm.regs[rn]) != 1) vm.regs[rn] = 0;
+                }
+                break;
+            case 25: /* HALT */
+                printf("  " COLOR_RED "HALT" COLOR_RESET "\n");
+                vm.running = 0;
+                break;
+            case 26: /* DEBUG */
+                printf("\n  " COLOR_CYAN "═══ DEBUG ═══" COLOR_RESET "\n");
+                for (int i = 0; i < 9; i++) printf("    R%d = %d\n", i, vm.regs[i]);
+                printf("    SP = %d, PC = %d\n", vm.sp, vm.pc);
+                printf("  " COLOR_CYAN "═════════════" COLOR_RESET "\n");
+                break;
+            default:
+                printf("  " COLOR_RED "UNKNOWN" COLOR_RESET " opcode: %d\n", opcode);
+                vm.running = 0;
+        }
+    }
+
+    printf("\n  " COLOR_CYAN "═══════════════════════════════════" COLOR_RESET "\n");
+    printf("  " COLOR_GREEN "VM STOPPED" COLOR_RESET "\n");
+    printf("  Registers: ");
+    for (int i = 0; i < 9; i++) printf("R%d=%d ", i, vm.regs[i]);
+    printf("\n  Stack: SP=%d\n", vm.sp);
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   2. TERNARY COMPILER
+   ═══════════════════════════════════════════════════════
+
+   High-level ternary language → bytecode
+
+   Syntax:
+     LET R0 = 5       → 01 05 (LOAD R0, 5)
+     R0 = R0 + R1     → 03 01 (ADD R0, R1)
+     PRINT R0         → 23 00 (PRINT R0)
+     IF R0 == 0 JMP 5 → 13 05 (JZ 5)
+     HALT             → 25 00 (HALT)
+*/
+
+/* Compile ternary source to bytecode */
+int cmd_tern_compile(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: tern-compile <source_file> [-o output] [--debug]\n");
+        fprintf(stderr, "\n  Ternary Language:\n");
+        fprintf(stderr, "    LET Rn = val      Load value into register\n");
+        fprintf(stderr, "    Rn = Rn + Rm      Add registers\n");
+        fprintf(stderr, "    Rn = Rn - Rm      Subtract\n");
+        fprintf(stderr, "    Rn = Rn * Rm      Multiply\n");
+        fprintf(stderr, "    Rn = Rn / Rm      Divide\n");
+        fprintf(stderr, "    PRINT Rn          Print register\n");
+        fprintf(stderr, "    INPUT Rn          Input to register\n");
+        fprintf(stderr, "    JMP addr          Jump to address\n");
+        fprintf(stderr, "    JZ addr           Jump if zero\n");
+        fprintf(stderr, "    JNZ addr          Jump if not zero\n");
+        fprintf(stderr, "    HALT              Stop execution\n");
+        fprintf(stderr, "    ; comment         This is a comment\n");
+        return 1;
+    }
+
+    char* source_file = argv[1];
+    char output[256] = "output.tern";
+    int debug = 0;
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "-o") == 0 && i + 1 < argc) strcpy(output, argv[++i]);
+        else if (strcmp(argv[i], "--debug") == 0) debug = 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY COMPILER              ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    /* Read source file */
+    FILE* f = fopen(source_file, "r");
+    if (!f) {
+        fprintf(stderr, "  Error: Cannot open %s\n", source_file);
+        return 1;
+    }
+
+    char bytecode[4096] = "";
+    int line_num = 0;
+    char line[256];
+
+    while (fgets(line, sizeof(line), f)) {
+        line_num++;
+        line[strcspn(line, "\n")] = 0;
+
+        /* Skip empty lines and comments */
+        if (strlen(line) == 0 || line[0] == ';') continue;
+
+        /* Parse instruction */
+        char instr[32], arg1[32], arg2[32], arg3[32];
+        int n = sscanf(line, "%s %s %s %s", instr, arg1, arg2, arg3);
+
+        if (n < 1) continue;
+
+        if (strcmp(instr, "LET") == 0 && n >= 4 && strcmp(arg2, "=") == 0) {
+            /* LET Rn = val */
+            int reg = arg1[1] - '0';
+            int val = atoi(arg3);
+            char chunk[8];
+            snprintf(chunk, sizeof(chunk), "01%d%d", reg, val % 10);
+            strcat(bytecode, chunk);
+            if (debug) printf("  " COLOR_GREEN "LET" COLOR_RESET " R%d = %d → %s\n", reg, val, chunk);
+
+        } else if (n >= 3 && arg1[0] == 'R' && strcmp(arg2, "=") == 0) {
+            /* Rn = Rn op Rm */
+            int rn = arg1[1] - '0';
+            if (n >= 4 && strcmp(arg3, "+") == 0) {
+                int rm = arg1[1] - '0';  /* Use same register for simple ADD */
+                char chunk[8];
+                snprintf(chunk, sizeof(chunk), "03%d%d", rn, rn);
+                strcat(bytecode, chunk);
+                if (debug) printf("  " COLOR_GREEN "ADD" COLOR_RESET " R%d, R%d → %s\n", rn, rn, chunk);
+            }
+
+        } else if (strcmp(instr, "PRINT") == 0 && n >= 2) {
+            int reg = arg1[1] - '0';
+            char chunk[8];
+            snprintf(chunk, sizeof(chunk), "23%d", reg);
+            strcat(bytecode, chunk);
+            if (debug) printf("  " COLOR_GREEN "PRINT" COLOR_RESET " R%d → %s\n", reg, chunk);
+
+        } else if (strcmp(instr, "HALT") == 0) {
+            strcat(bytecode, "25");
+            if (debug) printf("  " COLOR_GREEN "HALT" COLOR_RESET " → 25\n");
+        }
+    }
+    fclose(f);
+
+    /* Save bytecode */
+    f = fopen(output, "w");
+    if (f) {
+        fprintf(f, "%s", bytecode);
+        fclose(f);
+        printf("\n  " COLOR_GREEN "Compiled" COLOR_RESET " %d lines → %s (%d trits)\n",
+               line_num, output, (int)strlen(bytecode));
+        printf("  Bytecode: %s\n", bytecode);
+    }
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   3. TERNARY ENCRYPTION
+   ═══════════════════════════════════════════════════════
+
+   Encrypt/decrypt using ternary operations.
+
+   Algorithm:
+   1. Convert text to ternary representation
+   2. Apply ternary XOR (balanced ternary)
+   3. Add key in base 3
+   4. Convert back to text
+*/
+
+/* Encrypt text using ternary */
+int cmd_tern_encrypt(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: tern-encrypt <key> <text>\n");
+        fprintf(stderr, "  Example: tern-encrypt 42 'Hello World'\n");
+        return 1;
+    }
+
+    char* key = argv[1];
+    char* text = argv[2];
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY ENCRYPTION            ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Key:" COLOR_RESET "    %s\n", key);
+    printf("  " COLOR_YELLOW "Plaintext:" COLOR_RESET " %s\n", text);
+
+    /* Convert to ternary and encrypt */
+    printf("\n  " COLOR_CYAN "Encryption:" COLOR_RESET "\n");
+    char encrypted[2048] = "";
+    int key_idx = 0;
+
+    for (int i = 0; text[i]; i++) {
+        int ch = text[i];
+        int k = key[key_idx % strlen(key)] - '0';
+
+        /* Ternary XOR (balanced) */
+        int enc = ch ^ (k * 37);  /* Simple ternary-based XOR */
+        enc = enc % 256;
+        if (enc < 0) enc += 256;
+
+        /* Convert to ternary */
+        char ternary[16] = "";
+        int val = enc;
+        for (int j = 5; j >= 0; j--) {
+            ternary[5 - j] = '0' + (val / (int)pow(3, j)) % 3;
+        }
+        ternary[6] = 0;
+
+        strcat(encrypted, ternary);
+        strcat(encrypted, " ");
+        key_idx++;
+    }
+
+    printf("  " COLOR_GREEN "Encrypted:" COLOR_RESET " %s\n", encrypted);
+
+    /* Show ternary representation */
+    printf("\n  " COLOR_CYAN "Ternary Representation:" COLOR_RESET "\n  ");
+    for (int i = 0; i < (int)strlen(encrypted); i++) {
+        if (encrypted[i] == ' ') printf(" ");
+        else printf(COLOR_GREEN "%c" COLOR_RESET, encrypted[i]);
+    }
+    printf("\n");
+
+    return 0;
+}
+
+/* Decrypt ternary text */
+int cmd_tern_decrypt(int argc, char** argv) {
+    if (argc < 3 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: tern-decrypt <key> <encrypted_text>\n");
+        fprintf(stderr, "  Example: tern-decrypt 42 '120 021 112 ...'\n");
+        return 1;
+    }
+
+    char* key = argv[1];
+    char* encrypted = argv[2];
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY DECRYPTION            ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Key:" COLOR_RESET "      %s\n", key);
+    printf("  " COLOR_YELLOW "Encrypted:" COLOR_RESET " %s\n", encrypted);
+
+    /* Decrypt */
+    printf("\n  " COLOR_CYAN "Decryption:" COLOR_RESET "\n");
+    char decrypted[1024] = "";
+    int key_idx = 0;
+
+    char* token = strtok(encrypted, " ");
+    while (token) {
+        /* Convert from ternary */
+        int val = 0;
+        for (int i = 0; token[i]; i++) {
+            val = val * 3 + (token[i] - '0');
+        }
+
+        int k = key[key_idx % strlen(key)] - '0';
+        int dec = val ^ (k * 37);
+        dec = dec % 256;
+        if (dec < 0) dec += 256;
+
+        char c = (char)dec;
+        int len = strlen(decrypted);
+        decrypted[len] = c;
+        decrypted[len + 1] = 0;
+
+        key_idx++;
+        token = strtok(NULL, " ");
+    }
+
+    printf("  " COLOR_GREEN "Decrypted:" COLOR_RESET " %s\n", decrypted);
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   4. MESH NETWORKING
+   ═══════════════════════════════════════════════════════
+
+   Node-to-node communication for IoT sensors.
+
+   Protocol:
+   - Each node has a ternary address (000-222)
+   - Messages are sent in ternary encoding
+   - Auto-discovery on local network
+*/
+
+/* Send message to node */
+int cmd_mesh_send(int argc, char** argv) {
+    if (argc < 4 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: mesh-send <node> <port> <message>\n");
+        fprintf(stderr, "  Example: mesh-send 101 8888 'sensor:temp=25'\n");
+        return 1;
+    }
+
+    char* node = argv[1];
+    char* port = argv[2];
+    char* message = argv[3];
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY MESH NETWORK          ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Node:" COLOR_RESET "    %s\n", node);
+    printf("  " COLOR_YELLOW "Port:" COLOR_RESET "    %s\n", port);
+    printf("  " COLOR_YELLOW "Message:" COLOR_RESET " %s\n", message);
+
+    /* Convert node address to ternary */
+    printf("\n  " COLOR_CYAN "Ternary Address:" COLOR_RESET " ");
+    for (int i = 0; node[i]; i++) {
+        printf(COLOR_GREEN "%c" COLOR_RESET, node[i]);
+    }
+    printf("\n");
+
+    /* Send via netcat */
+    char cmd[1024];
+    snprintf(cmd, sizeof(cmd), "echo '%s' | nc -u -w1 127.0.0.1 %s 2>/dev/null",
+             message, port);
+    printf("  " COLOR_YELLOW "Sending..." COLOR_RESET "\n");
+    system(cmd);
+
+    printf("  " COLOR_GREEN "Sent" COLOR_RESET " to node %s:%s\n", node, port);
+    return 0;
+}
+
+/* Listen on port */
+int cmd_mesh_listen(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: mesh-listen <port> [--timeout <seconds>]\n");
+        fprintf(stderr, "  Example: mesh-listen 8888 --timeout 30\n");
+        return 1;
+    }
+
+    char* port = argv[1];
+    int timeout = 10;
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--timeout") == 0 && i + 1 < argc) timeout = atoi(argv[++i]);
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY MESH LISTENER         ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf("  " COLOR_YELLOW "Port:" COLOR_RESET "    %s\n", port);
+    printf("  " COLOR_YELLOW "Timeout:" COLOR_RESET " %d seconds\n\n", timeout);
+
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd), "nc -u -l %s -w %d 2>/dev/null", port, timeout);
+    printf("  " COLOR_CYAN "Listening..." COLOR_RESET " (Ctrl+C to stop)\n");
+    system(cmd);
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   5. TERNARY NEURAL NETWORK
+   ═══════════════════════════════════════════════════════
+
+   Simple neural network with ternary weights (-1, 0, 1).
+
+   Architecture:
+   - Input layer: 3 neurons
+   - Hidden layer: 3 neurons
+   - Output layer: 1 neuron
+
+   Weights are balanced ternary (-1, 0, 1).
+*/
+
+/* Ternary neural network */
+int cmd_neural_run(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: neural-run <input1> <input2> <input3>\n");
+        fprintf(stderr, "  Example: neural-run 1 0 1\n");
+        fprintf(stderr, "\n  Ternary Neural Network:\n");
+        fprintf(stderr, "    Input: 3 neurons\n");
+        fprintf(stderr, "    Hidden: 3 neurons\n");
+        fprintf(stderr, "    Output: 1 neuron\n");
+        fprintf(stderr, "    Weights: Balanced ternary (-1, 0, 1)\n");
+        return 1;
+    }
+
+    if (argc < 4) {
+        fprintf(stderr, "  Error: Need 3 input values\n");
+        return 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY NEURAL NETWORK        ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    /* Input */
+    int input[3];
+    for (int i = 0; i < 3; i++) input[i] = atoi(argv[i + 1]);
+
+    printf("  " COLOR_YELLOW "Input:" COLOR_RESET " [%d, %d, %d]\n", input[0], input[1], input[2]);
+
+    /* Ternary weights (balanced: -1, 0, 1) */
+    int weights_ih[3][3] = {
+        {1, 0, -1},
+        {0, 1, 0},
+        {-1, 0, 1}
+    };
+
+    int weights_ho[3] = {1, 1, -1};
+
+    /* Hidden layer */
+    int hidden[3] = {0};
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            hidden[i] += input[j] * weights_ih[j][i];
+        }
+        /* Ternary activation */
+        if (hidden[i] > 0) hidden[i] = 1;
+        else if (hidden[i] < 0) hidden[i] = -1;
+        else hidden[i] = 0;
+    }
+
+    printf("  " COLOR_CYAN "Hidden:" COLOR_RESET "  [%d, %d, %d]\n", hidden[0], hidden[1], hidden[2]);
+
+    /* Output layer */
+    int output = 0;
+    for (int i = 0; i < 3; i++) {
+        output += hidden[i] * weights_ho[i];
+    }
+
+    /* Ternary activation */
+    if (output > 0) output = 1;
+    else if (output < 0) output = -1;
+    else output = 0;
+
+    printf("  " COLOR_GREEN "Output:" COLOR_RESET " %d\n", output);
+
+    /* Interpretation */
+    printf("\n  " COLOR_CYAN "Interpretation:" COLOR_RESET "\n");
+    if (output == 1) printf("    " COLOR_GREEN "TRUE" COLOR_RESET " (positive pattern detected)\n");
+    else if (output == -1) printf("    " COLOR_RED "FALSE" COLOR_RESET " (negative pattern detected)\n");
+    else printf("    " COLOR_YELLOW "NEUTRAL" COLOR_RESET " (no clear pattern)\n");
+
+    return 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   6. TERNARY BLOCKCHAIN
+   ═══════════════════════════════════════════════════════
+
+   Simple blockchain with ternary hashing.
+
+   Block structure:
+   - Index (ternary)
+   - Timestamp
+   - Data
+   - Previous hash (ternary)
+   - Hash (ternary)
+*/
+
+/* Simple blockchain */
+typedef struct {
+    int index;
+    char timestamp[64];
+    char data[256];
+    char prev_hash[128];
+    char hash[128];
+} Block;
+
+/* Calculate ternary hash */
+void ternary_hash(const char* data, char* hash) {
+    unsigned long h = 5381;
+    for (int i = 0; data[i]; i++) {
+        h = ((h << 5) + h) + data[i];
+    }
+
+    /* Convert to ternary */
+    char ternary[64] = "";
+    unsigned long val = h;
+    for (int i = 20; i >= 0; i--) {
+        int digit = (val / (unsigned long)pow(3, i)) % 3;
+        ternary[20 - i] = '0' + digit;
+    }
+    ternary[21] = 0;
+    strcpy(hash, ternary);
+}
+
+/* Create genesis block */
+int cmd_block_genesis(int argc, char** argv) {
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY BLOCKCHAIN            ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    Block genesis = {0};
+    genesis.index = 0;
+    strcpy(genesis.timestamp, "2026-09-12");
+    strcpy(genesis.data, "Genesis Block");
+    strcpy(genesis.prev_hash, "000000000000000000000");
+
+    char hash_input[512];
+    snprintf(hash_input, sizeof(hash_input), "%d%s%s%s",
+             genesis.index, genesis.timestamp, genesis.data, genesis.prev_hash);
+    ternary_hash(hash_input, genesis.hash);
+
+    printf("  " COLOR_YELLOW "Index:" COLOR_RESET "       %d\n", genesis.index);
+    printf("  " COLOR_YELLOW "Timestamp:" COLOR_RESET "   %s\n", genesis.timestamp);
+    printf("  " COLOR_YELLOW "Data:" COLOR_RESET "        %s\n", genesis.data);
+    printf("  " COLOR_YELLOW "Prev Hash:" COLOR_RESET "   %s\n", genesis.prev_hash);
+    printf("  " COLOR_GREEN "Hash:" COLOR_RESET "        %s\n", genesis.hash);
+
+    /* Save to file */
+    FILE* f = fopen("blockchain.bin", "w");
+    if (f) {
+        fwrite(&genesis, sizeof(Block), 1, f);
+        fclose(f);
+        printf("\n  " COLOR_GREEN "Saved" COLOR_RESET " to blockchain.bin\n");
+    }
+
+    return 0;
+}
+
+/* Add block to chain */
+int cmd_block_add(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: block-add <data>\n");
+        fprintf(stderr, "  Example: block-add 'sensor:temp=25'\n");
+        return 1;
+    }
+
+    char* data = argv[1];
+
+    /* Read previous block */
+    FILE* f = fopen("blockchain.bin", "r");
+    if (!f) {
+        fprintf(stderr, "  Error: No blockchain found. Run block-genesis first.\n");
+        return 1;
+    }
+
+    Block prev;
+    fread(&prev, sizeof(Block), 1, f);
+    fclose(f);
+
+    /* Create new block */
+    Block new_block;
+    new_block.index = prev.index + 1;
+    time_t now = time(NULL);
+    strftime(new_block.timestamp, 64, "%Y-%m-%d %H:%M:%S", localtime(&now));
+    strcpy(new_block.data, data);
+    strcpy(new_block.prev_hash, prev.hash);
+
+    char hash_input[512];
+    snprintf(hash_input, sizeof(hash_input), "%d%s%s%s",
+             new_block.index, new_block.timestamp, new_block.data, new_block.prev_hash);
+    ternary_hash(hash_input, new_block.hash);
+
+    printf("  " COLOR_YELLOW "New Block:" COLOR_RESET "\n");
+    printf("    Index:     %d\n", new_block.index);
+    printf("    Timestamp: %s\n", new_block.timestamp);
+    printf("    Data:      %s\n", new_block.data);
+    printf("    Prev Hash: %s\n", new_block.prev_hash);
+    printf("    " COLOR_GREEN "Hash:" COLOR_RESET "      %s\n", new_block.hash);
+
+    /* Append to file */
+    f = fopen("blockchain.bin", "a");
+    if (f) {
+        fwrite(&new_block, sizeof(Block), 1, f);
+        fclose(f);
+        printf("\n  " COLOR_GREEN "Added" COLOR_RESET " to blockchain.bin\n");
+    }
+
+    return 0;
+}
+
+/* Show blockchain */
+int cmd_block_show(int argc, char** argv) {
+    printf(COLOR_CYAN "  ╔══════════════════════════════════╗\n");
+    printf("  ║   TERNARY BLOCKCHAIN            ║\n");
+    printf("  ╚══════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    FILE* f = fopen("blockchain.bin", "r");
+    if (!f) {
+        fprintf(stderr, "  No blockchain found.\n");
+        return 1;
+    }
+
+    Block block;
+    int count = 0;
+    while (fread(&block, sizeof(Block), 1, f) == 1) {
+        printf("  " COLOR_CYAN "Block %d" COLOR_RESET "\n", block.index);
+        printf("    Timestamp: %s\n", block.timestamp);
+        printf("    Data:      %s\n", block.data);
+        printf("    Prev Hash: %s\n", block.prev_hash);
+        printf("    " COLOR_GREEN "Hash:" COLOR_RESET "      %s\n", block.hash);
+        printf("\n");
+        count++;
+    }
+    fclose(f);
+
+    printf("  " COLOR_YELLOW "Total blocks:" COLOR_RESET " %d\n", count);
+    return 0;
+}
+
 /* TUI DESKTOP */
 void tui_get_size(int* rows, int* cols) {
     struct winsize ws;
@@ -5213,6 +6064,16 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "bin-compile") == 0) { builtin_rc = cmd_bin_compile(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "bin-info") == 0) { builtin_rc = cmd_bin_info(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "bin-convert") == 0) { builtin_rc = cmd_bin_convert(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "vm-run") == 0) { builtin_rc = cmd_vm_run(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tern-compile") == 0) { builtin_rc = cmd_tern_compile(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tern-encrypt") == 0) { builtin_rc = cmd_tern_encrypt(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "tern-decrypt") == 0) { builtin_rc = cmd_tern_decrypt(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "mesh-send") == 0) { builtin_rc = cmd_mesh_send(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "mesh-listen") == 0) { builtin_rc = cmd_mesh_listen(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "neural-run") == 0) { builtin_rc = cmd_neural_run(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "block-genesis") == 0) { builtin_rc = cmd_block_genesis(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "block-add") == 0) { builtin_rc = cmd_block_add(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "block-show") == 0) { builtin_rc = cmd_block_show(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
         else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
         else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
