@@ -1,7 +1,7 @@
 /**
  * filesystem.c — Quipu filesystem over real directory
  *
- * The Quipu FS is a directory (~/.tak/quipu/) where each "knot" is a file.
+ * The Quipu FS is a directory (~/.tritos/quipu/) where each "knot" is a file.
  * File metadata is stored in a manifest (JSON-like plain text).
  * This gives us real persistence with minimal overhead.
  */
@@ -90,7 +90,7 @@ int fs_exists(const char* name) {
 // LIST — return all files in Quipu
 // =============================================================================
 
-int fs_list(tak_file_t* files, int max_files) {
+int fs_list(tritos_file_t* files, int max_files) {
     DIR* d = opendir(quipu_root);
     if (!d) return 0;
 

@@ -1,4 +1,4 @@
-# Ternary Ancestral Kernel v2 — Userspace
+# Tritos — Ternary Ancestral Kernel v2 (Userspace)
 
 Un kernel ternario que **corre por encima de Linux**. Ultra-lite (48KB), usa Linux de sustento para todo lo complejo (procesos, memoria, filesystem, I/O, red).
 
@@ -6,7 +6,7 @@ Un kernel ternario que **corre por encima de Linux**. Ultra-lite (48KB), usa Lin
 
 ```
 ┌─────────────────────────────────────────────┐
-│  TAK (Ternary Ancestral Kernel)            │  ← Este binario (48KB)
+│  TRITOS (Ternary Ancestral Kernel)          │  ← Este binario (48KB)
 │  Shell + Scheduler + Memory + FS           │
 ├─────────────────────────────────────────────┤
 │  Linux Kernel                              │  ← El sustento real
@@ -22,8 +22,8 @@ Un kernel ternario que **corre por encima de Linux**. Ultra-lite (48KB), usa Lin
 ## Compilación
 
 ```bash
-make          # Compila → ./tak (48KB)
-make install  # Instala en /usr/local/bin/tak
+make          # Compila → ./tritos (48KB)
+make install  # Instala en /usr/local/bin/tritos
 ```
 
 Requisitos: `gcc`, `libc-dev` (viene con casi todo Linux)
@@ -31,18 +31,18 @@ Requisitos: `gcc`, `libc-dev` (viene con casi todo Linux)
 ## Uso
 
 ```bash
-./tak                    # Modo interactivo
-./tak -c "trit 42"      # Ejecutar un comando
-echo -e "ps\ncal" | ./tak  # Pipe
+./tritos                    # Modo interactivo
+./tritos -c "trit 42"      # Ejecutar un comando
+echo -e "ps\ncal" | ./tritos  # Pipe
 ```
 
 ## Comandos del Shell
 
 ### Procesos (Linux debajo)
 ```
-ps              Listar procesos TAK + Linux PIDs
+ps              Listar procesos TRITOS + Linux PIDs
 fork <cmd>      Fork+exec un comando Linux (ls, cat, gcc, etc)
-kill <pid>      Matar un proceso TAK
+kill <pid>      Matar un proceso TRITOS
 ```
 
 ### Memoria (Base 60)
@@ -77,36 +77,42 @@ clear                           Limpiar pantalla
 halt                            Salir
 ```
 
+### Seguridad
+```
+security-scan <url/text> [--research]  Analizar contenido
+security-status                        Estado del sistema
+```
+
 ## Ejemplo de uso
 
 ```
-tak@mayan:2/2$ trit 42
+tritos@mayan:2/2$ trit 42
   42 → ++-0
 
-tak@mayan:3/3$ b60 3600
+tritos@mayan:3/3$ b60 3600
   3600 → 60:0 (Base 60)
 
-tak@mayan:4/4$ fork ls /tmp
-  ✓ Created TAK PID 1 (Linux PID 12345): ls /tmp
+tritos@mayan:4/4$ fork ls /tmp
+  ✓ Created TRITOS PID 1 (Linux PID 12345): ls /tmp
 
-tak@mayan:5/5$ ps
+tritos@mayan:5/5$ ps
   PID   STATE     PRI  LINUX_PID  NAME
   0     ACTIVE    0    12340      init
   1     ACTIVE    0    12345      ls
 
-tak@mayan:6/6$ touch test.dat "hola mundo"
+tritos@mayan:6/6$ touch test.dat "hola mundo"
   ✓ Created 'test.dat' (10 bytes)
 
-tak@mayan:7/7$ cat test.dat
+tritos@mayan:7/7$ cat test.dat
   hola mundo
 
-tak@mayan:8/8$ cal
+tritos@mayan:8/8$ cal
   Global tick:   8
   Tzolkin day:   8 / 260
   Haab day:      8 / 365
   System load:   LOW
 
-tak@mayan:9/9$ mem
+tritos@mayan:9/9$ mem
   Active blocks:  5 / 60
   Block map:
   ████████████████████████████████·····························
@@ -125,13 +131,15 @@ tak@mayan:9/9$ mem
 
 ### Cómo funciona cada subsistema
 
-**Scheduler:** Cada "proceso TAK" tiene un PID Maya (Tzolkin/Haab). Detrás, es un proceso Linux real (fork/exec). Linux hace el scheduling real; TAK solo trackea estado.
+**Scheduler:** Cada "proceso TRITOS" tiene un PID Maya (Tzolkin/Haab). Detrás, es un proceso Linux real (fork/exec). Linux hace el scheduling real; TRITOS solo trackea estado.
 
-**Filesystem:** Los archivos Quipu viven en `~/.tak/quipu/`. Son archivos normales del filesystem Linux. TAK agrega nombres de 8 caracteres y permisos ternarios.
+**Filesystem:** Los archivos Quipu viven en `~/.tritos/quipu/`. Son archivos normales del filesystem Linux. TRITOS agrega nombres de 8 caracteres y permisos ternarios.
 
-**Memoria:** `malloc` normal de libc. TAK trackea 60 "bloques" con colores (tipo) y dueños. Es un wrapper, no un allocator custom.
+**Memoria:** `malloc` normal de libc. TRITOS trackea 60 "bloques" con colores (tipo) y dueños. Es un wrapper, no un allocator custom.
 
 **Ternary logic:** Operaciones {-1, 0, +1} empaquetadas en 5 bits (3 trits). Compresión de datos para sensores IoT.
+
+**Security:** Análisis de contenido con pesos variables, filtrado de dominios, verificación de protocolos, modo investigación para científicos.
 
 ## Por qué userspace
 
@@ -148,10 +156,11 @@ tak@mayan:9/9$ mem
 ## Futuro
 
 - [ ] Network stack ternario (wrapper sobre sockets)
-- [ ] Ternary compression CLI (`tak compress <file>`)
-- [ ] IoT sensor daemon mode (`tak --daemon`)
+- [ ] Ternary compression CLI (`tritos compress <file>`)
+- [ ] IoT sensor daemon mode (`tritos --daemon`)
 - [ ] GUI ternaria (wrapper sobre X11/Wayland)
 - [ ] Package manager ternario
+- [ ] Integración con Blender para visualización 3D
 
 ## Licencia
 

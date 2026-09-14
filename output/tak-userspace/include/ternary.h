@@ -32,15 +32,15 @@
 // CONSTANTS
 // =============================================================================
 
-#define TAK_VERSION     "2.0"
-#define TAK_NAME        "Ternary Ancestral Kernel"
-#define TAK_HOME        ".tak"
-#define TAK_MAX_PROCS   33
-#define TAK_MAX_FILES   33
-#define TAK_MAX_MEM     60
-#define TAK_BLOCK_SIZE  60
-#define TAK_CMD_MAX     256
-#define TAK_HISTORY     50
+#define TRITOS_VERSION     "2.0"
+#define TRITOS_NAME        "Ternary Ancestral Kernel"
+#define TRITOS_HOME        ".tritos"
+#define TRITOS_MAX_PROCS   33
+#define TRITOS_MAX_FILES   33
+#define TRITOS_MAX_MEM     60
+#define TRITOS_BLOCK_SIZE  60
+#define TRITOS_CMD_MAX     256
+#define TRITOS_HISTORY     50
 
 #define TZOLKIN_DAYS    260
 #define HAAB_DAYS       365
@@ -95,14 +95,14 @@ typedef struct {
     char name[32];
     uint64_t cpu_cycles;
     uint64_t memory_bytes;
-} tak_process_t;
+} tritos_process_t;
 
 typedef struct {
     char name[32];
     uint8_t type;       // 0=file, 1=dir, 2=exec
     uint32_t size;
     char path[256];
-} tak_file_t;
+} tritos_file_t;
 
 typedef struct {
     void* ptr;

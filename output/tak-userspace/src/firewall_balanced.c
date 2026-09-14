@@ -1,5 +1,5 @@
 // ============================================================================
-// TAK FIREWALL BALANCED — Filtrado de red sin falsos positivos
+// TRITOS FIREWALL BALANCED — Filtrado de red sin falsos positivos
 // ============================================================================
 
 #include <stdio.h>
@@ -295,7 +295,7 @@ void log_event(FirewallLog* log) {
 
 // Mostrar estado del firewall
 void show_firewall_status() {
-    printf("=== TAK FIREWALL STATUS ===\n");
+    printf("=== TRITOS FIREWALL STATUS ===\n");
     printf("Dominios bloqueados: ");
     int count = 0;
     for (int i = 0; BLOCKLIST[i].domain != NULL; i++) count++;
@@ -321,7 +321,7 @@ void show_firewall_status() {
 // ============================================================================
 
 int main() {
-    printf("=== TAK FIREWALL BALANCED ===\n");
+    printf("=== TRITOS FIREWALL BALANCED ===\n");
     printf("Filtrado de red sin falsos positivos\n\n");
     
     // Mostrar estado

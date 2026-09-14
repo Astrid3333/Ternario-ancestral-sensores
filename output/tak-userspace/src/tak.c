@@ -6,7 +6,7 @@
  * - Command chaining (cmd1 ; cmd2 && cmd3)
  * - cd, alias, jobs/fg/bg, history with arrows
  * - I/O redirection (>, >>, <)
- * - Script mode (-f file.tak)
+ * - Script mode (-f file.tritos)
  * - Signal handling (Ctrl+C kills foreground, not shell)
  * - Foreground process tracking
  */
@@ -34,11 +34,11 @@ extern char** environ;
 extern void sched_init(void);
 extern void sched_tick(void);
 extern int  sched_create(const char* name, trit_t priority);
-extern int  sched_kill(int tak_pid);
+extern int  sched_kill(int tritos_pid);
 extern int  sched_exec(const char* name, const char* path, char* const argv[]);
 extern void sched_reap(void);
 extern maya_calendar_t* sched_get_calendar(void);
-extern tak_process_t* sched_get_process(int i);
+extern tritos_process_t* sched_get_process(int i);
 extern int  sched_active_count(void);
 
 extern void fs_init(void);
@@ -47,7 +47,7 @@ extern int  fs_create(const char* name, const char* data, uint32_t size);
 extern int  fs_read(const char* name, char* buf, uint32_t bufsize);
 extern int  fs_delete(const char* name);
 extern int  fs_exists(const char* name);
-extern int  fs_list(tak_file_t* files, int max);
+extern int  fs_list(tritos_file_t* files, int max);
 extern uint32_t fs_size(const char* name);
 extern const char* fs_get_root(void);
 
@@ -155,9 +155,9 @@ void job_reap(void) {
                 break;
             }
         }
-        /* Also reap TAK processes */
-        for (int i = 1; i < TAK_MAX_PROCS; i++) {
-            tak_process_t* p = sched_get_process(i);
+        /* Also reap TRITOS processes */
+        for (int i = 1; i < TRITOS_MAX_PROCS; i++) {
+            tritos_process_t* p = sched_get_process(i);
             if (p->state != PROC_DEAD && p->linux_pid == pid) {
                 p->state = PROC_DEAD;
                 p->linux_pid = -1;
@@ -218,9 +218,9 @@ int job_bg(int id) {
 // HISTORY
 // =============================================================================
 
-#define TAK_HISTORY 50
+#define TRITOS_HISTORY 50
 
-static char cmd_history[TAK_HISTORY][TAK_CMD_MAX];
+static char cmd_history[TRITOS_HISTORY][TRITOS_CMD_MAX];
 static int history_idx = 0;
 static int history_pos = 0;
 
@@ -228,10 +228,10 @@ void history_add(const char* cmd) {
     if (strlen(cmd) == 0) return;
     /* Don't add duplicates of last command */
     if (history_idx > 0 &&
-        strcmp(cmd_history[(history_idx - 1) % TAK_HISTORY], cmd) == 0) {
+        strcmp(cmd_history[(history_idx - 1) % TRITOS_HISTORY], cmd) == 0) {
         return;
     }
-    strncpy(cmd_history[history_idx % TAK_HISTORY], cmd, TAK_CMD_MAX - 1);
+    strncpy(cmd_history[history_idx % TRITOS_HISTORY], cmd, TRITOS_CMD_MAX - 1);
     history_idx++;
     history_pos = history_idx;
 }
@@ -239,19 +239,19 @@ void history_add(const char* cmd) {
 void history_show(void) {
     int start = history_idx > 20 ? history_idx - 20 : 0;
     for (int i = start; i < history_idx; i++) {
-        printf("  %4d  %s\n", i + 1, cmd_history[i % TAK_HISTORY]);
+        printf("  %4d  %s\n", i + 1, cmd_history[i % TRITOS_HISTORY]);
     }
 }
 
 const char* history_prev(void) {
     if (history_pos > 0) history_pos--;
-    return cmd_history[history_pos % TAK_HISTORY];
+    return cmd_history[history_pos % TRITOS_HISTORY];
 }
 
 const char* history_next(void) {
     if (history_pos < history_idx) history_pos++;
     if (history_pos >= history_idx) return "";
-    return cmd_history[history_pos % TAK_HISTORY];
+    return cmd_history[history_pos % TRITOS_HISTORY];
 }
 
 // =============================================================================
@@ -400,7 +400,7 @@ void show_banner(void) {
     printf("\n");
     printf(COLOR_CYAN COLOR_BOLD);
     printf("  ╔══════════════════════════════════════════════════╗\n");
-    printf("  ║         TERNARY ANCESTRAL KERNEL v" TAK_VERSION "           ║\n");
+    printf("  ║         TERNARY ANCESTRAL KERNEL v" TRITOS_VERSION "           ║\n");
     printf("  ║         Ultra-lite · Runs on Linux               ║\n");
     printf("  ╚══════════════════════════════════════════════════╝\n");
     printf(COLOR_RESET "\n");
@@ -456,7 +456,7 @@ void cmd_help(void) {
     printf("  " COLOR_CYAN "help" COLOR_RESET "              Show this help\n");
     printf("  " COLOR_CYAN "ps" COLOR_RESET "                List processes\n");
     printf("  " COLOR_CYAN "fork <cmd...>" COLOR_RESET "     Fork+exec Linux command\n");
-    printf("  " COLOR_CYAN "kill <pid>" COLOR_RESET "       Kill TAK process\n");
+    printf("  " COLOR_CYAN "kill <pid>" COLOR_RESET "       Kill TRITOS process\n");
     printf("  " COLOR_CYAN "cd <dir>" COLOR_RESET "         Change directory\n");
     printf("  " COLOR_CYAN "pwd" COLOR_RESET "              Print working directory\n");
     printf("  " COLOR_CYAN "ls [dir]" COLOR_RESET "         List directory\n");
@@ -602,12 +602,12 @@ int cmd_ls(int argc, char** argv) {
 
 void cmd_ps(void) {
     printf("\n");
-    printf("  " COLOR_BOLD "TAK Processes:" COLOR_RESET "\n");
+    printf("  " COLOR_BOLD "TRITOS Processes:" COLOR_RESET "\n");
     printf("  ──────────────────────────────────────────────\n");
     printf("  " COLOR_GRAY "PID   STATE     PRI  LINUX_PID  NAME" COLOR_RESET "\n");
 
-    for (int i = 0; i < TAK_MAX_PROCS; i++) {
-        tak_process_t* p = sched_get_process(i);
+    for (int i = 0; i < TRITOS_MAX_PROCS; i++) {
+        tritos_process_t* p = sched_get_process(i);
         if (p->state == PROC_DEAD) continue;
 
         printf("  %-6d", i);
@@ -626,7 +626,7 @@ void cmd_ps(void) {
         printf("\n");
     }
     printf("\n  " COLOR_GRAY "Active: %d/%d" COLOR_RESET "\n",
-           sched_active_count(), TAK_MAX_PROCS);
+           sched_active_count(), TRITOS_MAX_PROCS);
 }
 
 void cmd_fork(int argc, char** argv) {
@@ -640,8 +640,8 @@ void cmd_fork(int argc, char** argv) {
 
     int slot = sched_exec(name, argv[1], &argv[1]);
     if (slot >= 0) {
-        tak_process_t* p = sched_get_process(slot);
-        printf("  " COLOR_GREEN "✓" COLOR_RESET " TAK PID %d (Linux %d): ",
+        tritos_process_t* p = sched_get_process(slot);
+        printf("  " COLOR_GREEN "✓" COLOR_RESET " TRITOS PID %d (Linux %d): ",
                slot, p->linux_pid);
         for (int i = 1; i < argc; i++) printf("%s ", argv[i]);
         printf("\n");
@@ -652,12 +652,12 @@ void cmd_fork(int argc, char** argv) {
 
 void cmd_kill_tak(int argc, char** argv) {
     if (argc < 2) {
-        printf("  Usage: kill <tak_pid>\n");
+        printf("  Usage: kill <tritos_pid>\n");
         return;
     }
     int pid = atoi(argv[1]);
-    if (pid <= 0 || pid >= TAK_MAX_PROCS) {
-        printf("  Invalid PID (1-%d)\n", TAK_MAX_PROCS - 1);
+    if (pid <= 0 || pid >= TRITOS_MAX_PROCS) {
+        printf("  Invalid PID (1-%d)\n", TRITOS_MAX_PROCS - 1);
         return;
     }
     if (sched_kill(pid) == 0)
@@ -673,12 +673,12 @@ void cmd_mem(void) {
     printf("\n");
     printf("  " COLOR_BOLD "Memory — Base 60" COLOR_RESET "\n");
     printf("  ──────────────────────────────────────────────\n");
-    printf("  Blocks: %d / %d\n", active, TAK_MAX_MEM);
+    printf("  Blocks: %d / %d\n", active, TRITOS_MAX_MEM);
     printf("  Alloc:  %u bytes\n", alloc);
-    printf("  Size:   %d bytes/block\n\n", TAK_BLOCK_SIZE);
+    printf("  Size:   %d bytes/block\n\n", TRITOS_BLOCK_SIZE);
 
     printf("  ");
-    for (int i = 0; i < TAK_MAX_MEM; i++) {
+    for (int i = 0; i < TRITOS_MAX_MEM; i++) {
         mem_block_t* b = mem_get_block(i);
         if (b->flags)
             printf("%s█" COLOR_RESET, mem_color_ansi(b->color));
@@ -699,7 +699,7 @@ void cmd_malloc(int argc, char** argv) {
 
     int slot = mem_alloc(1, 3, size, label);
     if (slot >= 0) {
-        babilonian_addr_t addr = linear_to_b60(slot * TAK_BLOCK_SIZE);
+        babilonian_addr_t addr = linear_to_b60(slot * TRITOS_BLOCK_SIZE);
         printf("  " COLOR_GREEN "✓" COLOR_RESET " %u bytes → block %d (addr %d:%d)\n",
                size, slot, addr.high, addr.low);
     } else {
@@ -720,8 +720,8 @@ void cmd_free_block(int argc, char** argv) {
 }
 
 void cmd_fs(void) {
-    tak_file_t files[TAK_MAX_FILES];
-    int n = fs_list(files, TAK_MAX_FILES);
+    tritos_file_t files[TRITOS_MAX_FILES];
+    int n = fs_list(files, TRITOS_MAX_FILES);
 
     printf("\n  " COLOR_BOLD "Quipu — %s" COLOR_RESET "\n", fs_get_root());
     printf("  ──────────────────────────────────────────────\n");
@@ -2653,10 +2653,10 @@ int cmd_mkpasswd(void) {
    4. COMPRESSION PREVIEW — Shows ternary compression ratio
       e.g., "Page: 45KB → 11KB ternary (75% reduction)"
 
-   5. PIPE INTEGRATION — Output pipes to other TAK commands
+   5. PIPE INTEGRATION — Output pipes to other TRITOS commands
       e.g., ternary-browser --dump url | sort | uniq -c
 
-   6. SCRIPTABLE — Full automation from TAK scripts
+   6. SCRIPTABLE — Full automation from TRITOS scripts
       e.g., ternary-browser --fetch --format json url
 
    7. OFFLINE CACHE — Pages cached in Quipu filesystem
@@ -2976,7 +2976,7 @@ int cmd_nodal_connect(int argc, char** argv) {
         printf("  Maya Tick: %lu\n", (unsigned long)cal->global_tick);
     } else if (strcmp(cmd, "sensors") == 0) {
         printf("  Connected sensors: none\n");
-        printf("  To add: configure sensor in .tak/sensors/\n");
+        printf("  To add: configure sensor in .tritos/sensors/\n");
     } else if (strcmp(cmd, "data") == 0) {
         printf("  No sensor data available\n");
         printf("  Connect sensors via USB/network\n");
@@ -3000,7 +3000,7 @@ int cmd_browse_web(int argc, char** argv) {
 
     /* Panel */
     tui_cursor(1, 1);
-    printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TAK Browser " COLOR_RESET);
+    printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TRITOS Browser " COLOR_RESET);
     printf(COLOR_BG_BLUE COLOR_WHITE " %-*s " COLOR_RESET, cols - 14, argv[1]);
 
     /* Fetch content */
@@ -5217,7 +5217,7 @@ int cmd_kernel_boot(int argc, char** argv) {
     printf("\n");
     printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Mounting Quipu filesystem...\n");
     usleep(delay * 1000);
-    printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Quipu root: ~/.tak/quipu/\n");
+    printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Quipu root: ~/.tritos/quipu/\n");
     printf("  " COLOR_MAGENTA "[FS]" COLOR_RESET " Knots: 0 loaded\n");
 
     usleep(delay * 1000);
@@ -6653,7 +6653,7 @@ void tui_box(int r, int c, int w, int h, const char* title, const char* color) {
 /* Panel: top bar (clock, memory, disk, Maya tick) */
 void tui_panel(int cols) {
     tui_cursor(1, 1);
-    printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TAK " COLOR_RESET);
+    printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TRITOS " COLOR_RESET);
     printf(COLOR_BG_BLUE COLOR_WHITE);
 
     /* Maya calendar */
@@ -6720,7 +6720,7 @@ static app_entry_t apps[] = {
     {"Compile",    "gcc",        "Compile C code",         "🔨"},
     {"Sensors",    "cat sensors.txt","Ternary sensor data","📡"},
     {"Settings",   "echo",       "System settings",        "🔧"},
-    {"About",      "echo",       "About TAK OS",           "ℹ"},
+    {"About",      "echo",       "About TRITOS OS",           "ℹ"},
     {NULL, NULL, NULL, NULL}
 };
 
@@ -6740,7 +6740,7 @@ int cmd_menu(void) {
 
     /* Title */
     tui_cursor(menu_r, menu_c + (menu_w - 16) / 2);
-    printf(COLOR_BOLD COLOR_CYAN "  TAK  Menu" COLOR_RESET);
+    printf(COLOR_BOLD COLOR_CYAN "  TRITOS  Menu" COLOR_RESET);
 
     /* Menu box */
     tui_box(menu_r + 1, menu_c, menu_w, menu_h, "Applications", COLOR_CYAN);
@@ -6929,7 +6929,7 @@ int cmd_desktop(void) {
         tui_cursor(6, cols / 2 - 10);
         printf(COLOR_BOLD COLOR_CYAN "┌──────────────────────────┐");
         tui_cursor(7, cols / 2 - 10);
-        printf(COLOR_CYAN "│" COLOR_RESET COLOR_BOLD "      TAK Desktop         " COLOR_CYAN "│");
+        printf(COLOR_CYAN "│" COLOR_RESET COLOR_BOLD "      TRITOS Desktop         " COLOR_CYAN "│");
         tui_cursor(8, cols / 2 - 10);
         printf(COLOR_CYAN "│" COLOR_RESET "   Ternary Ancestral OS   " COLOR_CYAN "│");
         tui_cursor(9, cols / 2 - 10);
@@ -6989,7 +6989,7 @@ int cmd_desktop(void) {
                     system(cmd);
                 }
             }
-            else if (sel == 3) { system("neofetch 2>/dev/null || echo '  TAK OS v1.0'"); printf("\n  Press Enter..."); getchar(); }
+            else if (sel == 3) { system("neofetch 2>/dev/null || echo '  TRITOS OS v1.0'"); printf("\n  Press Enter..."); getchar(); }
             else if (sel == 4) { printf("\n  Ternary sensor data would appear here\n  Press Enter..."); getchar(); }
             else if (sel == 5) running = 0;
 
@@ -7054,7 +7054,7 @@ void cmd_whoami(void) {
 }
 
 void cmd_uname(void) {
-    printf("  Ternary Ancestral Kernel v" TAK_VERSION "\n");
+    printf("  Ternary Ancestral Kernel v" TRITOS_VERSION "\n");
     char buf[256];
     FILE* f = fopen("/proc/version", "r");
     if (f) {
@@ -7075,7 +7075,7 @@ void cmd_uptime(void) {
         }
         fclose(f);
     }
-    printf("  TAK ticks: %lu\n", (unsigned long)sched_get_calendar()->global_tick);
+    printf("  TRITOS ticks: %lu\n", (unsigned long)sched_get_calendar()->global_tick);
 }
 
 void cmd_neofetch(void) {
@@ -7084,7 +7084,7 @@ void cmd_neofetch(void) {
     printf("        ╔═══╗         " COLOR_RESET COLOR_BOLD "ternary@mayan\n" COLOR_RESET);
     printf(COLOR_CYAN COLOR_BOLD);
     printf("       ╔╝   ╚╗        " COLOR_RESET "─────────────────\n");
-    printf(COLOR_CYAN COLOR_BOLD "      ╔╝  " COLOR_RESET COLOR_YELLOW "▲" COLOR_CYAN COLOR_BOLD "  ╚╗       " COLOR_RESET COLOR_BOLD "OS:" COLOR_RESET "       TAK v" TAK_VERSION "\n");
+    printf(COLOR_CYAN COLOR_BOLD "      ╔╝  " COLOR_RESET COLOR_YELLOW "▲" COLOR_CYAN COLOR_BOLD "  ╚╗       " COLOR_RESET COLOR_BOLD "OS:" COLOR_RESET "       TRITOS v" TRITOS_VERSION "\n");
     printf(COLOR_CYAN COLOR_BOLD "     ╔╝  " COLOR_RESET COLOR_YELLOW "▲ ▲" COLOR_CYAN COLOR_BOLD "  ╚╗      " COLOR_RESET COLOR_BOLD "Kernel:" COLOR_RESET "    Ternary Ancestral\n");
     printf(COLOR_CYAN COLOR_BOLD "    ╔╝  " COLOR_RESET COLOR_YELLOW "▲ ▲ ▲" COLOR_CYAN COLOR_BOLD "  ╚╗     " COLOR_RESET COLOR_BOLD "Substrate:" COLOR_RESET "   Linux (userspace)\n");
     printf(COLOR_CYAN COLOR_BOLD "    ╚╗  " COLOR_RESET COLOR_GREEN "- 0 +" COLOR_CYAN COLOR_BOLD "  ╔╝     " COLOR_RESET COLOR_BOLD "Shell:" COLOR_RESET "       tak-sh v3\n");
@@ -7402,7 +7402,7 @@ static int cmd_security_scan(int argc, char** argv) {
 }
 
 static int cmd_security_status(int argc, char** argv) {
-    printf("=== TAK SECURITY STATUS ===\n\n");
+    printf("=== TRITOS SECURITY STATUS ===\n\n");
     printf("Blocked Domains: %d\n", (int)(sizeof(SEC_BLOCKLIST)/sizeof(SEC_BLOCKLIST[0]) - 1));
     printf("Security Keywords: %d\n", (int)(sizeof(SEC_KEYWORDS)/sizeof(SEC_KEYWORDS[0]) - 1));
     printf("Protocols: ");
@@ -7818,9 +7818,9 @@ int run_piped(char** cmds, int ncmds) {
             close(fd[1]);
 
             /* Tokenize and exec */
-            char buf[TAK_CMD_MAX];
-            strncpy(buf, cmds[i], TAK_CMD_MAX - 1);
-            buf[TAK_CMD_MAX - 1] = 0;
+            char buf[TRITOS_CMD_MAX];
+            strncpy(buf, cmds[i], TRITOS_CMD_MAX - 1);
+            buf[TRITOS_CMD_MAX - 1] = 0;
 
             char* argv[64];
             int argc = 0;
@@ -7833,8 +7833,8 @@ int run_piped(char** cmds, int ncmds) {
             if (strcmp(argv[0], "trit") == 0 || strcmp(argv[0], "b60") == 0 ||
                 strcmp(argv[0], "cal") == 0 || strcmp(argv[0], "mem") == 0 ||
                 strcmp(argv[0], "whoami") == 0) {
-                char orig[TAK_CMD_MAX];
-                strncpy(orig, cmds[i], TAK_CMD_MAX - 1);
+                char orig[TRITOS_CMD_MAX];
+                strncpy(orig, cmds[i], TRITOS_CMD_MAX - 1);
                 run_single(orig);
                 _exit(0);
             }
@@ -7975,7 +7975,7 @@ int parse_and_run(char* line) {
     }
 
     /* Alias expansion: if first word is an alias, expand it */
-    char expanded[TAK_CMD_MAX];
+    char expanded[TRITOS_CMD_MAX];
     char* sp = strchr(line, ' ');
     int first_word_len = sp ? (int)(sp - line) : (int)strlen(line);
     char first_word[64];
@@ -7984,7 +7984,7 @@ int parse_and_run(char* line) {
         first_word[first_word_len] = 0;
         const char* exp = alias_lookup(first_word);
         if (exp) {
-            snprintf(expanded, TAK_CMD_MAX, "%s%s", exp, sp ? sp : "");
+            snprintf(expanded, TRITOS_CMD_MAX, "%s%s", exp, sp ? sp : "");
             line = expanded;
         }
     }
@@ -8074,7 +8074,7 @@ int main(int argc, char* argv[]) {
     /* Home directory */
     const char* home = getenv("HOME");
     if (!home) home = "/tmp";
-    snprintf(tak_home, sizeof(tak_home), "%s/%s", home, TAK_HOME);
+    snprintf(tak_home, sizeof(tak_home), "%s/%s", home, TRITOS_HOME);
     fs_set_home(tak_home);
     snprintf(state_path, sizeof(state_path), "%s/state", tak_home);
     getcwd(cwd, sizeof(cwd));
@@ -8101,7 +8101,7 @@ int main(int argc, char* argv[]) {
             fprintf(stderr, "tak: %s: %s\n", argv[2], strerror(errno));
             return 1;
         }
-        char line[TAK_CMD_MAX];
+        char line[TRITOS_CMD_MAX];
         while (fgets(line, sizeof(line), f)) {
             line[strcspn(line, "\n")] = 0;
             if (line[0] == '#' || line[0] == 0) continue;
@@ -8122,7 +8122,7 @@ int main(int argc, char* argv[]) {
     /* Interactive mode */
     show_banner();
 
-    char line[TAK_CMD_MAX];
+    char line[TRITOS_CMD_MAX];
     while (1) {
         sched_tick();
         job_reap();

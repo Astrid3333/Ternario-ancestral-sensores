@@ -1,7 +1,7 @@
 /**
  * scheduler.c — Maya-cycle scheduler wrapping Linux processes
  *
- * Each TAK "process" maps to a Linux process (fork/exec or thread).
+ * Each TRITOS "process" maps to a Linux process (fork/exec or thread).
  * Scheduling is done by Linux; we track state with Maya calendar IDs.
  */
 
@@ -14,7 +14,7 @@
 // STATE
 // =============================================================================
 
-static tak_process_t processes[TAK_MAX_PROCS];
+static tritos_process_t processes[TRITOS_MAX_PROCS];
 static maya_calendar_t calendar;
 static uint32_t next_pid_counter = 0;
 
@@ -24,7 +24,7 @@ static uint32_t next_pid_counter = 0;
 
 void sched_init(void) {
     memset(processes, 0, sizeof(processes));
-    for (int i = 0; i < TAK_MAX_PROCS; i++) {
+    for (int i = 0; i < TRITOS_MAX_PROCS; i++) {
         processes[i].state = PROC_DEAD;
         processes[i].linux_pid = -1;
     }
@@ -48,7 +48,7 @@ void sched_init(void) {
 // =============================================================================
 
 int sched_create(const char* name, trit_t priority) {
-    for (int i = 1; i < TAK_MAX_PROCS; i++) {
+    for (int i = 1; i < TRITOS_MAX_PROCS; i++) {
         if (processes[i].state == PROC_DEAD) {
             processes[i].pid = make_maya_pid(next_pid_counter++);
             processes[i].state = PROC_SLEEPING;
@@ -64,28 +64,28 @@ int sched_create(const char* name, trit_t priority) {
     return -1;
 }
 
-int sched_kill(int tak_pid) {
-    if (tak_pid < 0 || tak_pid >= TAK_MAX_PROCS) return -1;
-    if (processes[tak_pid].state == PROC_DEAD) return -1;
-    if (tak_pid == 0) return -1; /* can't kill init */
+int sched_kill(int tritos_pid) {
+    if (tritos_pid < 0 || tritos_pid >= TRITOS_MAX_PROCS) return -1;
+    if (processes[tritos_pid].state == PROC_DEAD) return -1;
+    if (tritos_pid == 0) return -1; /* can't kill init */
 
     /* Kill the Linux process if alive */
-    if (processes[tak_pid].linux_pid > 0) {
-        kill(processes[tak_pid].linux_pid, SIGTERM);
+    if (processes[tritos_pid].linux_pid > 0) {
+        kill(processes[tritos_pid].linux_pid, SIGTERM);
         usleep(50000);
-        if (kill(processes[tak_pid].linux_pid, 0) == 0) {
-            kill(processes[tak_pid].linux_pid, SIGKILL);
+        if (kill(processes[tritos_pid].linux_pid, 0) == 0) {
+            kill(processes[tritos_pid].linux_pid, SIGKILL);
         }
-        waitpid(processes[tak_pid].linux_pid, NULL, 0);
+        waitpid(processes[tritos_pid].linux_pid, NULL, 0);
     }
 
-    processes[tak_pid].state = PROC_DEAD;
-    processes[tak_pid].linux_pid = -1;
+    processes[tritos_pid].state = PROC_DEAD;
+    processes[tritos_pid].linux_pid = -1;
     return 0;
 }
 
 // =============================================================================
-// LAUNCH — fork+exec a Linux command, register as TAK process
+// LAUNCH — fork+exec a Linux command, register as TRITOS process
 // =============================================================================
 
 int sched_exec(const char* name, const char* path, char* const argv[]) {
@@ -110,14 +110,14 @@ int sched_exec(const char* name, const char* path, char* const argv[]) {
 }
 
 // =============================================================================
-// WAIT — reap children, update TAK process table
+// WAIT — reap children, update TRITOS process table
 // =============================================================================
 
 void sched_reap(void) {
     int status;
     pid_t pid;
     while ((pid = waitpid(-1, &status, WNOHANG)) > 0) {
-        for (int i = 1; i < TAK_MAX_PROCS; i++) {
+        for (int i = 1; i < TRITOS_MAX_PROCS; i++) {
             if (processes[i].linux_pid == pid) {
                 processes[i].state = PROC_DEAD;
                 processes[i].linux_pid = -1;
@@ -142,7 +142,7 @@ void sched_tick(void) {
 
     /* Update system load (ternary) */
     int active = 0;
-    for (int i = 1; i < TAK_MAX_PROCS; i++) {
+    for (int i = 1; i < TRITOS_MAX_PROCS; i++) {
         if (processes[i].state == PROC_ACTIVE) active++;
     }
     if (active <= 3) calendar.system_load = -1;
@@ -165,14 +165,14 @@ maya_calendar_t* sched_get_calendar(void) {
     return &calendar;
 }
 
-tak_process_t* sched_get_process(int i) {
-    if (i < 0 || i >= TAK_MAX_PROCS) return NULL;
+tritos_process_t* sched_get_process(int i) {
+    if (i < 0 || i >= TRITOS_MAX_PROCS) return NULL;
     return &processes[i];
 }
 
 int sched_active_count(void) {
     int c = 0;
-    for (int i = 1; i < TAK_MAX_PROCS; i++) {
+    for (int i = 1; i < TRITOS_MAX_PROCS; i++) {
         if (processes[i].state == PROC_ACTIVE) c++;
     }
     return c;

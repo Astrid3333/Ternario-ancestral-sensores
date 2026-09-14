@@ -2,13 +2,13 @@
  * memory.c — Ternary memory manager (Base 60)
  *
  * Wraps malloc with ternary tracking.
- * 60 "blocks" tracked, each can hold data up to TAK_BLOCK_SIZE.
+ * 60 "blocks" tracked, each can hold data up to TRITOS_BLOCK_SIZE.
  * Actual allocation uses malloc underneath; we just track metadata.
  */
 
 #include "ternary.h"
 
-static mem_block_t blocks[TAK_MAX_MEM];
+static mem_block_t blocks[TRITOS_MAX_MEM];
 static uint32_t total_allocated = 0;
 static uint32_t total_freed = 0;
 
@@ -28,7 +28,7 @@ void mem_init(void) {
 
 int mem_alloc(int owner, uint8_t color, uint32_t size, const char* label) {
     /* Find free slot */
-    for (int i = 0; i < TAK_MAX_MEM; i++) {
+    for (int i = 0; i < TRITOS_MAX_MEM; i++) {
         if (!blocks[i].flags) {
             blocks[i].ptr = malloc(size);
             if (!blocks[i].ptr) return -1;
@@ -45,7 +45,7 @@ int mem_alloc(int owner, uint8_t color, uint32_t size, const char* label) {
 }
 
 int mem_free(int block) {
-    if (block < 0 || block >= TAK_MAX_MEM) return -1;
+    if (block < 0 || block >= TRITOS_MAX_MEM) return -1;
     if (!blocks[block].flags) return -1;
 
     free(blocks[block].ptr);
@@ -55,7 +55,7 @@ int mem_free(int block) {
 }
 
 void mem_free_owner(int owner) {
-    for (int i = 0; i < TAK_MAX_MEM; i++) {
+    for (int i = 0; i < TRITOS_MAX_MEM; i++) {
         if (blocks[i].flags && blocks[i].owner == owner) {
             mem_free(i);
         }
@@ -63,18 +63,18 @@ void mem_free_owner(int owner) {
 }
 
 void* mem_get_ptr(int block) {
-    if (block < 0 || block >= TAK_MAX_MEM) return NULL;
+    if (block < 0 || block >= TRITOS_MAX_MEM) return NULL;
     return blocks[block].ptr;
 }
 
 uint32_t mem_get_size(int block) {
-    if (block < 0 || block >= TAK_MAX_MEM) return 0;
+    if (block < 0 || block >= TRITOS_MAX_MEM) return 0;
     return blocks[block].size;
 }
 
 int mem_get_active_count(void) {
     int c = 0;
-    for (int i = 0; i < TAK_MAX_MEM; i++) {
+    for (int i = 0; i < TRITOS_MAX_MEM; i++) {
         if (blocks[i].flags) c++;
     }
     return c;
@@ -85,7 +85,7 @@ uint32_t mem_get_total_allocated(void) {
 }
 
 mem_block_t* mem_get_block(int i) {
-    if (i < 0 || i >= TAK_MAX_MEM) return NULL;
+    if (i < 0 || i >= TRITOS_MAX_MEM) return NULL;
     return &blocks[i];
 }
 

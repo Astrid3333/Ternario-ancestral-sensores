@@ -1,5 +1,5 @@
 // ============================================================================
-// TAK PARENTAL CONTROL — Control parental sin falsos positivos
+// TRITOS PARENTAL CONTROL — Control parental sin falsos positivos
 // ============================================================================
 
 #include <stdio.h>

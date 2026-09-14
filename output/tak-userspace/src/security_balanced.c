@@ -1,5 +1,5 @@
 // ============================================================================
-// TAK SECURITY BALANCED — Protección sin falsos positivos
+// TRITOS SECURITY BALANCED — Protección sin falsos positivos
 // ============================================================================
 // Filosofía: Seguridad para todos, justicia para cada uno
 // ============================================================================
@@ -476,7 +476,7 @@ int check_performance(Metrics* m) {
 // ============================================================================
 
 int main() {
-    printf("=== TAK SECURITY BALANCED ===\n");
+    printf("=== TRITOS SECURITY BALANCED ===\n");
     printf("Protección sin falsos positivos\n\n");
     
     // Crear usuario de prueba

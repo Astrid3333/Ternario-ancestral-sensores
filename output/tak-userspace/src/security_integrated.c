@@ -1,5 +1,5 @@
 // ============================================================================
-// TAK SECURITY INTEGRATED — Sistema completo de seguridad
+// TRITOS SECURITY INTEGRATED — Sistema completo de seguridad
 // ============================================================================
 
 #include <stdio.h>
@@ -327,7 +327,7 @@ SystemMetrics calculate_metrics(uint32_t tp, uint32_t fp, uint32_t tn, uint32_t 
 // ============================================================================
 
 int main() {
-    printf("=== TAK SECURITY INTEGRATED ===\n");
+    printf("=== TRITOS SECURITY INTEGRATED ===\n");
     printf("Sistema completo de seguridad\n\n");
     
     User researcher = {
