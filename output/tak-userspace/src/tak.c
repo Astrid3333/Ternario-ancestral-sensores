@@ -11,6 +11,8 @@
  * - Foreground process tracking
  */
 
+#define _DEFAULT_SOURCE
+#define _BSD_SOURCE
 #include "ternary.h"
 #include <signal.h>
 #include <sys/wait.h>
@@ -20,6 +22,9 @@
 #include <termios.h>
 #include <utmp.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
+#include <sys/sysinfo.h>
+#include <dirent.h>
 
 /* Subsystem APIs */
 extern void sched_init(void);
@@ -1505,6 +1510,406 @@ int cmd_kill_tak_full(int argc, char** argv) {
     return 0;
 }
 
+/* ═══════════════════════════════════════════════════════
+   TUI DESKTOP — Linux Mint ternario style
+   ═══════════════════════════════════════════════════════ */
+
+void tui_get_size(int* rows, int* cols) {
+    struct winsize ws;
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == 0) {
+        *rows = ws.ws_row;
+        *cols = ws.ws_col;
+    } else {
+        *rows = 24;
+        *cols = 80;
+    }
+}
+
+void tui_cursor(int r, int c) { printf("\033[%d;%dH", r, c); }
+void tui_clear(void) { printf("\033[2J\033[H"); }
+void tui_hide_cursor(void) { printf("\033[?25l"); }
+void tui_show_cursor(void) { printf("\033[?25h"); }
+
+void tui_hline(int r, int c1, int c2, const char* color) {
+    tui_cursor(r, c1);
+    printf("%s", color);
+    for (int i = c1; i <= c2; i++) printf("─");
+    printf(COLOR_RESET);
+}
+
+void tui_box(int r, int c, int w, int h, const char* title, const char* color) {
+    /* Top */
+    tui_cursor(r, c);
+    printf("%s┌", color);
+    if (title) { printf("─ %s ", title); int tlen = strlen(title) + 4; for (int i = tlen; i < w - 1; i++) printf("─"); }
+    else { for (int i = 1; i < w - 1; i++) printf("─"); }
+    printf("┐" COLOR_RESET);
+    /* Sides */
+    for (int i = 1; i < h - 1; i++) {
+        tui_cursor(r + i, c);
+        printf("%s│", color);
+        for (int j = 1; j < w - 1; j++) printf(" ");
+        printf("│" COLOR_RESET);
+    }
+    /* Bottom */
+    tui_cursor(r + h - 1, c);
+    printf("%s└", color);
+    for (int i = 1; i < w - 1; i++) printf("─");
+    printf("┘" COLOR_RESET);
+}
+
+/* Panel: top bar (clock, memory, disk, Maya tick) */
+void tui_panel(int cols) {
+    tui_cursor(1, 1);
+    printf(COLOR_BG_MAGENTA COLOR_BOLD COLOR_WHITE " TAK " COLOR_RESET);
+    printf(COLOR_BG_BLUE COLOR_WHITE);
+
+    /* Maya calendar */
+    maya_calendar_t* cal = sched_get_calendar();
+    char buf[256];
+    int pos = 7;
+    snprintf(buf, sizeof(buf), " Tzol:%u ", cal->tzolkin_day);
+    tui_cursor(1, pos); printf("%s", buf); pos += strlen(buf);
+
+    snprintf(buf, sizeof(buf), " Haab:%u ", cal->haab_day);
+    tui_cursor(1, pos); printf("%s", buf); pos += strlen(buf);
+
+    snprintf(buf, sizeof(buf), " Tick:%lu ", (unsigned long)cal->global_tick);
+    tui_cursor(1, pos); printf("%s", buf); pos += strlen(buf);
+
+    /* System info */
+    struct statfs sf;
+    struct sysinfo si;
+    sysinfo(&si);
+    statfs("/", &sf);
+
+    unsigned long mem_used = (si.totalram - si.freeram) * si.mem_unit / 1024 / 1024;
+    unsigned long mem_total = si.totalram * si.mem_unit / 1024 / 1024;
+    unsigned long disk_used = (sf.f_blocks - sf.f_bfree) * sf.f_bsize / 1024 / 1024;
+    unsigned long disk_total = sf.f_blocks * sf.f_bsize / 1024 / 1024;
+
+    snprintf(buf, sizeof(buf), " MEM:%lu/%luMB ", mem_used, mem_total);
+    tui_cursor(1, pos); printf("%s", buf); pos += strlen(buf);
+
+    snprintf(buf, sizeof(buf), " DISK:%lu/%luGB ", disk_used / 1024, disk_total / 1024);
+    tui_cursor(1, pos); printf("%s", buf); pos += strlen(buf);
+
+    /* Time right-aligned */
+    time_t now = time(NULL);
+    struct tm* t = localtime(&now);
+    char timebuf[32];
+    strftime(timebuf, sizeof(timebuf), "%H:%M", t);
+    int tlen = strlen(timebuf) + 4;
+    if (pos + tlen < cols) {
+        tui_cursor(1, cols - tlen - 1);
+        printf(" %s ", timebuf);
+    }
+
+    printf(COLOR_RESET);
+}
+
+/* App menu (like Mint menu) */
+typedef struct {
+    const char* name;
+    const char* cmd;
+    const char* desc;
+    const char* icon; /* unicode/ascii art */
+} app_entry_t;
+
+static app_entry_t apps[] = {
+    {"Terminal",   "echo",       "Open a shell",           "$"},
+    {"File Manager", "ls",       "Browse files",           "📁"},
+    {"Text Editor", "cat",       "View/edit files",        "📝"},
+    {"Calculator", "bc",         "Calculate expressions",  "="},
+    {"System Info","neofetch",   "System information",     "ℹ"},
+    {"Processes",  "ps",         "Running processes",      "⚙"},
+    {"Network",    "curl",       "HTTP requests",          "🌐"},
+    {"Calendar",   "cal",        "Maya calendar",          "📅"},
+    {"Compile",    "gcc",        "Compile C code",         "🔨"},
+    {"Sensors",    "cat sensors.txt","Ternary sensor data","📡"},
+    {"Settings",   "echo",       "System settings",        "🔧"},
+    {"About",      "echo",       "About TAK OS",           "ℹ"},
+    {NULL, NULL, NULL, NULL}
+};
+
+int cmd_menu(void) {
+    int rows, cols;
+    tui_get_size(&rows, &cols);
+    tui_hide_cursor();
+    tui_clear();
+
+    int menu_w = 36;
+    int menu_h = 18;
+    int menu_r = (rows - menu_h) / 2;
+    int menu_c = (cols - menu_w) / 2;
+
+    /* Panel */
+    tui_panel(cols);
+
+    /* Title */
+    tui_cursor(menu_r, menu_c + (menu_w - 16) / 2);
+    printf(COLOR_BOLD COLOR_CYAN "  TAK  Menu" COLOR_RESET);
+
+    /* Menu box */
+    tui_box(menu_r + 1, menu_c, menu_w, menu_h, "Applications", COLOR_CYAN);
+
+    /* Items */
+    int sel = 0;
+    int running = 1;
+    while (running) {
+        for (int i = 0; apps[i].name; i++) {
+            tui_cursor(menu_r + 3 + i, menu_c + 2);
+            if (i == sel) printf(COLOR_BG_CYAN COLOR_BOLD COLOR_WHITE " %-32s " COLOR_RESET, apps[i].name);
+            else printf("  %s  %-28s " COLOR_RESET, apps[i].icon, apps[i].name);
+        }
+
+        tui_cursor(rows, 1);
+        printf(COLOR_BG_BLUE COLOR_WHITE " ↑↓ Select  Enter: Run  Q/Esc: Exit " COLOR_RESET "                    ");
+
+        /* Wait for input */
+        system("/bin/stty raw -echo 2>/dev/null");
+        int ch = getchar();
+        system("/bin/stty cooked echo 2>/dev/null");
+
+        if (ch == 'q' || ch == 'Q' || ch == 27) running = 0;
+        else if (ch == 127 || ch == 8) { /* backspace = up */ if (sel > 0) sel--; }
+        else if (ch == 'A' || ch == 'k') { if (sel > 0) sel--; }
+        else if (ch == 'B' || ch == 'j') { if (apps[sel + 1].name) sel++; }
+        else if (ch == '\n' || ch == '\r') {
+            /* Run command */
+            tui_show_cursor();
+            tui_cursor(rows - 2, 1);
+            printf(COLOR_RESET "  Running: %s...                          \n", apps[sel].cmd);
+            /* Return to shell to run */
+            printf("\033[0m");
+            system("/bin/stty cooked echo 2>/dev/null");
+            return 0;
+        }
+    }
+    tui_show_cursor();
+    tui_clear();
+    return 0;
+}
+
+/* File browser TUI */
+int cmd_browse(void) {
+    int rows, cols;
+    tui_get_size(&rows, &cols);
+    tui_hide_cursor();
+    tui_clear();
+
+    char cwd[4096];
+    getcwd(cwd, sizeof(cwd));
+
+    int panel_w = cols - 4;
+    int list_h = rows - 6;
+    int sel = 0;
+    int scroll = 0;
+    int running = 1;
+
+    while (running) {
+        /* Panel */
+        tui_panel(cols);
+
+        /* Path bar */
+        tui_cursor(3, 1);
+        printf(COLOR_BG_BLACK COLOR_CYAN " 📁 %-*s " COLOR_RESET, cols - 2, cwd);
+
+        /* List files */
+        DIR* d = opendir(cwd);
+        if (!d) { tui_cursor(5, 3); printf("Cannot open directory"); break; }
+
+        struct dirent* ent;
+        char entries[1024][256];
+        int n = 0;
+
+        /* Add .. */
+        snprintf(entries[0], 256, "..");
+        n = 1;
+
+        while ((ent = readdir(d)) && n < 1023) {
+            if (strcmp(ent->d_name, ".") == 0 || strcmp(ent->d_name, "..") == 0) continue;
+            snprintf(entries[n], 256, "%s%s", ent->d_name, ent->d_type == DT_DIR ? "/" : "");
+            n++;
+        }
+        closedir(d);
+
+        /* Sort */
+        for (int i = 0; i < n - 1; i++)
+            for (int j = i + 1; j < n; j++)
+                if (strcmp(entries[i], entries[j]) > 0) {
+                    char tmp[256]; strcpy(tmp, entries[i]);
+                    strcpy(entries[i], entries[j]); strcpy(entries[j], tmp);
+                }
+
+        /* Display */
+        if (sel < scroll) scroll = sel;
+        if (sel >= scroll + list_h) scroll = sel - list_h + 1;
+
+        for (int i = 0; i < list_h && scroll + i < n; i++) {
+            int idx = scroll + i;
+            tui_cursor(5 + i, 3);
+            int is_dir = entries[idx][strlen(entries[idx]) - 1] == '/';
+            if (idx == sel) {
+                if (is_dir) printf(COLOR_BG_CYAN COLOR_BOLD " 📁 %-40s " COLOR_RESET, entries[idx]);
+                else printf(COLOR_BG_CYAN COLOR_BOLD " 📄 %-40s " COLOR_RESET, entries[idx]);
+            } else {
+                if (is_dir) printf(COLOR_CYAN " 📁 %-40s " COLOR_RESET, entries[idx]);
+                else printf(" 📄 %-40s ", entries[idx]);
+            }
+        }
+
+        /* Bottom bar */
+        tui_cursor(rows - 1, 1);
+        printf(COLOR_BG_BLUE COLOR_WHITE " Enter: Open  Backspace: Up  Q: Exit " COLOR_RESET "                              ");
+
+        /* Input */
+        system("/bin/stty raw -echo 2>/dev/null");
+        int ch = getchar();
+        system("/bin/stty cooked echo 2>/dev/null");
+
+        if (ch == 'q' || ch == 'Q') running = 0;
+        else if (ch == 127 || ch == 8) {
+            /* Go up */
+            char* slash = strrchr(cwd, '/');
+            if (slash && slash != cwd) { *slash = 0; sel = 0; scroll = 0; }
+        }
+        else if (ch == 'A' || ch == 'k') { if (sel > 0) sel--; }
+        else if (ch == 'B' || ch == 'j') { if (sel < n - 1) sel++; }
+        else if (ch == '\n' || ch == '\r') {
+            /* Enter directory or open file */
+            char* name = entries[sel];
+            int is_dir = name[strlen(name) - 1] == '/';
+            if (is_dir) {
+                if (strcmp(name, "..") == 0) {
+                    char* slash = strrchr(cwd, '/');
+                    if (slash && slash != cwd) *slash = 0;
+                } else {
+                    snprintf(cwd + strlen(cwd), sizeof(cwd) - strlen(cwd), "/%s", name);
+                    /* Remove trailing / */
+                    cwd[strlen(cwd) - 1] = 0;
+                }
+                sel = 0; scroll = 0;
+            } else {
+                /* Open file in less */
+                tui_show_cursor();
+                tui_clear();
+                char cmd[4096];
+                snprintf(cmd, sizeof(cmd), "less %s/%s", cwd, name);
+                system("/bin/stty cooked echo 2>/dev/null");
+                system(cmd);
+                tui_hide_cursor();
+                tui_clear();
+            }
+        }
+    }
+    tui_show_cursor();
+    tui_clear();
+    return 0;
+}
+
+/* Full desktop environment */
+int cmd_desktop(void) {
+    int rows, cols;
+    tui_get_size(&rows, &cols);
+    tui_hide_cursor();
+    tui_clear();
+
+    int running = 1;
+    int sel = 0;
+    const char* panel_apps[] = {"Menu", "Files", "Terminal", "SysInfo", "Sensors", "Exit"};
+    int n_apps = 6;
+
+    while (running) {
+        /* Top panel */
+        tui_panel(cols);
+
+        /* Taskbar */
+        tui_cursor(3, 1);
+        printf(COLOR_BG_BLACK);
+        for (int i = 0; i < n_apps; i++) {
+            if (i == sel) printf(COLOR_BG_CYAN COLOR_BOLD " %s " COLOR_RESET COLOR_BG_BLACK, panel_apps[i]);
+            else printf(" %s ", panel_apps[i]);
+        }
+        printf(COLOR_RESET);
+
+        /* Desktop area */
+        tui_cursor(6, cols / 2 - 10);
+        printf(COLOR_BOLD COLOR_CYAN "┌──────────────────────────┐");
+        tui_cursor(7, cols / 2 - 10);
+        printf(COLOR_CYAN "│" COLOR_RESET COLOR_BOLD "      TAK Desktop         " COLOR_CYAN "│");
+        tui_cursor(8, cols / 2 - 10);
+        printf(COLOR_CYAN "│" COLOR_RESET "   Ternary Ancestral OS   " COLOR_CYAN "│");
+        tui_cursor(9, cols / 2 - 10);
+        printf(COLOR_CYAN "│" COLOR_RESET "   58 commands available   " COLOR_CYAN "│");
+        tui_cursor(10, cols / 2 - 10);
+        printf(COLOR_CYAN "│" COLOR_RESET "   Maya · Persia · Inca   " COLOR_CYAN "│");
+        tui_cursor(11, cols / 2 - 10);
+        printf("└──────────────────────────┘" COLOR_RESET);
+
+        /* Status */
+        maya_calendar_t* cal = sched_get_calendar();
+        struct sysinfo si;
+        sysinfo(&si);
+        unsigned long mem_used = (si.totalram - si.freeram) * si.mem_unit / 1024 / 1024;
+        unsigned long mem_total = si.totalram * si.mem_unit / 1024 / 1024;
+
+        tui_cursor(rows - 3, 3);
+        printf(COLOR_GRAY " Memory: %lu/%luMB  Load: %ld.%ld  Uptime: %ldh%ldm" COLOR_RESET,
+               mem_used, mem_total, si.loads[0] / 65536, (si.loads[0] / 6553) % 10,
+               si.uptime / 3600, (si.uptime / 60) % 60);
+
+        tui_cursor(rows - 2, 3);
+        printf(COLOR_GRAY " Maya Tick: %lu  Tzolkin: %u/260  Haab: %u/365" COLOR_RESET,
+               (unsigned long)cal->global_tick, cal->tzolkin_day, cal->haab_day);
+
+        /* Bottom bar */
+        tui_cursor(rows, 1);
+        printf(COLOR_BG_BLUE COLOR_WHITE " ←→ Select  Enter: Run  Q: Exit " COLOR_RESET "                                   ");
+
+        /* Input */
+        system("/bin/stty raw -echo 2>/dev/null");
+        int ch = getchar();
+        system("/bin/stty cooked echo 2>/dev/null");
+
+        if (ch == 'q' || ch == 'Q') running = 0;
+        else if (ch == 'A' || ch == 'k') { if (sel > 0) sel--; }
+        else if (ch == 'B' || ch == 'j') { if (sel < n_apps - 1) sel++; }
+        else if (ch == 'C' || ch == 'l') { if (sel < n_apps - 1) sel++; }
+        else if (ch == 'D' || ch == 'h') { if (sel > 0) sel--; }
+        else if (ch == '\n' || ch == '\r') {
+            tui_show_cursor();
+            system("/bin/stty cooked echo 2>/dev/null");
+            tui_clear();
+
+            if (sel == 0) cmd_menu();
+            else if (sel == 1) cmd_browse();
+            else if (sel == 2) {
+                printf("\n  Type 'exit' to return to desktop\n\n");
+                char line[256];
+                while (1) {
+                    printf(COLOR_CYAN "tak>" COLOR_RESET " ");
+                    if (!fgets(line, sizeof(line), stdin)) break;
+                    line[strcspn(line, "\n")] = 0;
+                    if (strcmp(line, "exit") == 0) break;
+                    char cmd[280];
+                    snprintf(cmd, sizeof(cmd), "%s", line);
+                    system(cmd);
+                }
+            }
+            else if (sel == 3) { system("neofetch 2>/dev/null || echo '  TAK OS v1.0'"); printf("\n  Press Enter..."); getchar(); }
+            else if (sel == 4) { printf("\n  Ternary sensor data would appear here\n  Press Enter..."); getchar(); }
+            else if (sel == 5) running = 0;
+
+            tui_hide_cursor();
+            tui_clear();
+        }
+    }
+    tui_show_cursor();
+    tui_clear();
+    return 0;
+}
+
 void cmd_cal(void) {
     maya_calendar_t* cal = sched_get_calendar();
     printf("\n  " COLOR_BOLD "Maya Calendar" COLOR_RESET "\n");
@@ -1888,6 +2293,9 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "who") == 0) { builtin_rc = cmd_who(); is_builtin = 1; }
         else if (strcmp(argv[0], "su") == 0) { builtin_rc = cmd_su(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "passwd") == 0) { builtin_rc = cmd_passwd(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "desktop") == 0) { builtin_rc = cmd_desktop(); is_builtin = 1; }
+        else if (strcmp(argv[0], "menu") == 0) { builtin_rc = cmd_menu(); is_builtin = 1; }
+        else if (strcmp(argv[0], "browse") == 0) { builtin_rc = cmd_browse(); is_builtin = 1; }
         else if (strcmp(argv[0], "cal") == 0) { cmd_cal(); is_builtin = 1; }
         else if (strcmp(argv[0], "trit") == 0) { cmd_trit(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "b60") == 0) { cmd_b60(argc, argv); is_builtin = 1; }

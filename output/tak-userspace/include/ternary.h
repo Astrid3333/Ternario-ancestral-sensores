@@ -60,6 +60,10 @@
 #define COLOR_BG_RED    "\033[41m"
 #define COLOR_BG_GREEN  "\033[42m"
 #define COLOR_BG_YELLOW "\033[43m"
+#define COLOR_BG_BLUE   "\033[44m"
+#define COLOR_BG_MAGENTA "\033[45m"
+#define COLOR_BG_CYAN   "\033[46m"
+#define COLOR_BG_BLACK  "\033[40m"
 
 // =============================================================================
 // TYPES
