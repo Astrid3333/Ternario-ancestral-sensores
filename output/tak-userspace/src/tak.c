@@ -13,6 +13,7 @@
 
 #define _DEFAULT_SOURCE
 #define _BSD_SOURCE
+#define _GNU_SOURCE
 #include "ternary.h"
 #include <signal.h>
 #include <sys/wait.h>
@@ -6134,7 +6135,12 @@ int cmd_game_guess(int argc, char** argv) {
     while (1) {
         printf("  " COLOR_CYAN "Guess:" COLOR_RESET " ");
         int guess;
-        if (scanf("%d", &guess) != 1) continue;
+        if (scanf("%d", &guess) != 1) {
+            if (feof(stdin)) break;
+            int ch;
+            while ((ch = getchar()) != '\n' && ch != EOF);
+            continue;
+        }
         char buf[64];
         fgets(buf, sizeof(buf), stdin);
         attempts++;
@@ -7131,6 +7137,399 @@ void cmd_echo(int argc, char** argv) {
 }
 
 // =============================================================================
+// INNOVATION 15: OCTAVE MCP INTEGRATION
+// Scientific Research without Animal Experimentation
+// =============================================================================
+
+/* Helper: execute octave-mcp tool via CLI */
+static int octave_exec(const char* tool, const char* params, const char* input_file, const char* output_file) {
+    char cmd[2048];
+    if (input_file && output_file) {
+        snprintf(cmd, sizeof(cmd), "octave-mcp %s %s --input %s --output %s 2>&1", tool, params ? params : "", input_file, output_file);
+    } else if (input_file) {
+        snprintf(cmd, sizeof(cmd), "octave-mcp %s %s --input %s 2>&1", tool, params ? params : "", input_file);
+    } else if (output_file) {
+        snprintf(cmd, sizeof(cmd), "octave-mcp %s %s --output %s 2>&1", tool, params ? params : "", output_file);
+    } else {
+        snprintf(cmd, sizeof(cmd), "octave-mcp %s %s 2>&1", tool, params ? params : "");
+    }
+    return system(cmd);
+}
+
+/* octave-sim: Run any Octave MCP scientific simulation */
+int cmd_octave_sim(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-sim --tool <tool_name> [--params \"...\"] [--input file] [--output file]\n\n");
+        fprintf(stderr, "  Run scientific simulations via Octave MCP.\n\n");
+        fprintf(stderr, "  Available tools:\n");
+        fprintf(stderr, "    Biological:  cell-fate, stem-cell, cardiac-regen, bacterial-growth, enzyme-kinetics\n");
+        fprintf(stderr, "    Viral:       viral-lattice, viral-spread\n");
+        fprintf(stderr, "    Pharma:      virtual-pharma, toxicity-predict, drug-delivery\n");
+        fprintf(stderr, "    Physics:     molecular-dynamics, dft, quantum-info, statmech, fem\n");
+        fprintf(stderr, "    Math:        wavelet, fractal-dim, chaos, reaction-diffusion\n");
+        fprintf(stderr, "    Statistics:  stats, ml, clustering, glm\n");
+        fprintf(stderr, "    Ternary:     ternary-arith, ternary-hamming, ternary-comb, landauer\n");
+        fprintf(stderr, "    Climate:     climate, biodiversity, forest-fire, flood-model\n");
+        fprintf(stderr, "\n  Example:\n");
+        fprintf(stderr, "    octave-sim --tool enzyme-kinetics --params \"S=0:0.1:10,Vmax=1,Km=2\" --output results.json\n");
+        return 1;
+    }
+
+    char tool[128] = "";
+    char params[512] = "";
+    char input[256] = "";
+    char output[256] = "";
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--tool") == 0 && i + 1 < argc) strncpy(tool, argv[++i], 127);
+        else if (strcmp(argv[i], "--params") == 0 && i + 1 < argc) strncpy(params, argv[++i], 511);
+        else if (strcmp(argv[i], "--input") == 0 && i + 1 < argc) strncpy(input, argv[++i], 255);
+        else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+    }
+
+    if (tool[0] == 0) {
+        fprintf(stderr, "  Error: --tool is required\n");
+        return 1;
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════════╗\n");
+    printf("  ║   OCTAVE MCP SIMULATION             ║\n");
+    printf("  ╚══════════════════════════════════════╝" COLOR_RESET "\n\n");
+    printf("  " COLOR_YELLOW "Tool:" COLOR_RESET "    %s\n", tool);
+    if (params[0]) printf("  " COLOR_YELLOW "Params:" COLOR_RESET "  %s\n", params);
+    if (input[0]) printf("  " COLOR_YELLOW "Input:" COLOR_RESET "   %s\n", input);
+    if (output[0]) printf("  " COLOR_YELLOW "Output:" COLOR_RESET "  %s\n", output);
+    printf("\n");
+
+    int rc = octave_exec(tool, params[0] ? params : NULL, input[0] ? input : NULL, output[0] ? output : NULL);
+
+    if (rc == 0) {
+        printf("\n  " COLOR_GREEN "Simulation complete!" COLOR_RESET "\n");
+        if (output[0]) printf("  Results saved to: %s\n", output);
+    } else {
+        printf("\n  " COLOR_RED "Simulation failed (rc=%d)" COLOR_RESET "\n", rc);
+    }
+    return rc;
+}
+
+/* octave-bio: Biological simulation shortcuts */
+int cmd_octave_bio(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-bio <model> [options]\n\n");
+        fprintf(stderr, "  Biological simulations (NO ANIMALS).\n\n");
+        fprintf(stderr, "  Models:\n");
+        fprintf(stderr, "    cell-fate        Cell fate Boolean network\n");
+        fprintf(stderr, "    stem-cell        Stem cell lineage dynamics (Gillespie)\n");
+        fprintf(stderr, "    cardiac-regen    Cardiac regeneration post-infarct\n");
+        fprintf(stderr, "    bacterial-growth Bacterial growth curves\n");
+        fprintf(stderr, "    enzyme           Enzyme kinetics (Michaelis-Menten)\n");
+        fprintf(stderr, "    viral-lattice    Viral spread PDE simulation\n");
+        fprintf(stderr, "    genome           Genome signal analysis\n");
+        fprintf(stderr, "    protein          Protein structure (geometric algebra)\n");
+        fprintf(stderr, "\n  Example:\n");
+        fprintf(stderr, "    octave-bio enzyme --S 0:0.1:10 --Vmax 1 --Km 2 --output enzyme.json\n");
+        fprintf(stderr, "    octave-bio bacterial-growth --N0 1e6 --mu 0.5 --K 1e9\n");
+        return 1;
+    }
+
+    const char* model = argv[1];
+    char params[512] = "";
+    char output[256] = "";
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+        else {
+            if (params[0]) strcat(params, ",");
+            strcat(params, argv[i]);
+            if (i + 1 < argc && argv[i+1][0] != '-') {
+                strcat(params, "=");
+                strcat(params, argv[++i]);
+            }
+        }
+    }
+
+    printf(COLOR_CYAN "  [BIO]" COLOR_RESET " Simulating: %s\n", model);
+    int rc = octave_exec(model, params[0] ? params : NULL, NULL, output[0] ? output : NULL);
+    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
+    return rc;
+}
+
+/* octave-pharma: Pharmacology simulation (NO ANIMALS) */
+int cmd_octave_pharma(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-pharma <model> [options]\n\n");
+        fprintf(stderr, "  Virtual pharmacology (NO ANIMALS).\n\n");
+        fprintf(stderr, "  Models:\n");
+        fprintf(stderr, "    pbpk             Physiologically-based pharmacokinetic\n");
+        fprintf(stderr, "    toxicity         Toxicity prediction (Tox21-inspired)\n");
+        fprintf(stderr, "    drug-delivery    Drug release (Poiseuille flow)\n");
+        fprintf(stderr, "    dose-response    Dose-response curve\n");
+        fprintf(stderr, "\n  Example:\n");
+        fprintf(stderr, "    octave-pharma pbpk --dose 500 --weight 70 --output pbpk.json\n");
+        fprintf(stderr, "    octave-pharma toxicity --compound aspirin --dose 500\n");
+        return 1;
+    }
+
+    const char* model = argv[1];
+    char params[512] = "";
+    char output[256] = "";
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+        else {
+            if (params[0]) strcat(params, ",");
+            strcat(params, argv[i]);
+            if (i + 1 < argc && argv[i+1][0] != '-') {
+                strcat(params, "=");
+                strcat(params, argv[++i]);
+            }
+        }
+    }
+
+    printf(COLOR_CYAN "  [PHARMA]" COLOR_RESET " Virtual pharmacology: %s\n", model);
+    printf("  " COLOR_YELLOW "Note:" COLOR_RESET " No animals used - fully computational\n\n");
+    int rc = octave_exec(model, params[0] ? params : NULL, NULL, output[0] ? output : NULL);
+    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
+    return rc;
+}
+
+/* octave-stats: Statistical analysis and ML */
+int cmd_octave_stats(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-stats <analysis> [options]\n\n");
+        fprintf(stderr, "  Statistical analysis and machine learning.\n\n");
+        fprintf(stderr, "  Analyses:\n");
+        fprintf(stderr, "    describe         Descriptive statistics\n");
+        fprintf(stderr, "    regress          Linear regression\n");
+        fprintf(stderr, "    glm              Generalized linear model\n");
+        fprintf(stderr, "    cluster          K-means clustering\n");
+        fprintf(stderr, "    pca              Principal component analysis\n");
+        fprintf(stderr, "    hypothesis       Hypothesis testing\n");
+        fprintf(stderr, "    correlation      Correlation analysis\n");
+        fprintf(stderr, "    timeseries       Time series analysis\n");
+        fprintf(stderr, "\n  Example:\n");
+        fprintf(stderr, "    octave-stats describe --input data.csv\n");
+        fprintf(stderr, "    octave-stats regress --y response --x \"x1,x2,x3\" --input data.csv\n");
+        return 1;
+    }
+
+    const char* analysis = argv[1];
+    char params[512] = "";
+    char input[256] = "";
+    char output[256] = "";
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--input") == 0 && i + 1 < argc) strncpy(input, argv[++i], 255);
+        else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+        else {
+            if (params[0]) strcat(params, ",");
+            strcat(params, argv[i]);
+            if (i + 1 < argc && argv[i+1][0] != '-') {
+                strcat(params, "=");
+                strcat(params, argv[++i]);
+            }
+        }
+    }
+
+    printf(COLOR_CYAN "  [STATS]" COLOR_RESET " Analysis: %s\n", analysis);
+    int rc = octave_exec(analysis, params[0] ? params : NULL, input[0] ? input : NULL, output[0] ? output : NULL);
+    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
+    return rc;
+}
+
+/* octave-ternary: Ternary-specific analysis */
+int cmd_octave_ternary(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-ternary <analysis> [options]\n\n");
+        fprintf(stderr, "  Ternary-specific analysis.\n\n");
+        fprintf(stderr, "  Analyses:\n");
+        fprintf(stderr, "    arith            Ternary arithmetic operations\n");
+        fprintf(stderr, "    hamming          Ternary Hamming code\n");
+        fprintf(stderr, "    combinatorics    Ternary combinatorics\n");
+        fprintf(stderr, "    landauer         Landauer limit (ternary)\n");
+        fprintf(stderr, "    encoding         Ternary encoding/decoding\n");
+        fprintf(stderr, "    compression      Ternary compression analysis\n");
+        fprintf(stderr, "\n  Example:\n");
+        fprintf(stderr, "    octave-ternary arith --op add --a 121 --b 202\n");
+        fprintf(stderr, "    octave-ternary hamming --data 10101\n");
+        return 1;
+    }
+
+    const char* analysis = argv[1];
+    char params[512] = "";
+
+    for (int i = 2; i < argc; i++) {
+        if (params[0]) strcat(params, ",");
+        strcat(params, argv[i]);
+        if (i + 1 < argc && argv[i+1][0] != '-') {
+            strcat(params, "=");
+            strcat(params, argv[++i]);
+        }
+    }
+
+    printf(COLOR_CYAN "  [TERNARY]" COLOR_RESET " Analysis: %s\n", analysis);
+    int rc = octave_exec(analysis, params[0] ? params : NULL, NULL, NULL);
+    if (rc == 0) printf("  " COLOR_GREEN "Done!" COLOR_RESET "\n");
+    return rc;
+}
+
+/* octave-report: Generate scientific report */
+int cmd_octave_report(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: octave-report --input results.json [--output report.pdf] [--format pdf|html|md]\n\n");
+        fprintf(stderr, "  Generate scientific report from simulation results.\n\n");
+        fprintf(stderr, "  Example:\n");
+        fprintf(stderr, "    octave-report --input enzyme.json --output enzyme-report.pdf\n");
+        fprintf(stderr, "    octave-report --input results.json --format html\n");
+        return 1;
+    }
+
+    char input[256] = "";
+    char output[256] = "";
+    char format[32] = "pdf";
+
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--input") == 0 && i + 1 < argc) strncpy(input, argv[++i], 255);
+        else if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+        else if (strcmp(argv[i], "--format") == 0 && i + 1 < argc) strncpy(format, argv[++i], 31);
+    }
+
+    if (input[0] == 0) {
+        fprintf(stderr, "  Error: --input is required\n");
+        return 1;
+    }
+    if (output[0] == 0) {
+        snprintf(output, sizeof(output), "report.%s", format);
+    }
+
+    printf(COLOR_CYAN "  [REPORT]" COLOR_RESET " Generating report from: %s\n", input);
+    printf("  Format: %s → %s\n\n", format, output);
+
+    char params[512];
+    snprintf(params, sizeof(params), "--format %s", format);
+    int rc = octave_exec("report-generator", params, input, output);
+    if (rc == 0) printf("  " COLOR_GREEN "Report generated: %s" COLOR_RESET "\n", output);
+    return rc;
+}
+
+// =============================================================================
+// INNOVATION 16: VIRTUAL SENSOR SIMULATION
+// Sensor data without physical sensors
+// =============================================================================
+
+/* sensor-sim: Generate virtual sensor data */
+int cmd_sensor_sim(int argc, char** argv) {
+    if (argc < 2 || strcmp(argv[1], "--help") == 0) {
+        fprintf(stderr, "  Usage: sensor-sim <type> [--output file.json] [--duration seconds] [--interval ms]\n\n");
+        fprintf(stderr, "  Generate virtual sensor data (no physical sensors needed).\n\n");
+        fprintf(stderr, "  Sensor types:\n");
+        fprintf(stderr, "    temperature      Temperature sensor (0-50°C)\n");
+        fprintf(stderr, "    humidity         Humidity sensor (0-100%%)\n");
+        fprintf(stderr, "    pressure         Barometric pressure (900-1100 hPa)\n");
+        fprintf(stderr, "    light            Light intensity (0-100000 lux)\n");
+        fprintf(stderr, "    motion           Motion detector (0/1)\n");
+        fprintf(stderr, "    acoustic         Acoustic sensor (dB)\n");
+        fprintf(stderr, "    air-quality      Air quality index (0-500)\n");
+        fprintf(stderr, "    multi            Multiple sensors combined\n");
+        fprintf(stderr, "\n  Example:\n");
+        fprintf(stderr, "    sensor-sim temperature --duration 60 --output temp.json\n");
+        fprintf(stderr, "    sensor-sim multi --duration 300 --interval 1000\n");
+        return 1;
+    }
+
+    const char* type = argv[1];
+    char output[256] = "";
+    int duration = 10;
+    int interval = 1000;
+
+    for (int i = 2; i < argc; i++) {
+        if (strcmp(argv[i], "--output") == 0 && i + 1 < argc) strncpy(output, argv[++i], 255);
+        else if (strcmp(argv[i], "--duration") == 0 && i + 1 < argc) duration = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--interval") == 0 && i + 1 < argc) interval = atoi(argv[++i]);
+    }
+
+    printf(COLOR_CYAN "  ╔══════════════════════════════════════╗\n");
+    printf("  ║   VIRTUAL SENSOR SIMULATION          ║\n");
+    printf("  ╚══════════════════════════════════════╝" COLOR_RESET "\n\n");
+    printf("  " COLOR_YELLOW "Type:" COLOR_RESET "     %s\n", type);
+    printf("  " COLOR_YELLOW "Duration:" COLOR_RESET " %d seconds\n", duration);
+    printf("  " COLOR_YELLOW "Interval:" COLOR_RESET " %d ms\n\n", interval);
+
+    /* Generate sensor data */
+    srand(time(NULL));
+    int samples = (duration * 1000) / interval;
+
+    /* Output file or stdout */
+    FILE* out = stdout;
+    if (output[0]) {
+        out = fopen(output, "w");
+        if (!out) {
+            fprintf(stderr, "  Error: cannot open %s\n", output);
+            return 1;
+        }
+    }
+
+    fprintf(out, "{\"sensor\":\"%s\",\"samples\":[\n", type);
+
+    for (int i = 0; i < samples; i++) {
+        double value = 0;
+        double t = (double)(i * interval) / 1000.0;
+
+        if (strcmp(type, "temperature") == 0) {
+            /* Sine wave + noise: 20°C ± 10°C */
+            value = 25.0 + 5.0 * sin(t * 0.1) + ((rand() % 100) - 50) / 50.0;
+        } else if (strcmp(type, "humidity") == 0) {
+            value = 60.0 + 20.0 * sin(t * 0.05) + ((rand() % 100) - 50) / 25.0;
+            if (value < 0) value = 0; if (value > 100) value = 100;
+        } else if (strcmp(type, "pressure") == 0) {
+            value = 1013.25 + 5.0 * sin(t * 0.02) + ((rand() % 100) - 50) / 20.0;
+        } else if (strcmp(type, "light") == 0) {
+            /* Day/night cycle */
+            double hour = fmod(t / 3600.0, 24.0);
+            value = 50000.0 * sin((hour - 6.0) * M_PI / 12.0);
+            if (value < 0) value = 0;
+            value += ((rand() % 1000) - 500);
+        } else if (strcmp(type, "motion") == 0) {
+            value = (rand() % 100 < 5) ? 1.0 : 0.0;
+        } else if (strcmp(type, "acoustic") == 0) {
+            value = 40.0 + 20.0 * sin(t * 0.3) + ((rand() % 100) - 50) / 10.0;
+            if (value < 0) value = 0;
+        } else if (strcmp(type, "air-quality") == 0) {
+            value = 50.0 + 30.0 * sin(t * 0.01) + ((rand() % 100) - 50) / 5.0;
+            if (value < 0) value = 0; if (value > 500) value = 500;
+        } else if (strcmp(type, "multi") == 0) {
+            /* Multiple sensors */
+            fprintf(out, "  {\"t\":%.1f,\"temp\":%.1f,\"hum\":%.1f,\"pres\":%.1f,\"light\":%.0f}",
+                    t,
+                    25.0 + 5.0 * sin(t * 0.1) + ((rand() % 100) - 50) / 50.0,
+                    60.0 + 20.0 * sin(t * 0.05) + ((rand() % 100) - 50) / 25.0,
+                    1013.25 + 5.0 * sin(t * 0.02),
+                    fmax(0, 50000.0 * sin((fmod(t / 3600.0, 24.0) - 6.0) * M_PI / 12.0)));
+            if (i < samples - 1) fprintf(out, ",\n");
+            continue;
+        } else {
+            fprintf(stderr, "  Unknown sensor type: %s\n", type);
+            if (out != stdout) fclose(out);
+            return 1;
+        }
+
+        fprintf(out, "  {\"t\":%.1f,\"value\":%.2f}", t, value);
+        if (i < samples - 1) fprintf(out, ",\n");
+        else fprintf(out, "\n");
+    }
+
+    fprintf(out, "]}\n");
+
+    if (out != stdout) {
+        fclose(out);
+        printf("  " COLOR_GREEN "Generated %d samples → %s" COLOR_RESET "\n", samples, output);
+    } else {
+        printf("\n  " COLOR_GREEN "Generated %d samples" COLOR_RESET "\n", samples);
+    }
+    return 0;
+}
+
+// =============================================================================
 // SEGMENT RUNNER — handles pipes, redirection, background for one segment
 // =============================================================================
 
@@ -7736,6 +8135,15 @@ int run_single(char* line) {
         }
         else if (strcmp(argv[0], "security-scan") == 0) { builtin_rc = cmd_security_scan(argc, argv); is_builtin = 1; }
         else if (strcmp(argv[0], "security-status") == 0) { builtin_rc = cmd_security_status(argc, argv); is_builtin = 1; }
+        /* Octave MCP Integration */
+        else if (strcmp(argv[0], "octave-sim") == 0) { builtin_rc = cmd_octave_sim(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-bio") == 0) { builtin_rc = cmd_octave_bio(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-pharma") == 0) { builtin_rc = cmd_octave_pharma(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-stats") == 0) { builtin_rc = cmd_octave_stats(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-ternary") == 0) { builtin_rc = cmd_octave_ternary(argc, argv); is_builtin = 1; }
+        else if (strcmp(argv[0], "octave-report") == 0) { builtin_rc = cmd_octave_report(argc, argv); is_builtin = 1; }
+        /* Virtual Sensor Simulation */
+        else if (strcmp(argv[0], "sensor-sim") == 0) { builtin_rc = cmd_sensor_sim(argc, argv); is_builtin = 1; }
 
         if (is_builtin) {
             fflush(stdout);

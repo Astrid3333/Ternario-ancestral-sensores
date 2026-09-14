@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <math.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
