@@ -11,7 +11,15 @@
 #ifndef TERNARY_H
 #define TERNARY_H
 
-#include <stdint.h>
+// Freestanding types (no stdlib)
+typedef signed char int8_t;
+typedef unsigned char uint8_t;
+typedef signed short int16_t;
+typedef unsigned short uint16_t;
+typedef signed int int32_t;
+typedef unsigned int uint32_t;
+typedef signed long long int64_t;
+typedef unsigned long long uint64_t;
 
 // =============================================================================
 // I/O PORTS — Inline assembly para x86
@@ -150,6 +158,28 @@ static inline trit_t compare_maya_pid(maya_pid_t a, maya_pid_t b) {
 }
 
 // =============================================================================
+// TIPOS DE PROCESOS Y SCHEDULER
+// =============================================================================
+
+typedef enum {
+    PROC_DEAD = -1,
+    PROC_SLEEPING = 0,
+    PROC_ACTIVE = 1
+} proc_state_t;
+
+typedef struct {
+    maya_pid_t pid;
+    proc_state_t state;
+    trit_t priority;
+    uint8_t memory_block;
+    uint16_t cpu_cycles;
+    uint8_t quantum;
+    uint8_t parent;
+    uint8_t children[3];
+    uint8_t n_children;
+} __attribute__((packed)) process_t;
+
+// =============================================================================
 // LIBC TERNARIA MÍNIMA
 // =============================================================================
 
@@ -220,5 +250,24 @@ static inline int16_t parse_num(const char* str) {
     }
     return neg ? -num : num;
 }
+
+// =============================================================================
+// DECLARACIONES DE FUNCIONES (scheduler.c, memory.c)
+// =============================================================================
+
+void mem_init(void);
+void mem_get_status(uint8_t* used, uint8_t* free_count, uint8_t* locked);
+uint8_t mem_get_color(uint8_t block);
+
+void sched_init(void);
+int8_t sched_create(uint8_t parent, trit_t priority);
+int8_t sched_kill(uint8_t pid);
+int8_t sched_sleep(uint8_t pid);
+int8_t sched_wake(uint8_t pid);
+uint8_t sched_tick(void);
+uint8_t sched_get_current(void);
+void sched_get_state(uint32_t* tick, uint8_t* tzolkin, uint8_t* haab, trit_t* load);
+int8_t sched_get_info(uint8_t pid, process_t* info);
+int8_t sys_fork(void);
 
 #endif // TERNARY_H

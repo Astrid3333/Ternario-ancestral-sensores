@@ -11,26 +11,8 @@
 #include "../include/ternary.h"
 
 // =============================================================================
-// ESTRUCTURAS
+// ESTRUCTURAS (definidas en ternary.h)
 // =============================================================================
-
-typedef enum {
-    PROC_DEAD = -1,
-    PROC_SLEEPING = 0,
-    PROC_ACTIVE = 1
-} proc_state_t;
-
-typedef struct {
-    maya_pid_t pid;
-    proc_state_t state;
-    trit_t priority;
-    uint8_t memory_block;
-    uint16_t cpu_cycles;
-    uint8_t quantum;
-    uint8_t parent;
-    uint8_t children[3];
-    uint8_t n_children;
-} __attribute__((packed)) process_t;
 
 typedef struct {
     uint32_t global_tick;

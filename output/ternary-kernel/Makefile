@@ -1,15 +1,15 @@
 # Makefile para Kernel Ternario Ancestral v2
-# Compilación cruzada para i386 (x86)
+# Compilación para i386 (x86) usando gcc estándar con -m32
 
-CC = i686-elf-gcc
+CC = gcc
 AS = nasm
-LD = i686-elf-ld
+LD = ld
 OBJCOPY = objcopy
 
 CFLAGS = -ffreestanding -O2 -Wall -Wextra -nostdlib -nostdinc -fno-builtin \
-         -fno-stack-protector -nostartfiles -nodefaultlibs -m32
+         -fno-stack-protector -nostartfiles -nodefaultlibs -m32 -fno-pie -no-pie
 ASFLAGS = -f elf32
-LDFLAGS = -m elf_i386 -T linker.ld
+LDFLAGS = -m elf_i386 -T linker.ld -no-pie -nostdlib
 
 BOOT_SRC = boot/boot.asm
 BOOT_OBJ = boot/boot.bin
