@@ -346,9 +346,12 @@ class TritosGUI(Gtk.Window):
         menu.show_all()
 
         try:
-            root_window = self.get_root_window()
-            tx, ty = self.taskbar.translate_coordinates(root_window, 0, 0)
-            menu.move(tx, ty - menu.get_allocated_height())
+            parent = self.taskbar.get_parent_window()
+            if parent:
+                tx, ty = self.taskbar.translate_coordinates(parent, 0, 0)
+                menu.move(tx, ty - menu.get_allocated_height())
+            else:
+                menu.move(100, 100)
         except Exception:
             menu.move(100, 100)
 
