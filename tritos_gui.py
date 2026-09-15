@@ -254,13 +254,20 @@ START_MENU_ITEMS = [
     ("item", "🔬 Ciencia Ternaria", "science"),
     ("item", "📡 Sensores", "sensors"),
     ("item", "🖨️ Impresión 3D", "render"),
-    ("item", "🔐 Seguridad", "crypto"),
+    ("item", "🌐 Navegador", "browser"),
+    ("item", "🔌 Arduino", "arduino"),
     ("section", "HERRAMIENTAS"),
+    ("item", "🔐 Seguridad", "security"),
+    ("item", "🛡️ Firewall", "firewall"),
+    ("item", "👶 Control Parental", "parental"),
     ("item", "📁 Archivos", "files"),
     ("item", "⚙️ Sistema", "system"),
     ("item", "🎵 Audio", "audio"),
     ("item", "🧮 Matemática", "math"),
-    ("item", "🧮 Terminal Bin/Tern", "terminal"),
+    ("item", "🔢 Terminal Bin/Tern", "terminal"),
+    ("section", "CIENCIA"),
+    ("item", "🧪 Experimentos", "experiments"),
+    ("item", "🖥️ Kernel Bare-Metal", "kernel"),
     ("section", "SISTEMA"),
     ("item", "🐚 Shell Tritos", "shell"),
 ]
@@ -434,6 +441,13 @@ class TritosGUI(Gtk.Window):
             "math": self._show_math,
             "terminal": self._show_terminal,
             "shell": self._show_shell,
+            "browser": self._show_browser,
+            "arduino": self._show_arduino,
+            "security": self._show_security,
+            "firewall": self._show_firewall,
+            "parental": self._show_parental,
+            "experiments": self._show_experiments,
+            "kernel": self._show_kernel,
         }
         fn = dispatch.get(section, self._show_desktop)
         fn()
@@ -472,12 +486,18 @@ class TritosGUI(Gtk.Window):
             ("🔬", "Ciencia\nTernaria", "science"),
             ("📡", "Sensores", "sensors"),
             ("🖨️", "Impresión\n3D", "render"),
-            ("🔐", "Seguridad", "crypto"),
+            ("🌐", "Navegador", "browser"),
+            ("🔌", "Arduino", "arduino"),
+            ("🔐", "Seguridad", "security"),
+            ("🛡️", "Firewall", "firewall"),
+            ("👶", "Control\nParental", "parental"),
             ("📁", "Archivos", "files"),
             ("⚙️", "Sistema", "system"),
             ("🎵", "Audio", "audio"),
             ("🧮", "Matemática", "math"),
             ("🔢", "Terminal\nBin/Tern", "terminal"),
+            ("🧪", "Experi-\nmentos", "experiments"),
+            ("🖥️", "Kernel\nBare-Metal", "kernel"),
             ("🐚", "Shell\nTritos", "shell"),
         ]
 
@@ -1458,6 +1478,566 @@ class TritosGUI(Gtk.Window):
         # Scroll to end
         end_iter = buf.get_end_iter()
         self._term_output.scroll_mark_onscreen(buf.create_mark(None, end_iter, False))
+
+    def _show_security(self):
+        content = self._make_page("🔐 SEGURIDAD")
+
+        f1 = Gtk.Frame(label=" Security Scan ")
+        f1.get_style_context().add_class("card")
+        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vb1.set_margin_start(8)
+        vb1.set_margin_end(8)
+        vb1.set_margin_top(8)
+        vb1.set_margin_bottom(8)
+        f1.add(vb1)
+
+        lbl = Gtk.Label(label="URL o texto a escanear:")
+        lbl.get_style_context().add_class("param-label")
+        lbl.set_xalign(0)
+        vb1.pack_start(lbl, False, False, 0)
+
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        self._sec_scan_entry = Gtk.Entry()
+        self._sec_scan_entry.set_hexpand(True)
+        self._sec_scan_entry.set_width_chars(40)
+        self._sec_scan_entry.get_style_context().add_class("param-entry")
+        row.pack_start(self._sec_scan_entry, True, True, 0)
+        scan_btn = Gtk.Button(label="▶ Escanear")
+        scan_btn.get_style_context().add_class("run-btn")
+        scan_btn.connect("clicked", lambda w: self._security_scan())
+        row.pack_start(scan_btn, False, False, 0)
+        vb1.pack_start(row, False, False, 0)
+        content.pack_start(f1, False, False, 0)
+
+        f2 = Gtk.Frame(label=" Security Status ")
+        f2.get_style_context().add_class("card")
+        vb2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        vb2.set_margin_start(8)
+        vb2.set_margin_end(8)
+        vb2.set_margin_top(8)
+        vb2.set_margin_bottom(8)
+        f2.add(vb2)
+        status_btn = Gtk.Button(label="▶ Ver Estado")
+        status_btn.get_style_context().add_class("run-btn")
+        status_btn.connect("clicked", lambda w: self._security_status())
+        vb2.pack_start(status_btn, False, False, 0)
+        content.pack_start(f2, False, False, 0)
+
+        f3 = Gtk.Frame(label=" Resultado ")
+        f3.get_style_context().add_class("card")
+        self._sec_output = Gtk.TextView()
+        self._sec_output.get_style_context().add_class("output-text")
+        self._sec_output.set_editable(False)
+        self._sec_output.set_monospace(True)
+        self._sec_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self._sec_output)
+        f3.add(sw)
+        content.pack_start(f3, True, True, 0)
+
+    def _security_scan(self):
+        url = self._sec_scan_entry.get_text().strip()
+        if not url:
+            self._sec_output.get_buffer().set_text("Ingresá una URL o texto.")
+            return
+        cmd = [SCIENCE_BIN, "security-scan", url]
+        self._sec_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            self._sec_output.get_buffer().set_text(r.stdout + r.stderr)
+        except subprocess.TimeoutExpired:
+            self._sec_output.get_buffer().set_text("Timeout después de 30s")
+        except Exception as e:
+            self._sec_output.get_buffer().set_text(f"Error: {e}")
+
+    def _security_status(self):
+        cmd = [SCIENCE_BIN, "security-status"]
+        self._sec_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            self._sec_output.get_buffer().set_text(r.stdout + r.stderr)
+        except Exception as e:
+            self._sec_output.get_buffer().set_text(f"Error: {e}")
+
+    def _show_firewall(self):
+        content = self._make_page("🛡️ FIREWALL TERNARIO")
+
+        f1 = Gtk.Frame(label=" Firewall Status ")
+        f1.get_style_context().add_class("card")
+        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vb1.set_margin_start(8)
+        vb1.set_margin_end(8)
+        vb1.set_margin_top(8)
+        vb1.set_margin_bottom(8)
+        f1.add(vb1)
+
+        info_lbl = Gtk.Label(label="Firewall ternario: 3 estados — ALLOW / BLOCK / ANALYZE")
+        info_lbl.get_style_context().add_class("card-desc")
+        info_lbl.set_xalign(0)
+        vb1.pack_start(info_lbl, False, False, 0)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        rules_btn = Gtk.Button(label="▶ Ver Reglas")
+        rules_btn.get_style_context().add_class("run-btn")
+        rules_btn.connect("clicked", lambda w: self._firewall_rules())
+        btn_row.pack_start(rules_btn, False, False, 0)
+        vb1.pack_start(btn_row, False, False, 0)
+        content.pack_start(f1, False, False, 0)
+
+        of = Gtk.Frame(label=" Resultado ")
+        of.get_style_context().add_class("card")
+        self._fw_output = Gtk.TextView()
+        self._fw_output.get_style_context().add_class("output-text")
+        self._fw_output.set_editable(False)
+        self._fw_output.set_monospace(True)
+        self._fw_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self._fw_output)
+        of.add(sw)
+        content.pack_start(of, True, True, 0)
+
+    def _firewall_rules(self):
+        cmd = [SCIENCE_BIN, "security-status"]
+        self._fw_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            self._fw_output.get_buffer().set_text(r.stdout + r.stderr)
+        except Exception as e:
+            self._fw_output.get_buffer().set_text(f"Error: {e}")
+
+    def _show_parental(self):
+        content = self._make_page("👶 CONTROL PARENTAL")
+
+        f1 = Gtk.Frame(label=" Verificar URL ")
+        f1.get_style_context().add_class("card")
+        g1 = Gtk.Grid()
+        g1.set_column_spacing(8)
+        g1.set_row_spacing(6)
+        g1.set_margin_start(8)
+        g1.set_margin_end(8)
+        g1.set_margin_top(8)
+        g1.set_margin_bottom(8)
+        f1.add(g1)
+
+        lbl = Gtk.Label(label="URL:")
+        lbl.get_style_context().add_class("param-label")
+        lbl.set_xalign(1)
+        g1.attach(lbl, 0, 0, 1, 1)
+        self._par_url = Gtk.Entry()
+        self._par_url.set_text("https://")
+        self._par_url.set_width_chars(36)
+        self._par_url.get_style_context().add_class("param-entry")
+        g1.attach(self._par_url, 1, 0, 1, 1)
+
+        lbl2 = Gtk.Label(label="Nivel:")
+        lbl2.get_style_context().add_class("param-label")
+        lbl2.set_xalign(1)
+        g1.attach(lbl2, 0, 1, 1, 1)
+        self._par_level = Gtk.ComboBoxText()
+        for i in range(4):
+            self._par_level.append_text(str(i))
+        self._par_level.set_active(1)
+        g1.attach(self._par_level, 1, 1, 1, 1)
+
+        check_btn = Gtk.Button(label="▶ Verificar")
+        check_btn.get_style_context().add_class("run-btn")
+        check_btn.connect("clicked", lambda w: self._parental_check())
+        g1.attach(check_btn, 2, 0, 1, 2)
+        content.pack_start(f1, False, False, 0)
+
+        of = Gtk.Frame(label=" Resultado ")
+        of.get_style_context().add_class("card")
+        self._par_output = Gtk.TextView()
+        self._par_output.get_style_context().add_class("output-text")
+        self._par_output.set_editable(False)
+        self._par_output.set_monospace(True)
+        self._par_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self._par_output)
+        of.add(sw)
+        content.pack_start(of, True, True, 0)
+
+    def _parental_check(self):
+        url = self._par_url.get_text().strip()
+        level = self._par_level.get_active_text()
+        if not url:
+            self._par_output.get_buffer().set_text("Ingresá una URL.")
+            return
+        cmd = [SCIENCE_BIN, "security-scan", url, "-l", level]
+        self._par_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            self._par_output.get_buffer().set_text(r.stdout + r.stderr)
+        except subprocess.TimeoutExpired:
+            self._par_output.get_buffer().set_text("Timeout después de 30s")
+        except Exception as e:
+            self._par_output.get_buffer().set_text(f"Error: {e}")
+
+    def _show_browser(self):
+        content = self._make_page("🌐 NAVEGADOR TERNARIO")
+
+        f1 = Gtk.Frame(label=" Navegador Ternario ")
+        f1.get_style_context().add_class("card")
+        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vb1.set_margin_start(8)
+        vb1.set_margin_end(8)
+        vb1.set_margin_top(8)
+        vb1.set_margin_bottom(8)
+        f1.add(vb1)
+
+        url_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        lbl = Gtk.Label(label="URL:")
+        lbl.get_style_context().add_class("param-label")
+        url_row.pack_start(lbl, False, False, 0)
+        self._br_url = Gtk.Entry()
+        self._br_url.set_hexpand(True)
+        self._br_url.set_width_chars(40)
+        self._br_url.get_style_context().add_class("param-entry")
+        url_row.pack_start(self._br_url, True, True, 0)
+        vb1.pack_start(url_row, False, False, 0)
+
+        opts = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        opts.set_margin_top(4)
+        self._br_opts = {}
+        for opt in ["encode", "compress", "sensor", "cache", "nodal"]:
+            cb = Gtk.CheckButton(label=opt)
+            if opt in ("encode", "compress"):
+                cb.set_active(True)
+            self._br_opts[opt] = cb
+            opts.pack_start(cb, False, False, 0)
+        vb1.pack_start(opts, False, False, 0)
+
+        btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        btn_row.set_margin_top(4)
+        nav_btn = Gtk.Button(label="▶ Navegar")
+        nav_btn.get_style_context().add_class("run-btn")
+        nav_btn.connect("clicked", lambda w: self._browser_navigate())
+        btn_row.pack_start(nav_btn, False, False, 0)
+        vb1.pack_start(btn_row, False, False, 0)
+        content.pack_start(f1, False, False, 0)
+
+        of = Gtk.Frame(label=" Resultado ")
+        of.get_style_context().add_class("card")
+        self._br_output = Gtk.TextView()
+        self._br_output.get_style_context().add_class("output-text")
+        self._br_output.set_editable(False)
+        self._br_output.set_monospace(True)
+        self._br_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self._br_output)
+        of.add(sw)
+        content.pack_start(of, True, True, 0)
+
+    def _browser_navigate(self):
+        url = self._br_url.get_text().strip()
+        if not url:
+            self._br_output.get_buffer().set_text("Ingresá una URL.")
+            return
+        opts = [k for k, v in self._br_opts.items() if v.get_active()]
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        tritos_bin = os.path.join(script_dir, "tritos")
+        if not os.path.exists(tritos_bin):
+            tritos_bin = os.path.join(script_dir, "bin", "tritos")
+
+        commands = []
+        if "sensor" in opts:
+            commands.append(["ternary-browser", "--sensor", url])
+        if "cache" in opts:
+            commands.append(["cache-browse", url])
+        if "nodal" in opts:
+            commands.append(["nodal", url])
+        if "encode" in opts or "compress" in opts:
+            flags = []
+            if "encode" in opts:
+                flags.append("--encode")
+            if "compress" in opts:
+                flags.append("--compress")
+            commands.append(["ternary-browser"] + flags + [url])
+
+        if not commands:
+            commands.append(["ternary-browser", url])
+
+        self._br_output.get_buffer().set_text("")
+        for cmd in commands:
+            try:
+                r = subprocess.run(cmd, capture_output=True, text=True, timeout=15,
+                                   cwd=script_dir)
+                buf = self._br_output.get_buffer()
+                end_iter = buf.get_end_iter()
+                buf.insert(end_iter, f"$ {' '.join(cmd)}\n{r.stdout}{r.stderr}\n\n")
+            except FileNotFoundError:
+                buf = self._br_output.get_buffer()
+                end_iter = buf.get_end_iter()
+                buf.insert(end_iter, f"$ {' '.join(cmd)}\nError: comando no encontrado\n\n")
+            except Exception as e:
+                buf = self._br_output.get_buffer()
+                end_iter = buf.get_end_iter()
+                buf.insert(end_iter, f"$ {' '.join(cmd)}\nError: {e}\n\n")
+
+    def _show_arduino(self):
+        content = self._make_page("🔌 ARDUINO — Librería TernaryAncestral")
+
+        f1 = Gtk.Frame(label=" Librería TernaryAncestral ")
+        f1.get_style_context().add_class("card")
+        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vb1.set_margin_start(8)
+        vb1.set_margin_end(8)
+        vb1.set_margin_top(8)
+        vb1.set_margin_bottom(8)
+        f1.add(vb1)
+
+        desc = Gtk.Label(label="Librería Arduino para comunicación ternaria ancestral.\n"
+                               "Cada trit = 3 valores: -1, 0, +1 → transmisión eficiente de datos.")
+        desc.get_style_context().add_class("card-desc")
+        desc.set_xalign(0)
+        desc.set_line_wrap(True)
+        vb1.pack_start(desc, False, False, 0)
+
+        modes_grid = Gtk.Grid()
+        modes_grid.set_column_spacing(8)
+        modes_grid.set_row_spacing(8)
+        modes_grid.set_margin_top(8)
+        vb1.pack_start(modes_grid, False, False, 0)
+
+        modes = [
+            ("📡 Lite", "15 bytes", "Modo ligero para sensores\n"
+             "Pines: A0, D2\nVelocidad: 4800 baud"),
+            ("📡 Original", "162 bytes", "Modo completo original\n"
+             "Pines: A0–A5, D2–D8\nVelocidad: 9600 baud"),
+            ("🏰 Babylonian", "198 bytes", "Modo base 60 ancestral\n"
+             "Pines: A0–A5, D2–D10\nVelocidad: 115200 baud"),
+        ]
+        for i, (title, size, desc_text) in enumerate(modes):
+            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            card.get_style_context().add_class("card")
+            card.set_size_request(200, -1)
+            t_lbl = Gtk.Label(label=f"{title}  ({size})")
+            t_lbl.get_style_context().add_class("card-name")
+            card.pack_start(t_lbl, False, False, 0)
+            d_lbl = Gtk.Label(label=desc_text)
+            d_lbl.get_style_context().add_class("card-desc")
+            d_lbl.set_xalign(0)
+            d_lbl.set_line_wrap(True)
+            card.pack_start(d_lbl, False, False, 0)
+            modes_grid.attach(card, i, 0, 1, 1)
+        content.pack_start(f1, False, False, 0)
+
+        f2 = Gtk.Frame(label=" Compatibilidad ")
+        f2.get_style_context().add_class("card")
+        vb2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        vb2.set_margin_start(8)
+        vb2.set_margin_end(8)
+        vb2.set_margin_top(8)
+        vb2.set_margin_bottom(8)
+        f2.add(vb2)
+        boards = ["Arduino Uno/Nano/Mega", "ESP32", "ESP8266", "ATtiny85"]
+        for b in boards:
+            bl = Gtk.Label(label=f"  ✓  {b}")
+            bl.get_style_context().add_class("card-desc")
+            bl.set_xalign(0)
+            vb2.pack_start(bl, False, False, 0)
+        content.pack_start(f2, False, False, 0)
+
+        f3 = Gtk.Frame(label=" Ejemplos ")
+        f3.get_style_context().add_class("card")
+        vb3 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        vb3.set_margin_start(8)
+        vb3.set_margin_end(8)
+        vb3.set_margin_top(8)
+        vb3.set_margin_bottom(8)
+        f3.add(vb3)
+        examples = [
+            ("sensor_transmitter", "Transmite datos de sensor con codificación ternaria"),
+            ("data_receiver", "Recibe y decodifica datos ternarios"),
+        ]
+        for name, desc_text in examples:
+            el = Gtk.Label(label=f"  📁 {name}\n     {desc_text}")
+            el.get_style_context().add_class("card-desc")
+            el.set_xalign(0)
+            el.set_line_wrap(True)
+            vb3.pack_start(el, False, False, 0)
+        content.pack_start(f3, False, False, 0)
+
+    def _show_experiments(self):
+        content = self._make_page("🧪 EXPERIMENTOS")
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+
+        grid = Gtk.Grid()
+        grid.set_column_spacing(10)
+        grid.set_row_spacing(10)
+        grid.set_halign(Gtk.Align.CENTER)
+        grid.set_valign(Gtk.Align.START)
+        grid.set_margin_top(12)
+
+        experiments = [
+            ("01", "Sensores Ternarios\nAncestrales",
+             "Compresión: 3.2x vs binario\n"
+             "Ahorro energía: 67%\n"
+             "Latencia: reducida 40%"),
+            ("02", "Nodo Ternario\nDatacenter",
+             "Compresión: 8x\n"
+             "Ahorro energía: 80.2%\n"
+             "Throughput: +35%"),
+            ("03", "Compresión\nAncestral Extendida",
+             "Maya: 4.1x compresión\n"
+             "Persa: 3.8x compresión\n"
+             "Babilonia: 3.5x compresión"),
+            ("04", "Calendario Maya/\nAzteca/Persa",
+             "Maya: 13 Baktunes, Long Count\n"
+             "Azteca: Xiuhpohualli 365 días\n"
+             "Persa: Solar Hijri, Nowruz"),
+        ]
+
+        for i, (num, title, results) in enumerate(experiments):
+            col = i % 2
+            row = i // 2
+            card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+            card.get_style_context().add_class("card")
+            card.set_size_request(380, -1)
+            num_lbl = Gtk.Label(label=f"#{num}")
+            num_lbl.set_markup(f'<span size="large" weight="bold" color="#ffd700">#{num}</span>')
+            card.pack_start(num_lbl, False, False, 0)
+            t_lbl = Gtk.Label(label=title)
+            t_lbl.get_style_context().add_class("card-name")
+            t_lbl.set_line_wrap(True)
+            card.pack_start(t_lbl, False, False, 0)
+            r_lbl = Gtk.Label(label=results)
+            r_lbl.get_style_context().add_class("card-desc")
+            r_lbl.set_xalign(0)
+            r_lbl.set_line_wrap(True)
+            card.pack_start(r_lbl, False, False, 0)
+
+            exp_dir = os.path.join(SCRIPT_DIR, f"experiments/exp{num}")
+            for fname in os.listdir(exp_dir) if os.path.isdir(exp_dir) else []:
+                if fname.endswith(".json"):
+                    try:
+                        import json
+                        with open(os.path.join(exp_dir, fname)) as jf:
+                            data = json.load(jf)
+                        summary = f"  📊 {fname}: {json.dumps(data, indent=2)[:200]}"
+                        s_lbl = Gtk.Label(label=summary)
+                        s_lbl.get_style_context().add_class("output-text")
+                        s_lbl.set_xalign(0)
+                        s_lbl.set_line_wrap(True)
+                        card.pack_start(s_lbl, False, False, 0)
+                    except Exception:
+                        pass
+
+            grid.attach(card, col, row, 1, 1)
+
+        scroll.add(grid)
+        content.pack_start(scroll, True, True, 0)
+
+    def _show_kernel(self):
+        content = self._make_page("🖥️ KERNEL BARE-METAL TRITOS")
+
+        f1 = Gtk.Frame(label=" Kernel x86 ")
+        f1.get_style_context().add_class("card")
+        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vb1.set_margin_start(8)
+        vb1.set_margin_end(8)
+        vb1.set_margin_top(8)
+        vb1.set_margin_bottom(8)
+        f1.add(vb1)
+
+        info = Gtk.Label(label="Kernel bare-metal x86 en ensamblador.\n"
+                               "Components: boot.asm (bootloader), modo texto VGA, "
+                               "driver de teclado, shell interactivo.")
+        info.get_style_context().add_class("card-desc")
+        info.set_xalign(0)
+        info.set_line_wrap(True)
+        vb1.pack_start(info, False, False, 0)
+        content.pack_start(f1, False, False, 0)
+
+        f2 = Gtk.Frame(label=" Compilar ")
+        f2.get_style_context().add_class("card")
+        vb2 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        vb2.set_margin_start(8)
+        vb2.set_margin_end(8)
+        vb2.set_margin_top(8)
+        vb2.set_margin_bottom(8)
+        f2.add(vb2)
+        build_btn = Gtk.Button(label="▶ Compilar Kernel")
+        build_btn.get_style_context().add_class("run-btn")
+        build_btn.connect("clicked", lambda w: self._kernel_build())
+        vb2.pack_start(build_btn, False, False, 0)
+        content.pack_start(f2, False, False, 0)
+
+        f3 = Gtk.Frame(label=" Ejecutar ")
+        f3.get_style_context().add_class("card")
+        vb3 = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        vb3.set_margin_start(8)
+        vb3.set_margin_end(8)
+        vb3.set_margin_top(8)
+        vb3.set_margin_bottom(8)
+        f3.add(vb3)
+        qemu_btn = Gtk.Button(label="▶ QEMU")
+        qemu_btn.get_style_context().add_class("gen-btn")
+        qemu_btn.connect("clicked", lambda w: self._kernel_run())
+        vb3.pack_start(qemu_btn, False, False, 0)
+        content.pack_start(f3, False, False, 0)
+
+        of = Gtk.Frame(label=" Resultado ")
+        of.get_style_context().add_class("card")
+        self._kern_output = Gtk.TextView()
+        self._kern_output.get_style_context().add_class("output-text")
+        self._kern_output.set_editable(False)
+        self._kern_output.set_monospace(True)
+        self._kern_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.add(self._kern_output)
+        of.add(sw)
+        content.pack_start(of, True, True, 0)
+
+    def _kernel_build(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        build_script = os.path.join(script_dir, "build-kernel.sh")
+        if not os.path.exists(build_script):
+            build_script = os.path.join(script_dir, "bin", "build-kernel.sh")
+        cmd = ["bash", build_script]
+        self._kern_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=60,
+                               cwd=script_dir)
+            self._kern_output.get_buffer().set_text(r.stdout + r.stderr)
+        except FileNotFoundError:
+            self._kern_output.get_buffer().set_text(
+                "Error: build-kernel.sh no encontrado.\n"
+                f"Esperado en: {script_dir}")
+        except subprocess.TimeoutExpired:
+            self._kern_output.get_buffer().set_text("Timeout después de 60s")
+        except Exception as e:
+            self._kern_output.get_buffer().set_text(f"Error: {e}")
+
+    def _kernel_run(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        disk_img = os.path.join(script_dir, "disk.img")
+        if not os.path.exists(disk_img):
+            self._kern_output.get_buffer().set_text(
+                f"Error: disk.img no encontrado en {script_dir}\n"
+                "Compilá el kernel primero.")
+            return
+        cmd = ["qemu-system-i386", "-drive", f"file={disk.img}"]
+        self._kern_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
+        try:
+            subprocess.Popen(cmd, cwd=script_dir,
+                             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            self._kern_output.get_buffer().set_text(
+                "QEMU iniciado.\n"
+                f"$ {' '.join(cmd)}")
+        except FileNotFoundError:
+            self._kern_output.get_buffer().set_text(
+                "Error: qemu-system-i386 no encontrado.\n"
+                "Instalá QEMU: sudo apt install qemu-system-x86")
+        except Exception as e:
+            self._kern_output.get_buffer().set_text(f"Error: {e}")
 
     def _show_shell(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
