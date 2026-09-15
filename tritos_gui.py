@@ -1792,16 +1792,24 @@ class TritosGUI(Gtk.Window):
         self._ai_chat_output.scroll_mark_onscreen(buf.create_mark(None, end_iter, False))
 
     def _show_browser(self):
-        content = self._make_page("🌐 NAVEGADOR TERNARIO")
+        content = self._make_page("🌐 NAVEGADOR WEB TRITOS")
 
-        f1 = Gtk.Frame(label=" Navegador Ternario ")
-        f1.get_style_context().add_class("card")
-        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        vb1.set_margin_start(8)
-        vb1.set_margin_end(8)
-        vb1.set_margin_top(8)
-        vb1.set_margin_bottom(8)
-        f1.add(vb1)
+        # Launch WebKit browser
+        launch_frame = Gtk.Frame(label=" Navegador Web Completo (WebKit) ")
+        launch_frame.get_style_context().add_class("card")
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vbox.set_margin_start(12)
+        vbox.set_margin_end(12)
+        vbox.set_margin_top(8)
+        launch_frame.add(vbox)
+
+        info = Gtk.Label()
+        info.set_xalign(0)
+        info.set_markup(
+            '<span color="#c9d1d9">Navegador web completo con soporte JavaScript, '
+            'pestañas, bookmarks, y motor WebKit. Navegá a cualquier sitio.</span>')
+        info.set_line_wrap(True)
+        vbox.pack_start(info, False, False, 0)
 
         url_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         lbl = Gtk.Label(label="URL:")
@@ -1809,89 +1817,142 @@ class TritosGUI(Gtk.Window):
         url_row.pack_start(lbl, False, False, 0)
         self._br_url = Gtk.Entry()
         self._br_url.set_hexpand(True)
-        self._br_url.set_width_chars(40)
+        self._br_url.set_width_chars(50)
+        self._br_url.set_text("https://es.wikipedia.org")
         self._br_url.get_style_context().add_class("param-entry")
         url_row.pack_start(self._br_url, True, True, 0)
-        vb1.pack_start(url_row, False, False, 0)
-
-        opts = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
-        opts.set_margin_top(4)
-        self._br_opts = {}
-        for opt in ["encode", "compress", "sensor", "cache", "nodal"]:
-            cb = Gtk.CheckButton(label=opt)
-            if opt in ("encode", "compress"):
-                cb.set_active(True)
-            self._br_opts[opt] = cb
-            opts.pack_start(cb, False, False, 0)
-        vb1.pack_start(opts, False, False, 0)
+        vbox.pack_start(url_row, False, False, 0)
 
         btn_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        btn_row.set_margin_top(4)
-        nav_btn = Gtk.Button(label="▶ Navegar")
+        nav_btn = Gtk.Button(label="🌐 Abrir Navegador Web")
         nav_btn.get_style_context().add_class("run-btn")
-        nav_btn.connect("clicked", lambda w: self._browser_navigate())
+        nav_btn.connect("clicked", lambda w: self._launch_webkit_browser())
         btn_row.pack_start(nav_btn, False, False, 0)
-        vb1.pack_start(btn_row, False, False, 0)
-        content.pack_start(f1, False, False, 0)
+        vbox.pack_start(btn_row, False, False, 0)
+        content.pack_start(launch_frame, False, False, 0)
 
-        of = Gtk.Frame(label=" Resultado ")
-        of.get_style_context().add_class("card")
-        self._br_output = Gtk.TextView()
-        self._br_output.get_style_context().add_class("output-text")
-        self._br_output.set_editable(False)
-        self._br_output.set_monospace(True)
-        self._br_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
-        sw = Gtk.ScrolledWindow()
-        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
-        sw.add(self._br_output)
-        of.add(sw)
-        content.pack_start(of, True, True, 0)
+        # TUI Browser for terminal-style
+        tui_frame = Gtk.Frame(label=" Navegador TUI (Terminal) ")
+        tui_frame.get_style_context().add_class("card")
+        tui_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        tui_vbox.set_margin_start(12)
+        tui_vbox.set_margin_end(12)
+        tui_vbox.set_margin_top(8)
+        tui_frame.add(tui_vbox)
 
-    def _browser_navigate(self):
-        url = self._br_url.get_text().strip()
-        if not url:
-            self._br_output.get_buffer().set_text("Ingresá una URL.")
+        info2 = Gtk.Label()
+        info2.set_xalign(0)
+        info2.set_markup(
+            '<span color="#c9d1d9">Navegador estilo lynx para terminal. '
+            'Links numerados, navegación con teclado.</span>')
+        info2.set_line_wrap(True)
+        tui_vbox.pack_start(info2, False, False, 0)
+
+        tui_url_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        lbl2 = Gtk.Label(label="URL:")
+        lbl2.get_style_context().add_class("param-label")
+        tui_url_row.pack_start(lbl2, False, False, 0)
+        self._tui_url = Gtk.Entry()
+        self._tui_url.set_hexpand(True)
+        self._tui_url.set_width_chars(50)
+        self._tui_url.set_text("https://es.wikipedia.org")
+        self._tui_url.get_style_context().add_class("param-entry")
+        tui_url_row.pack_start(self._tui_url, True, True, 0)
+        tui_vbox.pack_start(tui_url_row, False, False, 0)
+
+        tui_btn = Gtk.Button(label="⌨️ Abrir en Terminal")
+        tui_btn.get_style_context().add_class("run-btn")
+        tui_btn.connect("clicked", lambda w: self._launch_tui_browser())
+        tui_vbox.pack_start(tui_btn, False, False, 0)
+        content.pack_start(tui_frame, False, False, 0)
+
+        # Ternary analysis
+        analysis_frame = Gtk.Frame(label=" Análisis Ternario de Página ")
+        analysis_frame.get_style_context().add_class("card")
+        ana_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        ana_vbox.set_margin_start(12)
+        ana_vbox.set_margin_end(12)
+        ana_vbox.set_margin_top(8)
+        analysis_frame.add(ana_vbox)
+
+        ana_url_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        lbl3 = Gtk.Label(label="URL:")
+        lbl3.get_style_context().add_class("param-label")
+        ana_url_row.pack_start(lbl3, False, False, 0)
+        self._ana_url = Gtk.Entry()
+        self._ana_url.set_hexpand(True)
+        self._ana_url.set_width_chars(50)
+        self._ana_url.get_style_context().add_class("param-entry")
+        ana_url_row.pack_start(self._ana_url, True, True, 0)
+        ana_vbox.pack_start(ana_url_row, False, False, 0)
+
+        ana_btn = Gtk.Button(label="🔍 Analizar con ternary-browser")
+        ana_btn.get_style_context().add_class("run-btn")
+        ana_btn.connect("clicked", lambda w: self._analyze_url())
+        ana_vbox.pack_start(ana_btn, False, False, 0)
+
+        self._ana_output = Gtk.TextView()
+        self._ana_output.get_style_context().add_class("output-text")
+        self._ana_output.set_editable(False)
+        self._ana_output.set_monospace(True)
+        self._ana_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw2 = Gtk.ScrolledWindow()
+        sw2.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw2.set_size_request(-1, 200)
+        sw2.add(self._ana_output)
+        ana_vbox.pack_start(sw2, True, True, 0)
+        content.pack_start(analysis_frame, True, True, 0)
+
+    def _launch_webkit_browser(self):
+        url = self._br_url.get_text().strip() or "https://es.wikipedia.org"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        browser_script = os.path.join(script_dir, "tritos_browser.py")
+        try:
+            subprocess.Popen(
+                [sys.executable, browser_script, url],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL)
+        except Exception as e:
+            self._ana_output.get_buffer().set_text(f"Error: {e}")
+
+    def _launch_tui_browser(self):
+        url = self._tui_url.get_text().strip() or "https://es.wikipedia.org"
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        browser_bin = os.path.join(script_dir, "tritos_browser")
+        if not os.path.exists(browser_bin):
+            browser_bin = os.path.join(script_dir, "output", "tak-userspace", "tritos_browser")
+        if not os.path.exists(browser_bin):
+            self._ana_output.get_buffer().set_text(
+                "Error: tritos_browser no encontrado. Compilá con:\n"
+                "gcc -o tritos_browser src/tui_browser.c -O2")
             return
-        opts = [k for k, v in self._br_opts.items() if v.get_active()]
+        try:
+            subprocess.Popen(
+                [browser_bin, url],
+                stdout=sys.stdout, stderr=sys.stderr,
+                stdin=sys.stdin)
+        except Exception as e:
+            self._ana_output.get_buffer().set_text(f"Error: {e}")
+
+    def _analyze_url(self):
+        url = self._ana_url.get_text().strip()
+        if not url:
+            self._ana_output.get_buffer().set_text("Ingresá una URL.")
+            return
         script_dir = os.path.dirname(os.path.abspath(__file__))
         tritos_bin = os.path.join(script_dir, "tritos")
         if not os.path.exists(tritos_bin):
-            tritos_bin = os.path.join(script_dir, "bin", "tritos")
-
-        commands = []
-        if "sensor" in opts:
-            commands.append(["ternary-browser", "--sensor", url])
-        if "cache" in opts:
-            commands.append(["cache-browse", url])
-        if "nodal" in opts:
-            commands.append(["nodal", url])
-        if "encode" in opts or "compress" in opts:
-            flags = []
-            if "encode" in opts:
-                flags.append("--encode")
-            if "compress" in opts:
-                flags.append("--compress")
-            commands.append(["ternary-browser"] + flags + [url])
-
-        if not commands:
-            commands.append(["ternary-browser", url])
-
-        self._br_output.get_buffer().set_text("")
-        for cmd in commands:
-            try:
-                r = subprocess.run(cmd, capture_output=True, text=True, timeout=15,
-                                   cwd=script_dir)
-                buf = self._br_output.get_buffer()
-                end_iter = buf.get_end_iter()
-                buf.insert(end_iter, f"$ {' '.join(cmd)}\n{r.stdout}{r.stderr}\n\n")
-            except FileNotFoundError:
-                buf = self._br_output.get_buffer()
-                end_iter = buf.get_end_iter()
-                buf.insert(end_iter, f"$ {' '.join(cmd)}\nError: comando no encontrado\n\n")
-            except Exception as e:
-                buf = self._br_output.get_buffer()
-                end_iter = buf.get_end_iter()
-                buf.insert(end_iter, f"$ {' '.join(cmd)}\nError: {e}\n\n")
+            tritos_bin = os.path.join(script_dir, "output", "tak-userspace", "tritos")
+        try:
+            result = subprocess.run(
+                [tritos_bin, "-c", f"ternary-browser --dump --encode --compress {url}"],
+                capture_output=True, text=True, timeout=30)
+            output = result.stdout + result.stderr
+            self._ana_output.get_buffer().set_text(output[:5000])
+        except subprocess.TimeoutExpired:
+            self._ana_output.get_buffer().set_text("Timeout: la página tardó demasiado.")
+        except Exception as e:
+            self._ana_output.get_buffer().set_text(f"Error: {e}")
 
     def _show_arduino(self):
         content = self._make_page("🔌 ARDUINO — Librería TernaryAncestral")
