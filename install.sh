@@ -217,6 +217,7 @@ install_files() {
     mkdir -p "$INSTALL_DIR"
     mkdir -p "$DATA_DIR/quipu"
     mkdir -p "$DATA_DIR/config"
+    mkdir -p "$DATA_DIR/bin"
     
     # Instalar userspace
     cp "$SCRIPT_DIR/output/tak-userspace/tritos" "$INSTALL_DIR/tritos"
@@ -227,6 +228,11 @@ install_files() {
         cp "$SCRIPT_DIR/output/tak-userspace/tritos_science" "$INSTALL_DIR/tritos_science"
         chmod +x "$INSTALL_DIR/tritos_science"
         ok "tritos_science → $INSTALL_DIR/tritos_science"
+        
+        # Copiar también a ~/.tritos/bin/ para que el shell lo encuentre
+        cp "$SCRIPT_DIR/output/tak-userspace/tritos_science" "$DATA_DIR/bin/tritos_science"
+        chmod +x "$DATA_DIR/bin/tritos_science"
+        ok "tritos_science → $DATA_DIR/bin/tritos_science"
     fi
     
     # Verificar ~/.local/bin está en PATH
