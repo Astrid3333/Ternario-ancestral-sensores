@@ -250,6 +250,8 @@ SENSOR_TYPES = [
 ]
 
 START_MENU_ITEMS = [
+    ("section", "INTELIGENCIA"),
+    ("item", "🧠 IA Ternaria", "ai"),
     ("section", "APLICACIONES"),
     ("item", "🔬 Ciencia Ternaria", "science"),
     ("item", "📡 Sensores", "sensors"),
@@ -441,6 +443,7 @@ class TritosGUI(Gtk.Window):
             "math": self._show_math,
             "terminal": self._show_terminal,
             "shell": self._show_shell,
+            "ai": self._show_ai,
             "browser": self._show_browser,
             "arduino": self._show_arduino,
             "security": self._show_security,
@@ -483,6 +486,7 @@ class TritosGUI(Gtk.Window):
         icon_grid.set_valign(Gtk.Align.START)
 
         desktop_icons = [
+            ("🧠", "IA\nTernaria", "ai"),
             ("🔬", "Ciencia\nTernaria", "science"),
             ("📡", "Sensores", "sensors"),
             ("🖨️", "Impresión\n3D", "render"),
@@ -1675,6 +1679,114 @@ class TritosGUI(Gtk.Window):
             self._par_output.get_buffer().set_text("Timeout después de 30s")
         except Exception as e:
             self._par_output.get_buffer().set_text(f"Error: {e}")
+
+    def _show_ai(self):
+        content = self._make_page("🧠 IA TERNARIA")
+
+        self._ai_tritos_bin = os.path.join(SCRIPT_DIR, "tritos_ai")
+        if not os.path.exists(self._ai_tritos_bin):
+            self._ai_tritos_bin = os.path.join(SCRIPT_DIR, "bin", "tritos_ai")
+
+        # Chat frame
+        chat_frame = Gtk.Frame(label=" Chat con IA Ternaria ")
+        chat_frame.get_style_context().add_class("card")
+        chat_frame.set_margin_start(12)
+        chat_frame.set_margin_end(12)
+        chat_frame.set_margin_top(8)
+        content.pack_start(chat_frame, True, True, 0)
+
+        chat_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        chat_vbox.set_margin_start(8)
+        chat_vbox.set_margin_end(8)
+        chat_vbox.set_margin_top(8)
+        chat_frame.add(chat_vbox)
+
+        chat_sw = Gtk.ScrolledWindow()
+        chat_sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        chat_sw.set_min_content_height(200)
+        chat_vbox.pack_start(chat_sw, True, True, 0)
+
+        self._ai_chat_output = Gtk.TextView()
+        self._ai_chat_output.get_style_context().add_class("output-text")
+        self._ai_chat_output.set_editable(False)
+        self._ai_chat_output.set_monospace(True)
+        self._ai_chat_output.set_left_margin(8)
+        self._ai_chat_output.set_top_margin(8)
+        self._ai_chat_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        chat_sw.add(self._ai_chat_output)
+
+        # Welcome message
+        buf = self._ai_chat_output.get_buffer()
+        buf.set_text(
+            "  🧠 TRITOS IA v1.0 — Motor de Razonamiento Ternario\n"
+            "  ─────────────────────────────────────────────────\n"
+            "  Lógica: ⊕ (+1) = Certeza  |  0 = Incierto  |  ⊖ (-1) = Descartado\n\n"
+            "  Comandos:\n"
+            "    chat <msg>       Chat libre con IA\n"
+            "    paper <título>   Analizar paper de investigación\n"
+            "    sensors          Análisis de sensores demo\n"
+            "    hypothesis <txt> Evaluar hipótesis\n"
+            "    analyze <text>   Clasificar sentimiento\n"
+            "    demo             Demo completa\n\n"
+        )
+
+        # Input
+        input_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        chat_vbox.pack_start(input_box, False, False, 0)
+
+        self._ai_entry = Gtk.Entry()
+        self._ai_entry.set_hexpand(True)
+        self._ai_entry.set_placeholder_text("Escribí un comando: chat, paper, sensors, hypothesis...")
+        self._ai_entry.get_style_context().add_class("param-entry")
+        self._ai_entry.connect("activate", lambda w: self._ai_run())
+        input_box.pack_start(self._ai_entry, True, True, 0)
+
+        run_btn = Gtk.Button(label="▶ Enviar")
+        run_btn.get_style_context().add_class("run-btn")
+        run_btn.connect("clicked", lambda w: self._ai_run())
+        input_box.pack_start(run_btn, False, False, 0)
+
+        # Quick actions
+        qa_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        qa_box.set_margin_top(4)
+        chat_vbox.pack_start(qa_box, False, False, 0)
+
+        for label, cmd in [("💬 Chat", "chat hola"), ("📄 Paper", "paper ternary IoT sensor"),
+                           ("📡 Sensores", "sensors"), ("🔬 Hipótesis", "hypothesis Los sistemas ternarios son superiores"),
+                           ("📊 Demo", "demo")]:
+            btn = Gtk.Button(label=label)
+            btn.get_style_context().add_class("term-quick-btn")
+            btn.connect("clicked", lambda w, c=cmd: self._ai_entry.set_text(c) or self._ai_run())
+            qa_box.pack_start(btn, False, False, 0)
+
+    def _ai_run(self):
+        cmd = self._ai_entry.get_text().strip()
+        if not cmd:
+            return
+        buf = self._ai_chat_output.get_buffer()
+        end_iter = buf.get_end_iter()
+        buf.insert(end_iter, f"\n  Tú: {cmd}\n")
+
+        try:
+            r = subprocess.run(
+                [self._ai_tritos_bin] + cmd.split(),
+                capture_output=True, text=True, timeout=10)
+            output = r.stdout + r.stderr
+            if output.strip():
+                end_iter = buf.get_end_iter()
+                buf.insert(end_iter, output)
+        except FileNotFoundError:
+            end_iter = buf.get_end_iter()
+            buf.insert(end_iter,
+                "  ⚠️ tritos_ai no encontrado. Compilá con:\n"
+                "  gcc -o tritos_ai src/ternary_ai.c -lm\n")
+        except Exception as e:
+            end_iter = buf.get_end_iter()
+            buf.insert(end_iter, f"  Error: {e}\n")
+
+        self._ai_entry.set_text("")
+        end_iter = buf.get_end_iter()
+        self._ai_chat_output.scroll_mark_onscreen(buf.create_mark(None, end_iter, False))
 
     def _show_browser(self):
         content = self._make_page("🌐 NAVEGADOR TERNARIO")
