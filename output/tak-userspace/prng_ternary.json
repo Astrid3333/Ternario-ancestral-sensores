@@ -1,0 +1,5 @@
+{
+  "type": "Ternary_PRNG",
+  "state": [0, 1, 2],
+  "counter": 70
+}

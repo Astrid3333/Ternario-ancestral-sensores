@@ -72,6 +72,171 @@ static pid_t foreground_pid = -1;
 static int shell_pgid;
 
 // =============================================================================
+// INTERFACE OPTIONS
+// =============================================================================
+
+typedef enum { LANG_ES, LANG_EN, LANG_RU } lang_t;
+typedef enum { STYLE_MINIMAL, STYLE_FULL, STYLE_TERNARY } style_t;
+
+typedef struct {
+    lang_t lang;
+    style_t style;
+    char prompt[64];
+    char theme[32];
+    int show_banner;
+    int show_colors;
+} interface_t;
+
+static interface_t iface = {
+    .lang = LANG_ES,
+    .style = STYLE_TERNARY,
+    .prompt = "tritos",
+    .theme = "ancestral",
+    .show_banner = 1,
+    .show_colors = 1
+};
+
+/* Language strings */
+typedef struct {
+    const char* prompt;
+    const char* welcome;
+    const char* help_hint;
+    const char* error_cmd;
+    const char* error_file;
+    const char* running;
+    const char* done;
+    const char* exit_msg;
+    const char* history_title;
+    const char* jobs_title;
+    const char* no_jobs;
+    const char*俄语; /* placeholder */
+} lang_strings_t;
+
+static const lang_strings_t lang_es = {
+    .prompt = "tritos",
+    .welcome = "Bienvenido a Tritos",
+    .help_hint = "Escribe 'ayuda' para comandos",
+    .error_cmd = "comando no encontrado",
+    .error_file = "archivo no encontrado",
+    .running = "ejecutando",
+    .done = "completado",
+    .exit_msg = "Saliendo de Tritos...",
+    .history_title = "Historial",
+    .jobs_title = "Trabajos",
+    .no_jobs = "Sin trabajos activos"
+};
+
+static const lang_strings_t lang_en = {
+    .prompt = "tritos",
+    .welcome = "Welcome to Tritos",
+    .help_hint = "Type 'help' for commands",
+    .error_cmd = "command not found",
+    .error_file = "file not found",
+    .running = "running",
+    .done = "done",
+    .exit_msg = "Exiting Tritos...",
+    .history_title = "History",
+    .jobs_title = "Jobs",
+    .no_jobs = "No active jobs"
+};
+
+static const lang_strings_t lang_ru = {
+    .prompt = "триٹос",
+    .welcome = "Добро пожаловать в Тритос",
+    .help_hint = "Введите 'помощь' для команд",
+    .error_cmd = "команда не найдена",
+    .error_file = "файл не найден",
+    .running = "выполняется",
+    .done = "выполнено",
+    .exit_msg = "Выход из Тритос...",
+    .history_title = "История",
+    .jobs_title = "Задачи",
+    .no_jobs = "Нет активных задач"
+};
+
+static const lang_strings_t* current_lang = &lang_es;
+
+const char* iface_get_str(const char* es, const char* en, const char* ru) {
+    switch (iface.lang) {
+        case LANG_EN: return en;
+        case LANG_RU: return ru;
+        default: return es;
+    }
+}
+
+void iface_set_lang(const char* lang) {
+    if (strcmp(lang, "es") == 0 || strcmp(lang, "spanish") == 0 || strcmp(lang, "español") == 0) {
+        iface.lang = LANG_ES;
+        current_lang = &lang_es;
+        strncpy(iface.prompt, "tritos", 63);
+    } else if (strcmp(lang, "en") == 0 || strcmp(lang, "english") == 0) {
+        iface.lang = LANG_EN;
+        current_lang = &lang_en;
+        strncpy(iface.prompt, "tritos", 63);
+    } else if (strcmp(lang, "ru") == 0 || strcmp(lang, "russian") == 0 || strcmp(lang, "русский") == 0) {
+        iface.lang = LANG_RU;
+        current_lang = &lang_ru;
+        strncpy(iface.prompt, "три тос", 63);
+    }
+}
+
+void iface_set_style(const char* style) {
+    if (strcmp(style, "minimal") == 0) iface.style = STYLE_MINIMAL;
+    else if (strcmp(style, "full") == 0) iface.style = STYLE_FULL;
+    else if (strcmp(style, "ternary") == 0) iface.style = STYLE_TERNARY;
+}
+
+void iface_show_help(void) {
+    printf(COLOR_CYAN "  ╔══════════════════════════════════════════════════╗\n");
+    printf("  ║   TRITOS — Interface Options                     ║\n");
+    printf("  ╚══════════════════════════════════════════════════╝" COLOR_RESET "\n\n");
+
+    printf(COLOR_BOLD "  Languages / Языки / Idiomas:" COLOR_RESET "\n");
+    printf("    iface-lang es       Español\n");
+    printf("    iface-lang en       English\n");
+    printf("    iface-lang ru       Русский (Russian ternary)\n\n");
+
+    printf(COLOR_BOLD "  Styles / Estilos:" COLOR_RESET "\n");
+    printf("    iface-style minimal   Minimal prompt\n");
+    printf("    iface-style full      Full info prompt\n");
+    printf("    iface-style ternary   Ternary theme\n\n");
+
+    printf(COLOR_BOLD "  Theme / Tema:" COLOR_RESET "\n");
+    printf("    iface-theme ancestral   Ancestral (Maya/Inca)\n");
+    printf("    iface-theme soviet      Soviet/Russian\n");
+    printf("    iface-theme modern      Modern\n\n");
+
+    printf(COLOR_BOLD "  Other:" COLOR_RESET "\n");
+    printf("    iface-show banner on|off   Show welcome banner\n");
+    printf("    iface-show colors on|off   Show colors\n");
+    printf("    iface-status               Show current config\n\n");
+
+    printf(COLOR_BOLD "  Russian Ternary Mode / Русский тернарный режим:" COLOR_RESET "\n");
+    printf("    iface-lang ru             Switch to Russian\n");
+    printf("    iface-theme soviet        Soviet-style interface\n");
+    printf("    iface-style ternary       Ternary prompt: −1, 0, +1\n\n");
+
+    printf("  " COLOR_YELLOW "Example: iface-lang ru && iface-theme soviet" COLOR_RESET "\n");
+}
+
+void iface_status(void) {
+    const char* lang_name = "Español";
+    const char* style_name = "Ternary";
+    if (iface.lang == LANG_EN) lang_name = "English";
+    else if (iface.lang == LANG_RU) lang_name = "Русский";
+    if (iface.style == STYLE_MINIMAL) style_name = "Minimal";
+    else if (iface.style == STYLE_FULL) style_name = "Full";
+
+    printf("\n  " COLOR_BOLD "Interface Configuration:" COLOR_RESET "\n");
+    printf("  ├─ Language:    %s\n", lang_name);
+    printf("  ├─ Style:       %s\n", style_name);
+    printf("  ├─ Theme:       %s\n", iface.theme);
+    printf("  ├─ Prompt:      %s\n", iface.prompt);
+    printf("  ├─ Banner:      %s\n", iface.show_banner ? "on" : "off");
+    printf("  └─ Colors:      %s\n\n", iface.show_colors ? "on" : "off");
+}
+
+// =============================================================================
 // ALIASES
 // =============================================================================
 
@@ -367,6 +532,14 @@ void state_save(void) {
     fprintf(f, "haab=%u\n", cal->haab_day);
     fprintf(f, "cwd=%s\n", cwd);
 
+    /* Interface settings */
+    fprintf(f, "iface.lang=%d\n", iface.lang);
+    fprintf(f, "iface.style=%d\n", iface.style);
+    fprintf(f, "iface.theme=%s\n", iface.theme);
+    fprintf(f, "iface.prompt=%s\n", iface.prompt);
+    fprintf(f, "iface.banner=%d\n", iface.show_banner);
+    fprintf(f, "iface.colors=%d\n", iface.show_colors);
+
     for (int i = 0; i < n_aliases; i++) {
         fprintf(f, "alias=%s=%s\n", aliases[i].name, aliases[i].expansion);
     }
@@ -388,6 +561,21 @@ void state_load(void) {
                 *eq = 0;
                 alias_add(line + 6, eq + 1);
             }
+        } else if (strncmp(line, "iface.lang=", 11) == 0) {
+            iface.lang = atoi(line + 11);
+            if (iface.lang == LANG_EN) current_lang = &lang_en;
+            else if (iface.lang == LANG_RU) current_lang = &lang_ru;
+            else current_lang = &lang_es;
+        } else if (strncmp(line, "iface.style=", 12) == 0) {
+            iface.style = atoi(line + 12);
+        } else if (strncmp(line, "iface.theme=", 12) == 0) {
+            strncpy(iface.theme, line + 12, 31);
+        } else if (strncmp(line, "iface.prompt=", 13) == 0) {
+            strncpy(iface.prompt, line + 13, 63);
+        } else if (strncmp(line, "iface.banner=", 13) == 0) {
+            iface.show_banner = atoi(line + 13);
+        } else if (strncmp(line, "iface.colors=", 13) == 0) {
+            iface.show_colors = atoi(line + 13);
         }
     }
     fclose(f);
@@ -398,24 +586,46 @@ void state_load(void) {
 // =============================================================================
 
 void show_banner(void) {
+    if (!iface.show_banner) return;
     printf("\n");
-    printf(COLOR_CYAN COLOR_BOLD);
-    printf("  ╔══════════════════════════════════════════════════╗\n");
-    printf("  ║         TERNARY ANCESTRAL KERNEL v" TRITOS_VERSION "           ║\n");
-    printf("  ║         Ultra-lite · Runs on Linux               ║\n");
-    printf("  ╚══════════════════════════════════════════════════╝\n");
-    printf(COLOR_RESET "\n");
 
-    printf("  " COLOR_GREEN "▸ Logic:" COLOR_RESET "     Ternary {-1, 0, +1}\n");
-    printf("  " COLOR_GREEN "▸ Memory:" COLOR_RESET "    Base 60 (Babylonian)\n");
-    printf("  " COLOR_GREEN "▸ Scheduler:" COLOR_RESET " Maya Tzolkin/Haab\n");
-    printf("  " COLOR_GREEN "▸ Filesystem:" COLOR_RESET " Quipu (real directory)\n");
-    printf("  " COLOR_GREEN "▸ Pipes:" COLOR_RESET "     cmd1 | cmd2\n");
-    printf("  " COLOR_GREEN "▸ Chaining:" COLOR_RESET "   cmd1 ; cmd2 && cmd3\n");
-    printf("  " COLOR_GREEN "▸ Redirection:" COLOR_RESET " > >> <\n");
-    printf("  " COLOR_GREEN "▸ Jobs:" COLOR_RESET "       jobs, fg, Ctrl+Z\n");
-    printf("\n");
-    printf("  " COLOR_YELLOW "Type 'help' for commands." COLOR_RESET "\n\n");
+    if (iface.lang == LANG_RU) {
+        printf(COLOR_CYAN COLOR_BOLD);
+        printf("  ╔══════════════════════════════════════════════════╗\n");
+        printf("  ║     ТЕРНАРНЫЙ ПРЕДКОВЫЙ ЯДРО v" TRITOS_VERSION "              ║\n");
+        printf("  ║     Ультра-лайт · Работает на Linux             ║\n");
+        printf("  ╚══════════════════════════════════════════════════╝\n");
+        printf(COLOR_RESET "\n");
+        printf("  " COLOR_GREEN "▸ Логика:" COLOR_RESET "     Тернарная {-1, 0, +1}\n");
+        printf("  " COLOR_GREEN "▸ Память:" COLOR_RESET "    Основание 60 (Вавилон)\n");
+        printf("  " COLOR_GREEN "▸ Планировщик:" COLOR_RESET " Майя Тцолкин/Хааб\n");
+        printf("  " COLOR_GREEN "▸ Файловая:" COLOR_RESET "   Кипу (реальный каталог)\n");
+        printf("  " COLOR_YELLOW "Введите 'помощь' для команд." COLOR_RESET "\n\n");
+    } else if (iface.lang == LANG_EN) {
+        printf(COLOR_CYAN COLOR_BOLD);
+        printf("  ╔══════════════════════════════════════════════════╗\n");
+        printf("  ║     TERNARY ANCESTRAL KERNEL v" TRITOS_VERSION "              ║\n");
+        printf("  ║     Ultra-lite · Runs on Linux                  ║\n");
+        printf("  ╚══════════════════════════════════════════════════╝\n");
+        printf(COLOR_RESET "\n");
+        printf("  " COLOR_GREEN "▸ Logic:" COLOR_RESET "     Ternary {-1, 0, +1}\n");
+        printf("  " COLOR_GREEN "▸ Memory:" COLOR_RESET "    Base 60 (Babylonian)\n");
+        printf("  " COLOR_GREEN "▸ Scheduler:" COLOR_RESET " Maya Tzolkin/Haab\n");
+        printf("  " COLOR_GREEN "▸ Filesystem:" COLOR_RESET " Quipu (real directory)\n");
+        printf("  " COLOR_YELLOW "Type 'help' for commands." COLOR_RESET "\n\n");
+    } else {
+        printf(COLOR_CYAN COLOR_BOLD);
+        printf("  ╔══════════════════════════════════════════════════╗\n");
+        printf("  ║     KERNEL TERNA ANCESTRAL v" TRITOS_VERSION "              ║\n");
+        printf("  ║     Ultra-liviano · Corre en Linux              ║\n");
+        printf("  ╚══════════════════════════════════════════════════╝\n");
+        printf(COLOR_RESET "\n");
+        printf("  " COLOR_GREEN "▸ Lógica:" COLOR_RESET "     Ternaria {-1, 0, +1}\n");
+        printf("  " COLOR_GREEN "▸ Memoria:" COLOR_RESET "    Base 60 (Babilónico)\n");
+        printf("  " COLOR_GREEN "▸ Planificador:" COLOR_RESET " Maya Tzolkin/Haab\n");
+        printf("  " COLOR_GREEN "▸ Archivos:" COLOR_RESET "   Quipu (directorio real)\n");
+        printf("  " COLOR_YELLOW "Escribe 'ayuda' para comandos." COLOR_RESET "\n\n");
+    }
 }
 
 // =============================================================================
@@ -433,15 +643,37 @@ void show_prompt(void) {
         printf(COLOR_GREEN COLOR_BOLD "~" COLOR_RESET);
     }
 
-    printf(COLOR_GREEN COLOR_BOLD "tak" COLOR_RESET);
-    printf(COLOR_GRAY "@" COLOR_RESET);
-    printf(COLOR_CYAN "mayan" COLOR_RESET);
+    if (iface.lang == LANG_RU) {
+        printf(COLOR_GREEN COLOR_BOLD "три тос" COLOR_RESET);
+        printf(COLOR_GRAY "@" COLOR_RESET);
+        printf(COLOR_CYAN "майя" COLOR_RESET);
+    } else if (iface.lang == LANG_EN) {
+        printf(COLOR_GREEN COLOR_BOLD "tritos" COLOR_RESET);
+        printf(COLOR_GRAY "@" COLOR_RESET);
+        printf(COLOR_CYAN "mayan" COLOR_RESET);
+    } else {
+        printf(COLOR_GREEN COLOR_BOLD "tritos" COLOR_RESET);
+        printf(COLOR_GRAY "@" COLOR_RESET);
+        printf(COLOR_CYAN "mayan" COLOR_RESET);
+    }
+
     printf(COLOR_GRAY ":" COLOR_RESET);
     printf(COLOR_BLUE "%s" COLOR_RESET, display_cwd);
     printf(COLOR_GRAY ":" COLOR_RESET);
     printf(COLOR_BLUE "%u" COLOR_RESET, cal->tzolkin_day);
     printf(COLOR_GRAY "/" COLOR_RESET);
     printf(COLOR_YELLOW "%u" COLOR_RESET, cal->haab_day);
+
+    if (iface.style == STYLE_TERNARY) {
+        /* Show ternary day indicator: −1, 0, +1 */
+        int tern = (cal->tzolkin_day % 3) - 1;
+        printf(COLOR_GRAY " [" COLOR_RESET);
+        if (tern == -1) printf(COLOR_RED "−1" COLOR_RESET);
+        else if (tern == 0) printf(COLOR_YELLOW "0" COLOR_RESET);
+        else printf(COLOR_GREEN "+1" COLOR_RESET);
+        printf(COLOR_GRAY "]" COLOR_RESET);
+    }
+
     printf(COLOR_BOLD "$ " COLOR_RESET);
     fflush(stdout);
 }
@@ -8695,6 +8927,56 @@ int run_single(char* line) {
         else if (strcmp(argv[0], "octave-report") == 0) { builtin_rc = cmd_octave_report(argc, argv); is_builtin = 1; }
         /* Virtual Sensor Simulation */
         else if (strcmp(argv[0], "sensor-sim") == 0) { builtin_rc = cmd_sensor_sim(argc, argv); is_builtin = 1; }
+        /* Tritos Science Suite — Physics, Sensors, Neural, Crypto, Compression */
+        else if (strcmp(argv[0], "science") == 0) {
+            /* Run tritos_science binary */
+            char science_path[1024];
+            snprintf(science_path, sizeof(science_path), "%s/bin/tritos_science", tak_home);
+            
+            if (access(science_path, X_OK) != 0) {
+                /* Try current directory */
+                snprintf(science_path, sizeof(science_path), "./tritos_science");
+            }
+            
+            pid_t pid = fork();
+            if (pid == 0) {
+                execv(science_path, argv);
+                fprintf(stderr, "  Error: Could not run science suite\n");
+                _exit(1);
+            } else if (pid > 0) {
+                waitpid(pid, &builtin_rc, 0);
+                builtin_rc = WEXITSTATUS(builtin_rc);
+            } else {
+                fprintf(stderr, "  Error: fork failed\n");
+                builtin_rc = 1;
+            }
+            is_builtin = 1;
+        }
+        /* Interface Options */
+        else if (strcmp(argv[0], "iface-lang") == 0) {
+            if (argc < 2) { fprintf(stderr, "  Usage: iface-lang <es|en|ru>\n"); builtin_rc = 1; }
+            else { iface_set_lang(argv[1]); state_save(); printf("  Language: %s\n", argv[1]); builtin_rc = 0; }
+            is_builtin = 1;
+        }
+        else if (strcmp(argv[0], "iface-style") == 0) {
+            if (argc < 2) { fprintf(stderr, "  Usage: iface-style <minimal|full|ternary>\n"); builtin_rc = 1; }
+            else { iface_set_style(argv[1]); state_save(); printf("  Style: %s\n", argv[1]); builtin_rc = 0; }
+            is_builtin = 1;
+        }
+        else if (strcmp(argv[0], "iface-theme") == 0) {
+            if (argc < 2) { fprintf(stderr, "  Usage: iface-theme <ancestral|soviet|modern>\n"); builtin_rc = 1; }
+            else { strncpy(iface.theme, argv[1], 31); state_save(); printf("  Theme: %s\n", argv[1]); builtin_rc = 0; }
+            is_builtin = 1;
+        }
+        else if (strcmp(argv[0], "iface-show") == 0) {
+            if (argc < 3) { fprintf(stderr, "  Usage: iface-show <banner|colors> <on|off>\n"); builtin_rc = 1; }
+            else if (strcmp(argv[1], "banner") == 0) { iface.show_banner = (strcmp(argv[2], "on") == 0); builtin_rc = 0; }
+            else if (strcmp(argv[1], "colors") == 0) { iface.show_colors = (strcmp(argv[2], "on") == 0); builtin_rc = 0; }
+            else { fprintf(stderr, "  Usage: iface-show <banner|colors> <on|off>\n"); builtin_rc = 1; }
+            is_builtin = 1;
+        }
+        else if (strcmp(argv[0], "iface-status") == 0) { iface_status(); is_builtin = 1; }
+        else if (strcmp(argv[0], "iface-help") == 0) { iface_show_help(); is_builtin = 1; }
 
         if (is_builtin) {
             fflush(stdout);

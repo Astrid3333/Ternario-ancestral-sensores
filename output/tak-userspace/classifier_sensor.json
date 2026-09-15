@@ -1,0 +1,36 @@
+{
+  "name": "environment",
+  "n_rules": 5,
+  "rules": [
+    {
+      "inputs": [0],
+      "values": [1],
+      "output": 1,
+      "desc": "High temperature → alert"
+    },
+    {
+      "inputs": [1],
+      "values": [1],
+      "output": 1,
+      "desc": "High humidity → rain likely"
+    },
+    {
+      "inputs": [0,1],
+      "values": [-1,-1],
+      "output": 1,
+      "desc": "Low temp + low humidity → frost warning"
+    },
+    {
+      "inputs": [0,1,2],
+      "values": [1,1,1],
+      "output": -1,
+      "desc": "All high → overexposure"
+    },
+    {
+      "inputs": [0,1,2],
+      "values": [0,0,0],
+      "output": 0,
+      "desc": "All neutral → normal conditions"
+    }
+  ]
+}
