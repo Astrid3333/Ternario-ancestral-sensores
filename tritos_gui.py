@@ -174,6 +174,27 @@ window { background-color: #1a1a2e; }
 }
 .file-item:hover { background-color: #21262d; }
 .path-label { color: #8b949e; font-size: 11px; font-family: monospace; }
+
+.term-quick-btn {
+    background-color: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+}
+.term-quick-btn:hover { background-color: #30363d; border-color: #58a6ff; }
+.term-calc-btn {
+    background-color: #161b22;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: bold;
+    min-width: 40px;
+}
+.term-calc-btn:hover { background-color: #21262d; border-color: #ffd700; }
 """
 
 SCIENCE_MODULES = [
@@ -239,6 +260,7 @@ START_MENU_ITEMS = [
     ("item", "⚙️ Sistema", "system"),
     ("item", "🎵 Audio", "audio"),
     ("item", "🧮 Matemática", "math"),
+    ("item", "🧮 Terminal Bin/Tern", "terminal"),
     ("section", "SISTEMA"),
     ("item", "🐚 Shell Tritos", "shell"),
 ]
@@ -410,6 +432,7 @@ class TritosGUI(Gtk.Window):
             "system": self._show_system,
             "audio": self._show_audio,
             "math": self._show_math,
+            "terminal": self._show_terminal,
             "shell": self._show_shell,
         }
         fn = dispatch.get(section, self._show_desktop)
@@ -454,6 +477,7 @@ class TritosGUI(Gtk.Window):
             ("⚙️", "Sistema", "system"),
             ("🎵", "Audio", "audio"),
             ("🧮", "Matemática", "math"),
+            ("🔢", "Terminal\nBin/Tern", "terminal"),
             ("🐚", "Shell\nTritos", "shell"),
         ]
 
@@ -1295,6 +1319,145 @@ class TritosGUI(Gtk.Window):
                 f"Usá 'Generar Claves' primero para cifrar con RSA ternario.")
         except Exception as e:
             self._crypto_output.get_buffer().set_text(f"Error: {e}")
+
+    def _show_terminal(self):
+        content = self._make_page("🔢 TERMINAL BINARIA / TERNARIA")
+
+        # Command input
+        cmd_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        cmd_box.set_margin_start(12)
+        cmd_box.set_margin_end(12)
+        cmd_box.set_margin_top(8)
+        content.pack_start(cmd_box, False, False, 0)
+
+        lbl = Gtk.Label(label="tritos₃>")
+        lbl.get_style_context().add_class("param-label")
+        cmd_box.pack_start(lbl, False, False, 0)
+
+        self._term_entry = Gtk.Entry()
+        self._term_entry.set_hexpand(True)
+        self._term_entry.set_placeholder_text("Escribí un comando: dec 42, 42 + 10, bal 255, truth, maya...")
+        self._term_entry.get_style_context().add_class("param-entry")
+        self._term_entry.connect("activate", lambda w: self._term_run())
+        cmd_box.pack_start(self._term_entry, True, True, 0)
+
+        run_btn = Gtk.Button(label="▶ Ejecutar")
+        run_btn.get_style_context().add_class("run-btn")
+        run_btn.connect("clicked", lambda w: self._term_run())
+        cmd_box.pack_start(run_btn, False, False, 0)
+
+        # Quick actions
+        qa_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        qa_box.set_margin_start(12)
+        qa_box.set_margin_end(12)
+        qa_box.set_margin_top(6)
+        content.pack_start(qa_box, False, False, 0)
+
+        qa_label = Gtk.Label(label="Rápidas:")
+        qa_label.get_style_context().add_class("param-label")
+        qa_box.pack_start(qa_label, False, False, 0)
+
+        for label, cmd in [("Dec→Todo", "dec "), ("Bal", "bal "), ("Base60", "b60 "),
+                           ("Truth", "truth"), ("Maya", "maya"), ("Persa", "persa"),
+                           ("Azteca", "azteca")]:
+            btn = Gtk.Button(label=label)
+            btn.get_style_context().add_class("term-quick-btn")
+            btn.connect("clicked", lambda w, c=cmd: self._term_insert(c))
+            qa_box.pack_start(btn, False, False, 0)
+
+        # Calculator buttons
+        calc_frame = Gtk.Frame(label=" Calculadora Ternaria ")
+        calc_frame.get_style_context().add_class("card")
+        calc_frame.set_margin_start(12)
+        calc_frame.set_margin_end(12)
+        calc_frame.set_margin_top(6)
+        content.pack_start(calc_frame, False, False, 0)
+
+        calc_grid = Gtk.Grid()
+        calc_grid.set_column_spacing(4)
+        calc_grid.set_row_spacing(4)
+        calc_grid.set_margin_start(8)
+        calc_grid.set_margin_end(8)
+        calc_grid.set_margin_top(8)
+        calc_frame.add(calc_grid)
+
+        ops = [("+", "+"), ("-", "-"), ("×", "*"), ("÷", "/"), ("%", "%"), ("^", "^")]
+        for i, (sym, op) in enumerate(ops):
+            btn = Gtk.Button(label=sym)
+            btn.get_style_context().add_class("term-calc-btn")
+            btn.connect("clicked", lambda w, o=op: self._term_insert(f" {o} "))
+            calc_grid.attach(btn, i, 0, 1, 1)
+
+        logic_ops = [("AND", "and "), ("OR", "or "), ("XOR", "xor "),
+                     ("NOT", "not "), ("→", "implies "), ("↔", "iff ")]
+        for i, (sym, cmd) in enumerate(logic_ops):
+            btn = Gtk.Button(label=sym)
+            btn.get_style_context().add_class("term-calc-btn")
+            btn.connect("clicked", lambda w, c=cmd: self._term_insert(c))
+            calc_grid.attach(btn, i, 1, 1, 1)
+
+        # Output
+        out_frame = Gtk.Frame(label=" Salida ")
+        out_frame.get_style_context().add_class("card")
+        out_frame.set_margin_start(12)
+        out_frame.set_margin_end(12)
+        out_frame.set_margin_top(6)
+        content.pack_start(out_frame, True, True, 0)
+
+        out_sw = Gtk.ScrolledWindow()
+        out_sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        out_frame.add(out_sw)
+
+        self._term_output = Gtk.TextView()
+        self._term_output.get_style_context().add_class("output-text")
+        self._term_output.set_editable(False)
+        self._term_output.set_monospace(True)
+        self._term_output.set_left_margin(8)
+        self._term_output.set_top_margin(8)
+        self._term_output.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        out_sw.add(self._term_output)
+
+    def _term_insert(self, text):
+        self._term_entry.insert_text(text, len(text), self._term_entry.get_position())
+
+    def _term_run(self):
+        cmd = self._term_entry.get_text().strip()
+        if not cmd:
+            return
+        buf = self._term_output.get_buffer()
+        end_iter = buf.get_end_iter()
+        buf.insert(end_iter, f"\n  tritos₃> {cmd}\n")
+
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        terminal_bin = os.path.join(script_dir, "tritos_terminal")
+        if not os.path.exists(terminal_bin):
+            terminal_bin = os.path.join(script_dir, "bin", "tritos_terminal")
+
+        try:
+            r = subprocess.run(
+                [terminal_bin, cmd],
+                capture_output=True, text=True, timeout=10,
+                cwd=script_dir)
+            output = r.stdout + r.stderr
+            if output.strip():
+                end_iter = buf.get_end_iter()
+                buf.insert(end_iter, output)
+        except FileNotFoundError:
+            end_iter = buf.get_end_iter()
+            buf.insert(end_iter,
+                "  Error: tritos_terminal no encontrado.\n"
+                "  Compilá con: gcc -o tritos_terminal src/ternary_terminal.c -lm\n")
+        except subprocess.TimeoutExpired:
+            end_iter = buf.get_end_iter()
+            buf.insert(end_iter, "  Timeout (>10s)\n")
+        except Exception as e:
+            end_iter = buf.get_end_iter()
+            buf.insert(end_iter, f"  Error: {e}\n")
+
+        self._term_entry.set_text("")
+        # Scroll to end
+        end_iter = buf.get_end_iter()
+        self._term_output.scroll_mark_onscreen(buf.create_mark(None, end_iter, False))
 
     def _show_shell(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
