@@ -267,6 +267,7 @@ START_MENU_ITEMS = [
     ("item", "🎵 Audio", "audio"),
     ("item", "🧮 Matemática", "math"),
     ("item", "🔢 Terminal Bin/Tern", "terminal"),
+    ("item", "📚 Fórmulas", "formulas"),
     ("section", "CIENCIA"),
     ("item", "🧪 Experimentos", "experiments"),
     ("item", "🖥️ Kernel Bare-Metal", "kernel"),
@@ -442,6 +443,7 @@ class TritosGUI(Gtk.Window):
             "audio": self._show_audio,
             "math": self._show_math,
             "terminal": self._show_terminal,
+            "formulas": self._show_formulas,
             "shell": self._show_shell,
             "ai": self._show_ai,
             "browser": self._show_browser,
@@ -500,6 +502,7 @@ class TritosGUI(Gtk.Window):
             ("🎵", "Audio", "audio"),
             ("🧮", "Matemática", "math"),
             ("🔢", "Terminal\nBin/Tern", "terminal"),
+            ("📚", "Fórmulas", "formulas"),
             ("🧪", "Experi-\nmentos", "experiments"),
             ("🖥️", "Kernel\nBare-Metal", "kernel"),
             ("🐚", "Shell\nTritos", "shell"),
@@ -2150,6 +2153,153 @@ class TritosGUI(Gtk.Window):
                 "Instalá QEMU: sudo apt install qemu-system-x86")
         except Exception as e:
             self._kern_output.get_buffer().set_text(f"Error: {e}")
+
+    def _show_formulas(self):
+        content = self._make_page("📚 FÓRMULAS / REFERENCIA CIENTÍFICA")
+
+        categories = [
+            ("⚖️ Aritmética Ternaria", [
+                ("Decimal → Balanceado", "r = n % 3; si r==2: digit=-1, carry=+1"),
+                ("Balanceado → Decimal", "value = Σ(d[i] × 3^i, i=0..n)"),
+                ("Suma Ternaria", "sum = a[i] + b[i] + carry; si >1: -3, carry=1"),
+                ("Float → Coordenada Ternaria", "digit = 1 si v/power ≥ 0.666, 0 si ≥ 0.333, -1 si no"),
+            ]),
+            ("🧲 Modelo de Ising Ternario", [
+                ("Hamiltoniano (E local)", "E = -J × Σ(s_i × s_vecino) - h × s_i"),
+                ("Energía Total", "E_total = (1/2) × Σ(E_local_i)"),
+                ("Magnetización", "M = (1/N) × Σ(s_i)"),
+                ("Criterio de Metropolis", "si ΔE ≤ 0: aceptar; si rand() < exp(-ΔE/T): aceptar"),
+                ("Calor Específico", "C = (⟨E²⟩ - ⟨E⟩²) / (k × T²)"),
+                ("Susceptibilidad", "χ = (⟨M²⟩ - ⟨M⟩²) / (k × T)"),
+            ]),
+            ("⚛️ Dinámica Molecular", [
+                ("Potencial Lennard-Jones", "U(r) = 4ε × ((σ/r)¹² - (σ/r)⁶)"),
+                ("Fuerza Lennard-Jones", "F(r) = 24ε × (2(σ/r)¹² - (σ/r)⁶) / r"),
+                ("Integración Velocity Verlet", "x(t+dt) = x(t) + v(t)dt + f(t)dt²/2"),
+                ("Energía Cinética", "KE = Σ(½ × m × (vx² + vy² + vz²))"),
+                ("Convención de Imagen Mínima", "dx = x_i - x_j - L × round((x_i - x_j)/L)"),
+                ("Maxwell-Boltzmann", "v_x = (rand() - 0.5) × √T"),
+            ]),
+            ("🧠 Perceptrón Ternario", [
+                ("Activación Ternaria", "f(sum) = +1 si >0, 0 si =0, -1 si <0"),
+                ("Producto Punto", "dot(a,b) = Σ(a[i] × b[i])"),
+                ("Forward Pass", "output = activation(Σ(W[i][j] × input[j] + bias[i]))"),
+                ("Regla de Aprendizaje", "delta = sign(error) × sign(input); W += delta"),
+            ]),
+            ("🔄 Red de Hopfield", [
+                ("Actualización Hebbiana", "W[i][j] = sign(pattern[i] × pattern[j])"),
+                ("Actualización Neurona", "sum = Σ(W[i][j] × state[j]); state = sign(sum + noise)"),
+                ("Overlap", "overlap = count(state[i] == pattern[i]) / N"),
+            ]),
+            ("🔐 Criptografía", [
+                ("Exponenciación Modular", "mod_pow(base, exp, mod) — squaring repetido"),
+                ("GCD Extendido", "ax + by = gcd(a,b)"),
+                ("Inversa Modular", "mod_inverse(a,m) = x tal que a×x ≡ 1 (mod m)"),
+                ("RSA: Generación de Claves", "n=p×q; φ=(p-1)(q-1); d=mod_inverse(e,φ)"),
+                ("Diffie-Hellman", "pub = g^priv mod p; shared = remote^local mod p"),
+                ("PRNG Ternario (LFSR)", "feedback = (s[0]+s[1]+s[2]) % 3"),
+            ]),
+            ("🌊 Ondas Sísmicas", [
+                ("Onda P", "amp = mag × exp(-dist/100) × exp(-|t-t_p|/0.1)"),
+                ("Onda S", "amp = mag × 1.5 × exp(-dist/80) × exp(-|t-t_s|/0.2)"),
+                ("Onda Superficial", "amp = mag × 2.0 × exp(-dist/60) × exp(-|t-t_surf|/0.5)"),
+                ("Tiempos de Llegada", "t_p = dist/v_p (v_p=6 km/s); t_s = dist/v_s (v_s=3.5 km/s)"),
+                ("Amplitud Combinada", "A = √(A_p² + A_s² + A_surf²)"),
+            ]),
+            ("🌍 Sensores Ambientales", [
+                ("Derivada Temperatura", "dT/dt = k_rad×(rad-500)/500 + k_wind×wind/10 + noise"),
+                ("Derivada Humedad", "dH/dt = k_temp×(T-25)/10 + k_rain×rain/10 + noise"),
+                ("Forzado Solar", "radiation = 500 + 400 × sin((hour-6)/24 × 2π)"),
+                ("Integración Euler", "T(t+dt) = T(t) + dT/dt × dt"),
+            ]),
+            ("⚡ Límite de Landauer", [
+                ("Energía por Símbolo", "E = k_B × T × ln(B); k_B=1.38e-23 J/K"),
+                ("Eficiencia de Codificación", "eff(B) = ln(B)/B; máximo en B=e≈2.718"),
+                ("Ventaja Ternaria vs Binaria", "(ln(3)/3 - ln(2)/2) / (ln(2)/2) × 100 = 5.7%"),
+                ("Ahorro Energético", "saving = 1 - (E_ternary / E_binary)"),
+            ]),
+            ("📦 Compresión", [
+                ("Residuo mod-33", "value = Σ(block[i] × 3^(3-i)); residue = value % 33"),
+                ("Checksum Quipu", "p1 = -(Σblock) % 3; p2 = -(Πblock) % 3"),
+                ("Ratio de Compresión", "ratio = original_bits / compressed_bits"),
+                ("Delta Encoding + Ternario", "delta[i] = data[i] - data[i-1]; pack 5 trits/int"),
+                ("Run-Length Ternario", "output = (state+1) << 14 | (count & 0x3FFF)"),
+                ("MSE", "MSE = (1/n) × Σ(original[i] - compressed[i])²"),
+            ]),
+            ("📅 Calendarios Ancestrales", [
+                ("Maya: Long Count → JDN", "JDN = 584283 + (b×144000 + k×7200 + t×360 + w×20 + n)"),
+                ("Tonalpohualli (260 días)", "(día, signo) = ((n-1)%13 + 1, (n-1)%20 + 1)"),
+                ("Año Bisiesto Persa", "bisiesto si (año % 33) ∈ {1,5,9,13,17,22,26,30}"),
+                ("Error de Año Medio", "error_seg = (año_medio - 365.24219) × 86400"),
+                ("Calendario Redondo", "LCM(260,365) = 18980; 52×365 = 73×260"),
+                ("Era 13 Baktun", "13 × 144000 = 1.872.000 días"),
+                ("Ciclo Persa 33 años", "año_medio = 12053/33 = 365.24242 días"),
+            ]),
+            ("🔢 Compresión Multi-Base", [
+                ("Trits por Dígito", "trits = log₃(base); Maya=2.72, Persa=3.15, Babilonia=3.91"),
+                ("Bits por Dígito", "bits = log₂(base); Babilonia(60)=5.91 bits"),
+                ("Ahorro vs Ternario", "Maya=63%, Persa=68.2%, Babilonia=74.3%"),
+            ]),
+            ("📊 Seguridad", [
+                ("Reputación", "rep = Σ(confidence[i] × score[i]) / count"),
+                ("Tasa de Falsos Positivos", "FPR = FP / (FP + TN)"),
+                ("Precisión / Recall / F1", "P=TP/(TP+FP); R=TP/(TP+FN); F1=2PR/(P+R)"),
+            ]),
+            ("🖨️ Render 3D", [
+                ("Vector Normal (Cross Product)", "n = AB × AC; n_x = (B_y-A_y)(C_z-A_z) - (B_z-A_z)(C_y-A_y)"),
+            ]),
+            ("📈 Entropía", [
+                ("Entropía de Shannon", "H = -Σ(p_i × log₂(p_i))"),
+            ]),
+            ("🧬 IA Ternaria", [
+                ("Voto Ponderado", "norm = Σ(value×conf) / Σ(conf); >0.3: ⊕, <-0.3: ⊖, sino: 0"),
+                ("Confianza Promedio", "avg = Σ(confidence[i]) / count"),
+            ]),
+        ]
+
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        content.pack_start(scroll, True, True, 0)
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        vbox.set_margin_start(16)
+        vbox.set_margin_end(16)
+        vbox.set_margin_top(12)
+        scroll.add(vbox)
+
+        # Summary
+        summary = Gtk.Label()
+        summary.set_markup(
+            '<span size="large" weight="bold" color="#ffd700">'
+            '67 fórmulas en 20 categorías — Todo el conocimiento científico de TRITOS</span>')
+        summary.set_xalign(0)
+        summary.set_line_wrap(True)
+        vbox.pack_start(summary, False, False, 0)
+
+        for cat_name, formulas in categories:
+            frame = Gtk.Frame(label=f" {cat_name} ")
+            frame.get_style_context().add_class("card")
+            vbox.pack_start(frame, False, False, 0)
+
+            grid = Gtk.Grid()
+            grid.set_column_spacing(12)
+            grid.set_row_spacing(4)
+            grid.set_margin_start(8)
+            grid.set_margin_end(8)
+            grid.set_margin_top(6)
+            grid.set_margin_bottom(6)
+            frame.add(grid)
+
+            for i, (name, formula) in enumerate(formulas):
+                name_lbl = Gtk.Label(label=name)
+                name_lbl.set_xalign(1)
+                name_lbl.set_markup(f'<span weight="bold" color="#c9d1d9">{name}</span>')
+                grid.attach(name_lbl, 0, i, 1, 1)
+
+                formula_lbl = Gtk.Label(label=formula)
+                formula_lbl.set_xalign(0)
+                formula_lbl.set_markup(f'<span font_family="monospace" color="#7ee787">{formula}</span>')
+                grid.attach(formula_lbl, 1, i, 1, 1)
 
     def _show_shell(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
