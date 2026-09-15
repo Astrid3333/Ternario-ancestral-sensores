@@ -20,6 +20,9 @@ notes/.gitkeep
 # Open Science internal files
 .openscience/
 
+# Screenshots
+*.png
+
 # Conversaciones locales
 conversation-*.md
 save-conversation.sh
