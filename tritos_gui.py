@@ -425,7 +425,6 @@ class TritosGUI(Gtk.Window):
         outer.pack_start(content, True, True, 0)
 
         self.page_stack.pack_start(outer, True, True, 0)
-        outer.show_all()
         return content
 
     def _navigate_to(self, section):
@@ -456,6 +455,9 @@ class TritosGUI(Gtk.Window):
         }
         fn = dispatch.get(section, self._show_desktop)
         fn()
+        # Show all widgets that were added after _make_page
+        for child in self.page_stack.get_children():
+            child.show_all()
 
     def _show_desktop(self):
         self._clear_page()
@@ -2359,7 +2361,7 @@ class TritosGUI(Gtk.Window):
 
                 formula_lbl = Gtk.Label(label=formula)
                 formula_lbl.set_xalign(0)
-                formula_lbl.set_markup(f'<span font_family="monospace" color="#7ee787">{formula}</span>')
+                formula_lbl.set_markup(f'<span font_family="monospace" color="#7ee787">{formula.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")}</span>')
                 grid.attach(formula_lbl, 1, i, 1, 1)
 
     def _show_shell(self):
