@@ -268,6 +268,7 @@ START_MENU_ITEMS = [
     ("item", "🧮 Matemática", "math"),
     ("item", "🔢 Terminal Bin/Tern", "terminal"),
     ("item", "📚 Fórmulas", "formulas"),
+    ("item", "📖 Enciclopedia", "encyclopedia"),
     ("section", "CIENCIA"),
     ("item", "🧪 Experimentos", "experiments"),
     ("item", "🖥️ Kernel Bare-Metal", "kernel"),
@@ -443,6 +444,7 @@ class TritosGUI(Gtk.Window):
             "math": self._show_math,
             "terminal": self._show_terminal,
             "formulas": self._show_formulas,
+            "encyclopedia": self._show_encyclopedia,
             "shell": self._show_shell,
             "ai": self._show_ai,
             "browser": self._show_browser,
@@ -505,6 +507,7 @@ class TritosGUI(Gtk.Window):
             ("🧮", "Matemática", "math"),
             ("🔢", "Terminal\nBin/Tern", "terminal"),
             ("📚", "Fórmulas", "formulas"),
+            ("📖", "Enciclo-\nlopedia", "encyclopedia"),
             ("🧪", "Experi-\nmentos", "experiments"),
             ("🖥️", "Kernel\nBare-Metal", "kernel"),
             ("🐚", "Shell\nTritos", "shell"),
@@ -2363,6 +2366,107 @@ class TritosGUI(Gtk.Window):
                 formula_lbl.set_xalign(0)
                 formula_lbl.set_markup(f'<span font_family="monospace" color="#7ee787">{formula.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")}</span>')
                 grid.attach(formula_lbl, 1, i, 1, 1)
+
+    def _show_encyclopedia(self):
+        content = self._make_page("📖 ENCICLOPEDIA — Wikipedia")
+
+        f1 = Gtk.Frame(label=" Buscar Artículo ")
+        f1.get_style_context().add_class("card")
+        vb1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vb1.set_margin_start(8)
+        vb1.set_margin_end(8)
+        vb1.set_margin_top(8)
+        f1.add(vb1)
+
+        info = Gtk.Label()
+        info.set_xalign(0)
+        info.set_markup('<span color="#c9d1d9">Conectado a Wikipedia (es). Buscá cualquier tema.</span>')
+        vb1.pack_start(info, False, False, 0)
+
+        search_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        lbl = Gtk.Label(label="Buscar:")
+        lbl.get_style_context().add_class("param-label")
+        search_row.pack_start(lbl, False, False, 0)
+        self._enc_search = Gtk.Entry()
+        self._enc_search.set_hexpand(True)
+        self._enc_search.set_width_chars(40)
+        self._enc_search.set_text("computación ternaria")
+        self._enc_search.get_style_context().add_class("param-entry")
+        self._enc_search.connect("activate", lambda w: self._enc_do_search())
+        search_row.pack_start(self._enc_search, True, True, 0)
+        btn = Gtk.Button(label="🔍 Buscar")
+        btn.get_style_context().add_class("run-btn")
+        btn.connect("clicked", lambda w: self._enc_do_search())
+        search_row.pack_start(btn, False, False, 0)
+        vb1.pack_start(search_row, False, False, 0)
+
+        # Quick topics
+        topics_row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        topics_row.set_margin_top(4)
+        for topic in ["Física", "Matemáticas", "Historia", "Computación", "Astronomía", "Biología"]:
+            tb = Gtk.Button(label=topic)
+            tb.get_style_context().add_class("gen-btn")
+            tb.connect("clicked", lambda w, t=topic: self._enc_topic(t))
+            topics_row.pack_start(tb, False, False, 0)
+        vb1.pack_start(topics_row, False, False, 0)
+        content.pack_start(f1, False, False, 0)
+
+        # Results list
+        rf = Gtk.Frame(label=" Resultados ")
+        rf.get_style_context().add_class("card")
+        self._enc_results = Gtk.TextView()
+        self._enc_results.get_style_context().add_class("output-text")
+        self._enc_results.set_editable(False)
+        self._enc_results.set_monospace(True)
+        self._enc_results.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw = Gtk.ScrolledWindow()
+        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.set_size_request(-1, 150)
+        sw.add(self._enc_results)
+        rf.add(sw)
+        content.pack_start(rf, False, False, 0)
+
+        # Article view
+        af = Gtk.Frame(label=" Artículo ")
+        af.get_style_context().add_class("card")
+        self._enc_article = Gtk.TextView()
+        self._enc_article.get_style_context().add_class("output-text")
+        self._enc_article.set_editable(False)
+        self._enc_article.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        sw2 = Gtk.ScrolledWindow()
+        sw2.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw2.add(self._enc_article)
+        af.add(sw2)
+        content.pack_start(af, True, True, 0)
+
+    def _enc_do_search(self):
+        query = self._enc_search.get_text().strip()
+        if not query:
+            return
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        enc_script = os.path.join(script_dir, "tritos_encyclopedia.py")
+        try:
+            result = subprocess.run(
+                [sys.executable, enc_script, "search", query],
+                capture_output=True, text=True, timeout=15)
+            self._enc_results.get_buffer().set_text(result.stdout + result.stderr)
+        except Exception as e:
+            self._enc_results.get_buffer().set_text(f"Error: {e}")
+
+    def _enc_topic(self, topic):
+        self._enc_search.set_text(topic)
+        self._enc_do_search()
+
+    def _enc_read_article(self, title):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        enc_script = os.path.join(script_dir, "tritos_encyclopedia.py")
+        try:
+            result = subprocess.run(
+                [sys.executable, enc_script, "read", title],
+                capture_output=True, text=True, timeout=15)
+            self._enc_article.get_buffer().set_text(result.stdout[:8000])
+        except Exception as e:
+            self._enc_article.get_buffer().set_text(f"Error: {e}")
 
     def _show_shell(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
