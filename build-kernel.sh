@@ -65,20 +65,16 @@ compile_kernel() {
     info "Compilando kernel..."
     cd "$KERNEL_DIR"
     
-    # Compilar cada archivo
-    gcc -m32 -ffreestanding -O2 -Wall -Wextra -nostdlib -nostdinc -fno-builtin \
-        -fno-stack-protector -nostartfiles -nodefaultlibs \
-        -Iinclude -c src/kernel.c -o kernel.o
+    # Compilar cada archivo (sin cross-compiler, usando gcc estándar con -m32)
+    local CFLAGS="-m32 -ffreestanding -O2 -Wall -Wextra -nostdlib -nostdinc -fno-builtin -fno-stack-protector -nostartfiles -nodefaultlibs -fno-pie -no-pie"
+    
+    gcc $CFLAGS -Iinclude -c src/kernel.c -o kernel.o
     ok "kernel.c → kernel.o"
     
-    gcc -m32 -ffreestanding -O2 -Wall -Wextra -nostdlib -nostdinc -fno-builtin \
-        -fno-stack-protector -nostartfiles -nodefaultlibs \
-        -Iinclude -c src/memory.c -o memory.o
+    gcc $CFLAGS -Iinclude -c src/memory.c -o memory.o
     ok "memory.c → memory.o"
     
-    gcc -m32 -ffreestanding -O2 -Wall -Wextra -nostdlib -nostdinc -fno-builtin \
-        -fno-stack-protector -nostartfiles -nodefaultlibs \
-        -Iinclude -c src/scheduler.c -o scheduler.o
+    gcc $CFLAGS -Iinclude -c src/scheduler.c -o scheduler.o
     ok "scheduler.c → scheduler.o"
 }
 
@@ -105,7 +101,7 @@ link_kernel() {
     info "Linkeando kernel..."
     cd "$KERNEL_DIR"
     
-    ld -m elf_i386 -T linker.ld kernel.o memory.o scheduler.o -o ternary_kernel.bin
+    ld -m elf_i386 -T linker.ld -no-pie -nostdlib kernel.o memory.o scheduler.o -o ternary_kernel.bin
     local size=$(wc -c < ternary_kernel.bin)
     ok "ternary_kernel.bin ($size bytes)"
 }
