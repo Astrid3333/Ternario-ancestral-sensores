@@ -64,7 +64,7 @@ window { background-color: #1a1a2e; }
     border: none;
     border-radius: 4px;
     padding: 8px 16px;
-    text-align: left;
+
     font-size: 13px;
 }
 .start-menu-item:hover { background-color: #21262d; }
@@ -168,7 +168,7 @@ window { background-color: #1a1a2e; }
     border: none;
     border-radius: 4px;
     padding: 6px 10px;
-    text-align: left;
+
     font-size: 12px;
     color: #c9d1d9;
 }
@@ -345,11 +345,12 @@ class TritosGUI(Gtk.Window):
 
         menu.show_all()
 
-        taskbar_alloc = self.taskbar.get_allocation()
-        self.taskbar.get_window().get_origin(0, 0)
-        root_window = self.get_root_window()
-        tx, ty = self.taskbar.translate_coordinates(root_window, 0, 0)
-        menu.move(tx, ty - menu.get_allocated_height())
+        try:
+            root_window = self.get_root_window()
+            tx, ty = self.taskbar.translate_coordinates(root_window, 0, 0)
+            menu.move(tx, ty - menu.get_allocated_height())
+        except Exception:
+            menu.move(100, 100)
 
         self.start_menu = menu
 
