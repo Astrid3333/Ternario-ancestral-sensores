@@ -1,6 +1,6 @@
-# Ternario Ancestral: Compresión Inteligente para IoT y Centros de Datos
+# TRITOS — Kernel Ternario Ancestral
 
-Sistema de codificación ternaria inspirado en matemáticas ancestrales (maya, persa, babilónica, quipu inca) para comprimir datos de 3 estados con eficiencia superior al binario.
+Sistema operativo ternario ancestral completo: kernel bare-metal, shell con 238+ comandos, science suite, IA ternaria, navegador web, enciclopedia, y GUI de escritorio.
 
 ## ¿Por qué ternario?
 
@@ -15,20 +15,88 @@ Los sensores IoT típicos reportan estados discretos: frío/normal/caliente, sec
 
 ---
 
+## Componentes del Sistema
+
+### 1. Kernel Bare-Metal (x86/QEMU)
+- Bootloader de 16-bit (boot.asm)
+- Shell en VGA con 20+ comandos
+- Scheduler Maya de 13 ciclos
+- Memory manager Base 60
+- Archivo `ternary_os.iso` (372KB) — arranca en QEMU
+
+### 2. Tritos Shell (Userspace)
+- 238+ comandos integrados
+- Piping (`|`), redirección (`>`, `>>`), background (`&`)
+- Aliases, historial, variables de entorno
+- Scripts (`-f archivo.tri`)
+- Multi-idioma: Español, Inglés, Ruso
+
+### 3. Science Suite (14 módulos)
+- Física: Ising, LGA, Dinámica Molecular
+- Sensores: Agrícola, Sísmico, Ambiental
+- Neurociencia: Perceptron, Hopfield
+- Render 3D: STL para impresión 3D
+- Criptografía: RSA, DH, Quipu
+- Compresión: Ternaria + Residual
+
+### 4. IA Ternaria
+- Lógica ternaria con scoring de confianza
+- Análisis de papers y sensores
+- Chatbot integrado
+- Sentiment analysis ternario
+
+### 5. Navegadores
+- **WebKit GUI**: Navegador gráfico con bookmarks
+- **TUI lynx-style**: Navegador de terminal con análisis ternario
+
+### 6. Enciclopedia
+- Wikipedia API (funcional)
+- Búsqueda, lectura, artículos aleatorios
+- 18 categorías temáticas
+
+### 7. GUI GTK3 de Escritorio
+- 19 secciones: Inicio, Ciencia, IA, Sensores, Seguridad, Firewall, etc.
+- Taskbar con reloj, start menu, desktop icons
+- Fórmulas científicas (67 en 20 categorías)
+
+---
+
 ## Estructura del repositorio
 
 ```
 ├── README.md                          # Este archivo
+├── install.sh                         # Instalador unificado
+├── build-kernel.sh                    # Compila kernel bare-metal
+├── create-usb.sh                      # Crea USB booteable
+├── tritos.desktop                     # Acceso directo Linux Mint
+├── tritos_gui.py                      # GUI GTK3 de escritorio
+├── tritos_browser.py                  # Navegador WebKit
+├── tritos_encyclopedia.py             # Enciclopedia Wikipedia
+├── tritos_britannica.py               # Scraper Britannica
+├── tritos-gui                         # Launcher GUI
 ├── output/
-│   ├── arduino-ternario-ancestral/    # Librería Arduino completa
-│   │   ├── src/                       # Código fuente (TernaryAncestral.h/.cpp)
-│   │   └── examples/                  # Ejemplos transmisor/receptor
+│   ├── ternary-kernel/                # Kernel bare-metal
+│   │   ├── boot/boot.asm              # Bootloader 16-bit
+│   │   ├── src/kernel.c               # VGA, keyboard, shell
+│   │   ├── ternary_os.iso             # ISO booteable (372KB)
+│   │   └── disk.img                   # Imagen de disco
 │   │
-│   └── experiment-suite/
-│       ├── 01-ternario-ancestral-sensores/    # Exploración inicial
-│       ├── 02-nodo-ternario-datacenter/       # Centro de datos nodal
-│       ├── 03-compresion-ancestral-extendida/ # Compresión extendida
-│       └── 04-calendario-maya-azteca-persa/   # Calendarios ancestrales
+│   ├── tak-userspace/                 # Tritos shell
+│   │   ├── src/tak.c                  # Shell principal (238+ cmd)
+│   │   ├── src/tritos_science.c       # Science suite
+│   │   ├── src/ternary_ai.c           # IA ternaria
+│   │   ├── src/tui_browser.c          # Navegador TUI
+│   │   ├── src/ternary_terminal.c     # Terminal calculadora
+│   │   ├── Makefile                   # Compila todo
+│   │   └── tritos                     # Binario compilado
+│   │
+│   ├── arduino-ternario-ancestral/    # Librería Arduino
+│   │
+│   └── experiment-suite/              # 4 experimentos
+│       ├── 01-ternario-ancestral-sensores/
+│       ├── 02-nodo-ternario-datacenter/
+│       ├── 03-compresion-ancestral-extendida/
+│       └── 04-calendario-maya-azteca-persa/
 ```
 
 ---
