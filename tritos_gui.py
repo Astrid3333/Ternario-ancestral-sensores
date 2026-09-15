@@ -681,22 +681,10 @@ class TritosGUI(Gtk.Window):
         self.stack.add_named(grid, "sensors")
         self.stack.set_visible_child_name("sensors")
 
-    def show_crypto(self):
-        self._show_simple("🔐 SEGURIDAD", "RSA/DH Ternario", COLORS["accent"])
-
-    def show_files(self):
-        self._show_simple("📁 ARCHIVOS", "Quipu Filesystem", COLORS["cyan"])
-
-    def show_system(self):
-        self._show_simple("⚙️ SISTEMA", "Procesos y Memoria", COLORS["green"])
-
-    def show_audio(self):
-        self._show_simple("🎵 AUDIO", "Compresión WAV Ternaria", COLORS["gold"])
-
+    # =========================================================================
+    # MATEMÁTICA
+    # =========================================================================
     def show_math(self):
-        self._show_simple("🧮 MATEMÁTICA", "Base 60 / Calendario Maya", COLORS["cyan"])
-
-    def _show_simple(self, title_text, subtitle, color):
         self.clear_header()
         back_btn = Gtk.Button(label="← Volver")
         back_btn.get_style_context().add_class("back-btn")
@@ -704,16 +692,695 @@ class TritosGUI(Gtk.Window):
         self.header_box.pack_start(back_btn, False, False, 0)
 
         title = Gtk.Label()
-        title.set_markup(f'<span size="large" weight="bold" color="{color}">{title_text}</span>')
+        title.set_markup(f'<span size="large" weight="bold" color="{COLORS["cyan"]}">🧮 MATEMÁTICA TERNARIA</span>')
         self.header_box.pack_start(title, False, False, 10)
 
-        label = Gtk.Label(label=f"\n\n  {subtitle}\n  Próximamente...")
-        label.get_style_context().add_class("module-desc")
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_margin_start(30)
+        content.set_margin_end(30)
+        content.set_margin_top(15)
+
+        # --- Conversor Ternario ---
+        frame1 = Gtk.Frame(label="Conversor Decimal → Ternario")
+        content.pack_start(frame1, False, False, 0)
+        g1 = Gtk.Grid()
+        g1.set_column_spacing(10)
+        g1.set_row_spacing(8)
+        g1.set_margin_start(10)
+        g1.set_margin_end(10)
+        g1.set_margin_top(10)
+        g1.set_margin_bottom(10)
+        frame1.add(g1)
+
+        lbl = Gtk.Label(label="Número decimal:")
+        lbl.set_xalign(1)
+        lbl.get_style_context().add_class("param-label")
+        g1.attach(lbl, 0, 0, 1, 1)
+        self.math_decimal_entry = Gtk.Entry()
+        self.math_decimal_entry.set_text("42")
+        self.math_decimal_entry.set_width_chars(15)
+        self.math_decimal_entry.get_style_context().add_class("param-entry")
+        g1.attach(self.math_decimal_entry, 1, 0, 1, 1)
+
+        btn = Gtk.Button(label="Convertir")
+        btn.get_style_context().add_class("run-btn")
+        btn.connect("clicked", lambda w: self._calc_ternary())
+        g1.attach(btn, 2, 0, 1, 1)
+
+        self.math_ternary_result = Gtk.Label()
+        self.math_ternary_result.set_xalign(0)
+        self.math_ternary_result.set_markup(f'<span color="{COLORS["green"]}">Resultado: —</span>')
+        g1.attach(self.math_ternary_result, 0, 1, 3, 1)
+
+        # --- Conversor Base 60 ---
+        frame2 = Gtk.Frame(label="Conversor Decimal → Base 60 (Babilonia)")
+        content.pack_start(frame2, False, False, 0)
+        g2 = Gtk.Grid()
+        g2.set_column_spacing(10)
+        g2.set_row_spacing(8)
+        g2.set_margin_start(10)
+        g2.set_margin_end(10)
+        g2.set_margin_top(10)
+        g2.set_margin_bottom(10)
+        frame2.add(g2)
+
+        lbl2 = Gtk.Label(label="Número decimal:")
+        lbl2.set_xalign(1)
+        lbl2.get_style_context().add_class("param-label")
+        g2.attach(lbl2, 0, 0, 1, 1)
+        self.math_b60_entry = Gtk.Entry()
+        self.math_b60_entry.set_text("120")
+        self.math_b60_entry.set_width_chars(15)
+        self.math_b60_entry.get_style_context().add_class("param-entry")
+        g2.attach(self.math_b60_entry, 1, 0, 1, 1)
+
+        btn2 = Gtk.Button(label="Convertir")
+        btn2.get_style_context().add_class("run-btn")
+        btn2.connect("clicked", lambda w: self._calc_base60())
+        g2.attach(btn2, 2, 0, 1, 1)
+
+        self.math_b60_result = Gtk.Label()
+        self.math_b60_result.set_xalign(0)
+        self.math_b60_result.set_markup(f'<span color="{COLORS["green"]}">Resultado: —</span>')
+        g2.attach(self.math_b60_result, 0, 1, 3, 1)
+
+        # --- Calendario Maya ---
+        frame3 = Gtk.Frame(label="Calendario Maya — Fecha Actual")
+        content.pack_start(frame3, False, False, 0)
+        g3 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+        g3.set_margin_start(10)
+        g3.set_margin_end(10)
+        g3.set_margin_top(10)
+        g3.set_margin_bottom(10)
+        frame3.add(g3)
+
+        import datetime
+        now = datetime.datetime.now()
+        day_of_year = now.timetuple().tm_yday
+        tzolkin = ((day_of_year - 1) % 260) + 1
+        haab = ((day_of_year - 1) % 365) + 1
+        long_count = (now - datetime.datetime(2012, 12, 21)).days
+
+        tzolkin_names = ["Imix", "Ik", "Akbal", "Kan", "Chicchan", "Cimi", "Manik",
+                         "Lamat", "Muluk", "Ok", "Chuen", "Eb", "Ben", "Ix",
+                         "Men", "Cib", "Caban", "Etz'nab", "Cauac", "Ahau"]
+        tzolkin_num = ((day_of_year - 1) % 13) + 1
+        tzolkin_name = tzolkin_names[(day_of_year - 1) % 20]
+
+        maya_info = (
+            f"  Fecha: {now.strftime('%d/%m/%Y %H:%M')}\n\n"
+            f"  Tzolkin:   {tzolkin_num} {tzolkin_name} (día {tzolkin}/260)\n"
+            f"  Haab:      día {haab}/365\n"
+            f"  Cuenta Larga: {long_count} días desde 21/12/2012\n"
+            f"  Cuenta Larga: {long_count // 144000} baktun, "
+            f"{(long_count % 144000) // 7200} katun, "
+            f"{(long_count % 7200) // 360} tun, "
+            f"{(long_count % 360) // 20} uinal, "
+            f"{long_count % 20} kin"
+        )
+        info_label = Gtk.Label(label=maya_info)
+        info_label.set_xalign(0)
+        info_label.get_style_context().add_class("output-text")
+        g3.pack_start(info_label, False, False, 0)
 
         for child in self.stack.get_children():
             self.stack.remove(child)
-        self.stack.add_named(label, "simple")
-        self.stack.set_visible_child_name("simple")
+        self.stack.add_named(content, "math")
+        self.stack.set_visible_child_name("math")
+
+    def _calc_ternary(self):
+        try:
+            n = int(self.math_decimal_entry.get_text().strip())
+            if n == 0:
+                result = "0"
+            else:
+                neg = n < 0
+                n = abs(n)
+                digits = []
+                while n > 0:
+                    digits.append(str(n % 3))
+                    n //= 3
+                result = "".join(reversed(digits))
+                if neg:
+                    result = "-" + result
+            self.math_ternary_result.set_markup(
+                f'<span color="{COLORS["green"]}">Resultado: {result}</span>')
+        except ValueError:
+            self.math_ternary_result.set_markup(
+                f'<span color="{COLORS["accent"]}">Error: ingresá un número entero</span>')
+
+    def _calc_base60(self):
+        try:
+            n = int(self.math_b60_entry.get_text().strip())
+            if n == 0:
+                result = "0:0"
+            else:
+                neg = n < 0
+                n = abs(n)
+                high = n // 60
+                low = n % 60
+                result = f"{high}:{low}"
+                if neg:
+                    result = "-" + result
+            self.math_b60_result.set_markup(
+                f'<span color="{COLORS["green"]}">Resultado: {result} (Base 60)</span>')
+        except ValueError:
+            self.math_b60_result.set_markup(
+                f'<span color="{COLORS["accent"]}">Error: ingresá un número entero</span>')
+
+    # =========================================================================
+    # AUDIO
+    # =========================================================================
+    def show_audio(self):
+        self.clear_header()
+        back_btn = Gtk.Button(label="← Volver")
+        back_btn.get_style_context().add_class("back-btn")
+        back_btn.connect("clicked", lambda w: self.show_dashboard())
+        self.header_box.pack_start(back_btn, False, False, 0)
+
+        title = Gtk.Label()
+        title.set_markup(f'<span size="large" weight="bold" color="{COLORS["gold"]}">🎵 AUDIO TERNARIO</span>')
+        self.header_box.pack_start(title, False, False, 10)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_margin_start(30)
+        content.set_margin_end(30)
+        content.set_margin_top(15)
+
+        # Generar tono
+        frame1 = Gtk.Frame(label="Generar Tono WAV")
+        content.pack_start(frame1, False, False, 0)
+        g1 = Gtk.Grid()
+        g1.set_column_spacing(10)
+        g1.set_row_spacing(8)
+        g1.set_margin_start(10)
+        g1.set_margin_end(10)
+        g1.set_margin_top(10)
+        g1.set_margin_bottom(10)
+        frame1.add(g1)
+
+        for i, (lbl_text, default) in enumerate([("Frecuencia (Hz)", "440"), ("Duración (s)", "2"), ("Salida", "/tmp/tritos_tone.wav")]):
+            lbl = Gtk.Label(label=f"{lbl_text}:")
+            lbl.set_xalign(1)
+            lbl.get_style_context().add_class("param-label")
+            g1.attach(lbl, 0, i, 1, 1)
+            entry = Gtk.Entry()
+            entry.set_text(default)
+            entry.set_width_chars(20)
+            entry.get_style_context().add_class("param-entry")
+            g1.attach(entry, 1, i, 1, 1)
+            if i == 0:
+                self.audio_freq_entry = entry
+            elif i == 1:
+                self.audio_dur_entry = entry
+            elif i == 2:
+                self.audio_out_entry = entry
+
+        btn = Gtk.Button(label="▶ Generar Tono")
+        btn.get_style_context().add_class("run-btn")
+        btn.connect("clicked", lambda w: self._audio_generate_tone())
+        g1.attach(btn, 2, 0, 1, 1)
+
+        # Comprimir WAV
+        frame2 = Gtk.Frame(label="Comprimir WAV → Ternario")
+        content.pack_start(frame2, False, False, 0)
+        g2 = Gtk.Grid()
+        g2.set_column_spacing(10)
+        g2.set_row_spacing(8)
+        g2.set_margin_start(10)
+        g2.set_margin_end(10)
+        g2.set_margin_top(10)
+        g2.set_margin_bottom(10)
+        frame2.add(g2)
+
+        lbl = Gtk.Label(label="Archivo WAV:")
+        lbl.set_xalign(1)
+        lbl.get_style_context().add_class("param-label")
+        g2.attach(lbl, 0, 0, 1, 1)
+        self.audio_wav_entry = Gtk.Entry()
+        self.audio_wav_entry.set_text("/tmp/tritos_tone.wav")
+        self.audio_wav_entry.set_width_chars(25)
+        self.audio_wav_entry.get_style_context().add_class("param-entry")
+        g2.attach(self.audio_wav_entry, 1, 0, 1, 1)
+
+        btn2 = Gtk.Button(label="Comprimir")
+        btn2.get_style_context().add_class("run-btn")
+        btn2.connect("clicked", lambda w: self._audio_compress())
+        g2.attach(btn2, 2, 0, 1, 1)
+
+        # Output
+        output_frame = Gtk.Frame(label="Resultado")
+        content.pack_start(output_frame, True, True, 0)
+        self.audio_output = Gtk.TextView()
+        self.audio_output.get_style_context().add_class("output-text")
+        self.audio_output.set_editable(False)
+        self.audio_output.set_monospace(True)
+        scroll = Gtk.ScrolledWindow()
+        scroll.add(self.audio_output)
+        output_frame.add(scroll)
+
+        for child in self.stack.get_children():
+            self.stack.remove(child)
+        self.stack.add_named(content, "audio")
+        self.stack.set_visible_child_name("audio")
+
+    def _audio_generate_tone(self):
+        try:
+            freq = self.audio_freq_entry.get_text().strip()
+            dur = self.audio_dur_entry.get_text().strip()
+            out = self.audio_out_entry.get_text().strip()
+            import struct, math
+            f = float(freq)
+            d = float(dur)
+            sample_rate = 8000
+            n_samples = int(sample_rate * d)
+            self.audio_output.get_buffer().set_text(
+                f"Generando tono {f}Hz, {d}s...\n")
+            import wave
+            with wave.open(out, 'w') as wav:
+                wav.setnchannels(1)
+                wav.setsampwidth(2)
+                wav.setframerate(sample_rate)
+                for i in range(n_samples):
+                    t = i / sample_rate
+                    val = int(16000 * math.sin(2 * math.pi * f * t))
+                    wav.writeframes(struct.pack('<h', val))
+            size = os.path.getsize(out)
+            self.audio_output.get_buffer().set_text(
+                f"✅ Tono generado: {out}\n"
+                f"   Frecuencia: {f} Hz\n"
+                f"   Duración: {d} s\n"
+                f"   Tamaño: {size:,} bytes\n"
+                f"   Muestra: {sample_rate} Hz, 16-bit, mono")
+        except Exception as e:
+            self.audio_output.get_buffer().set_text(f"Error: {str(e)}")
+
+    def _audio_compress(self):
+        wav_path = self.audio_wav_entry.get_text().strip()
+        if not os.path.exists(wav_path):
+            self.audio_output.get_buffer().set_text(f"Error: {wav_path} no existe")
+            return
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        science_bin = os.path.join(script_dir, "tritos_science")
+        if not os.path.exists(science_bin):
+            science_bin = os.path.join(script_dir, "bin", "tritos_science")
+        cmd = [science_bin, "audio", "-i", wav_path]
+        self.audio_output.get_buffer().set_text(f"Ejecutando: {' '.join(cmd)}\n\n")
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            self.audio_output.get_buffer().set_text(result.stdout + result.stderr)
+        except Exception as e:
+            self.audio_output.get_buffer().set_text(f"Error: {str(e)}")
+
+    # =========================================================================
+    # ARCHIVOS (QuipuFS)
+    # =========================================================================
+    def show_files(self):
+        self.clear_header()
+        back_btn = Gtk.Button(label="← Volver")
+        back_btn.get_style_context().add_class("back-btn")
+        back_btn.connect("clicked", lambda w: self.show_dashboard())
+        self.header_box.pack_start(back_btn, False, False, 0)
+
+        title = Gtk.Label()
+        title.set_markup(f'<span size="large" weight="bold" color="{COLORS["cyan"]}">📁 ARCHIVOS — QuipuFS</span>')
+        self.header_box.pack_start(title, False, False, 10)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_margin_start(30)
+        content.set_margin_end(30)
+        content.set_margin_top(15)
+
+        # QuipuFS path
+        quipu_path = os.path.expanduser("~/.tritos/quipu")
+        if not os.path.exists(quipu_path):
+            os.makedirs(quipu_path, exist_ok=True)
+
+        # Toolbar
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        content.pack_start(toolbar, False, False, 0)
+
+        refresh_btn = Gtk.Button(label="🔄 Actualizar")
+        refresh_btn.get_style_context().add_class("run-btn")
+        refresh_btn.connect("clicked", lambda w: self._files_refresh())
+        toolbar.pack_start(refresh_btn, False, False, 0)
+
+        new_file_btn = Gtk.Button(label="📄 Nuevo archivo")
+        new_file_btn.get_style_context().add_class("back-btn")
+        new_file_btn.connect("clicked", lambda w: self._files_create_file())
+        toolbar.pack_start(new_file_btn, False, False, 0)
+
+        new_dir_btn = Gtk.Button(label="📁 Nuevo directorio")
+        new_dir_btn.get_style_context().add_class("back-btn")
+        new_dir_btn.connect("clicked", lambda w: self._files_create_dir())
+        toolbar.pack_start(new_dir_btn, False, False, 0)
+
+        # File list
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        content.pack_start(scroll, True, True, 0)
+
+        self.files_list = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        scroll.add(self.files_list)
+
+        self.files_path_label = Gtk.Label()
+        self.files_path_label.set_xalign(0)
+        self.files_path_label.set_markup(f'<span color="{COLORS["gray"]}">Ruta: {quipu_path}</span>')
+        content.pack_start(self.files_path_label, False, False, 0)
+
+        self.current_quipu_path = quipu_path
+        self._files_refresh()
+
+        for child in self.stack.get_children():
+            self.stack.remove(child)
+        self.stack.add_named(content, "files")
+        self.stack.set_visible_child_name("files")
+
+    def _files_refresh(self):
+        for child in self.files_list.get_children():
+            self.files_list.remove(child)
+
+        path = self.current_quipu_path
+        self.files_path_label.set_markup(
+            f'<span color="{COLORS["gray"]}">Ruta: {path}</span>')
+
+        # Parent directory
+        if path != os.path.expanduser("~/.tritos/quipu"):
+            parent = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            parent_btn = Gtk.Button(label="📂 ..")
+            parent_btn.get_style_context().add_class("back-btn")
+            parent_btn.connect("clicked", lambda w: self._files_go_parent())
+            parent.pack_start(parent_btn, False, False, 0)
+            self.files_list.pack_start(parent, False, False, 0)
+
+        try:
+            entries = sorted(os.listdir(path))
+        except PermissionError:
+            entries = []
+
+        for name in entries:
+            full = os.path.join(path, name)
+            row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+            row.set_margin_top(3)
+            row.set_margin_bottom(3)
+
+            if os.path.isdir(full):
+                icon = Gtk.Button(label=f"📂 {name}/")
+                icon.get_style_context().add_class("back-btn")
+                icon.connect("clicked", lambda w, p=full: self._files_enter_dir(p))
+            else:
+                size = os.path.getsize(full)
+                icon = Gtk.Button(label=f"📄 {name}  ({size:,} bytes)")
+                icon.get_style_context().add_class("back-btn")
+                icon.connect("clicked", lambda w, p=full: self._files_view_file(p))
+
+            row.pack_start(icon, True, True, 0)
+
+            del_btn = Gtk.Button(label="🗑️")
+            del_btn.get_style_context().add_class("run-btn")
+            del_btn.connect("clicked", lambda w, p=full: self._files_delete(p))
+            row.pack_end(del_btn, False, False, 0)
+
+            self.files_list.pack_start(row, False, False, 0)
+
+        if not entries:
+            lbl = Gtk.Label(label="  (directorio vacío)")
+            lbl.get_style_context().add_class("module-desc")
+            self.files_list.pack_start(lbl, False, False, 0)
+
+        self.files_list.show_all()
+
+    def _files_enter_dir(self, path):
+        self.current_quipu_path = path
+        self._files_refresh()
+
+    def _files_go_parent(self):
+        self.current_quipu_path = os.path.dirname(self.current_quipu_path)
+        self._files_refresh()
+
+    def _files_create_file(self):
+        dialog = Gtk.Dialog(title="Nuevo archivo", parent=self,
+                            flags=Gtk.DialogFlags.MODAL,
+                            buttons=("Crear", Gtk.ResponseType.OK,
+                                     "Cancelar", Gtk.ResponseType.CANCEL))
+        box = dialog.get_content_area()
+        box.set_spacing(10)
+        box.set_margin_start(10)
+        box.set_margin_end(10)
+        box.set_margin_top(10)
+        box.add(Gtk.Label(label="Nombre del archivo:"))
+        name_entry = Gtk.Entry()
+        name_entry.set_text("nuevo.txt")
+        box.add(name_entry)
+        box.add(Gtk.Label(label="Contenido:"))
+        content_entry = Gtk.Entry()
+        content_entry.set_text("hola ternario")
+        box.add(content_entry)
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            name = name_entry.get_text().strip()
+            content = content_entry.get_text()
+            if name:
+                full = os.path.join(self.current_quipu_path, name)
+                with open(full, 'w') as f:
+                    f.write(content)
+                self._files_refresh()
+        dialog.destroy()
+
+    def _files_create_dir(self):
+        dialog = Gtk.Dialog(title="Nuevo directorio", parent=self,
+                            flags=Gtk.DialogFlags.MODAL,
+                            buttons=("Crear", Gtk.ResponseType.OK,
+                                     "Cancelar", Gtk.ResponseType.CANCEL))
+        box = dialog.get_content_area()
+        box.set_spacing(10)
+        box.set_margin_start(10)
+        box.set_margin_end(10)
+        box.set_margin_top(10)
+        box.add(Gtk.Label(label="Nombre del directorio:"))
+        name_entry = Gtk.Entry()
+        name_entry.set_text("nueva_carpeta")
+        box.add(name_entry)
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            name = name_entry.get_text().strip()
+            if name:
+                full = os.path.join(self.current_quipu_path, name)
+                os.makedirs(full, exist_ok=True)
+                self._files_refresh()
+        dialog.destroy()
+
+    def _files_view_file(self, path):
+        try:
+            with open(path, 'r') as f:
+                content = f.read(4096)
+        except:
+            content = "(no se puede leer)"
+
+        dialog = Gtk.Dialog(title=os.path.basename(path), parent=self,
+                            flags=Gtk.DialogFlags.MODAL,
+                            buttons=("Cerrar", Gtk.ResponseType.CLOSE))
+        dialog.set_default_size(500, 350)
+        tv = Gtk.TextView()
+        tv.set_editable(False)
+        tv.set_monospace(True)
+        tv.get_buffer().set_text(content)
+        scroll = Gtk.ScrolledWindow()
+        scroll.add(tv)
+        dialog.get_content_area().pack_start(scroll, True, True, 0)
+        dialog.show_all()
+        dialog.run()
+        dialog.destroy()
+
+    def _files_delete(self, path):
+        dialog = Gtk.Dialog(title="Eliminar", parent=self,
+                            flags=Gtk.DialogFlags.MODAL,
+                            buttons=("Eliminar", Gtk.ResponseType.OK,
+                                     "Cancelar", Gtk.ResponseType.CANCEL))
+        box = dialog.get_content_area()
+        box.add(Gtk.Label(label=f"¿Eliminar?\n{os.path.basename(path)}"))
+        dialog.show_all()
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            if os.path.isdir(path):
+                os.rmdir(path)
+            else:
+                os.remove(path)
+            self._files_refresh()
+        dialog.destroy()
+
+    # =========================================================================
+    # SISTEMA
+    # =========================================================================
+    def show_system(self):
+        self.clear_header()
+        back_btn = Gtk.Button(label="← Volver")
+        back_btn.get_style_context().add_class("back-btn")
+        back_btn.connect("clicked", lambda w: self.show_dashboard())
+        self.header_box.pack_start(back_btn, False, False, 0)
+
+        title = Gtk.Label()
+        title.set_markup(f'<span size="large" weight="bold" color="{COLORS["green"]}">⚙️ SISTEMA</span>')
+        self.header_box.pack_start(title, False, False, 10)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_margin_start(30)
+        content.set_margin_end(30)
+        content.set_margin_top(15)
+
+        # Info buttons
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        content.pack_start(btn_box, False, False, 0)
+
+        for label, cmd in [("💻 CPU", "lscpu"), ("💾 Memoria", "free -h"),
+                           ("📀 Disco", "df -h"), ("⏱️ Uptime", "uptime")]:
+            btn = Gtk.Button(label=label)
+            btn.get_style_context().add_class("run-btn")
+            btn.connect("clicked", lambda w, c=cmd: self._system_run(c))
+            btn_box.pack_start(btn, False, False, 0)
+
+        # Output
+        output_frame = Gtk.Frame(label="Resultado")
+        content.pack_start(output_frame, True, True, 0)
+        self.system_output = Gtk.TextView()
+        self.system_output.get_style_context().add_class("output-text")
+        self.system_output.set_editable(False)
+        self.system_output.set_monospace(True)
+        scroll = Gtk.ScrolledWindow()
+        scroll.add(self.system_output)
+        output_frame.add(scroll)
+
+        self._system_run("uname -a")
+
+        for child in self.stack.get_children():
+            self.stack.remove(child)
+        self.stack.add_named(content, "system")
+        self.stack.set_visible_child_name("system")
+
+    def _system_run(self, cmd):
+        try:
+            result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=10)
+            self.system_output.get_buffer().set_text(f"$ {cmd}\n\n{result.stdout}{result.stderr}")
+        except Exception as e:
+            self.system_output.get_buffer().set_text(f"Error: {str(e)}")
+
+    # =========================================================================
+    # SEGURIDAD
+    # =========================================================================
+    def show_crypto(self):
+        self.clear_header()
+        back_btn = Gtk.Button(label="← Volver")
+        back_btn.get_style_context().add_class("back-btn")
+        back_btn.connect("clicked", lambda w: self.show_dashboard())
+        self.header_box.pack_start(back_btn, False, False, 0)
+
+        title = Gtk.Label()
+        title.set_markup(f'<span size="large" weight="bold" color="{COLORS["accent"]}">🔐 SEGURIDAD TERNARIA</span>')
+        self.header_box.pack_start(title, False, False, 10)
+
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        content.set_margin_start(30)
+        content.set_margin_end(30)
+        content.set_margin_top(15)
+
+        # RSA
+        frame1 = Gtk.Frame(label="RSA Ternario — Generar Claves")
+        content.pack_start(frame1, False, False, 0)
+        g1 = Gtk.Grid()
+        g1.set_column_spacing(10)
+        g1.set_row_spacing(8)
+        g1.set_margin_start(10)
+        g1.set_margin_end(10)
+        g1.set_margin_top(10)
+        g1.set_margin_bottom(10)
+        frame1.add(g1)
+
+        lbl = Gtk.Label(label="Bits (p, q):")
+        lbl.set_xalign(1)
+        lbl.get_style_context().add_class("param-label")
+        g1.attach(lbl, 0, 0, 1, 1)
+        self.crypto_bits_entry = Gtk.Entry()
+        self.crypto_bits_entry.set_text("64")
+        self.crypto_bits_entry.set_width_chars(10)
+        self.crypto_bits_entry.get_style_context().add_class("param-entry")
+        g1.attach(self.crypto_bits_entry, 1, 0, 1, 1)
+
+        btn = Gtk.Button(label="Generar Claves")
+        btn.get_style_context().add_class("run-btn")
+        btn.connect("clicked", lambda w: self._crypto_gen_keys())
+        g1.attach(btn, 2, 0, 1, 1)
+
+        # Cifrar
+        frame2 = Gtk.Frame(label="Cifrar / Descifrar Mensaje")
+        content.pack_start(frame2, False, False, 0)
+        g2 = Gtk.Grid()
+        g2.set_column_spacing(10)
+        g2.set_row_spacing(8)
+        g2.set_margin_start(10)
+        g2.set_margin_end(10)
+        g2.set_margin_top(10)
+        g2.set_margin_bottom(10)
+        frame2.add(g2)
+
+        lbl2 = Gtk.Label(label="Mensaje:")
+        lbl2.set_xalign(1)
+        lbl2.get_style_context().add_class("param-label")
+        g2.attach(lbl2, 0, 0, 1, 1)
+        self.crypto_msg_entry = Gtk.Entry()
+        self.crypto_msg_entry.set_text("HOLA TERNARIO")
+        self.crypto_msg_entry.set_width_chars(30)
+        self.crypto_msg_entry.get_style_context().add_class("param-entry")
+        g2.attach(self.crypto_msg_entry, 1, 0, 1, 1)
+
+        btn_enc = Gtk.Button(label="Cifrar")
+        btn_enc.get_style_context().add_class("run-btn")
+        btn_enc.connect("clicked", lambda w: self._crypto_encrypt())
+        g2.attach(btn_enc, 2, 0, 1, 1)
+
+        # Output
+        output_frame = Gtk.Frame(label="Resultado")
+        content.pack_start(output_frame, True, True, 0)
+        self.crypto_output = Gtk.TextView()
+        self.crypto_output.get_style_context().add_class("output-text")
+        self.crypto_output.set_editable(False)
+        self.crypto_output.set_monospace(True)
+        scroll = Gtk.ScrolledWindow()
+        scroll.add(self.crypto_output)
+        output_frame.add(scroll)
+
+        for child in self.stack.get_children():
+            self.stack.remove(child)
+        self.stack.add_named(content, "crypto")
+        self.stack.set_visible_child_name("crypto")
+
+    def _crypto_gen_keys(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        science_bin = os.path.join(script_dir, "tritos_science")
+        if not os.path.exists(science_bin):
+            science_bin = os.path.join(script_dir, "bin", "tritos_science")
+        bits = self.crypto_bits_entry.get_text().strip()
+        cmd = [science_bin, "crypto", "-b", bits]
+        self.crypto_output.get_buffer().set_text(f"Generando claves RSA ({bits} bits)...\n\n")
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            self.crypto_output.get_buffer().set_text(result.stdout + result.stderr)
+        except Exception as e:
+            self.crypto_output.get_buffer().set_text(f"Error: {str(e)}")
+
+    def _crypto_encrypt(self):
+        msg = self.crypto_msg_entry.get_text().strip()
+        try:
+            msg_bytes = msg.encode('utf-8')
+            msg_int = int.from_bytes(msg_bytes, 'big')
+            self.crypto_output.get_buffer().set_text(
+                f"Mensaje: \"{msg}\"\n"
+                f"Bytes:   {msg_bytes.hex()}\n"
+                f"Entero:  {msg_int}\n\n"
+                f"Usá 'Generar Claves' primero para cifrar con RSA ternario.")
+        except Exception as e:
+            self.crypto_output.get_buffer().set_text(f"Error: {str(e)}")
 
 
 def main():
