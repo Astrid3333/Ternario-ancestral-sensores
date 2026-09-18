@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
 tritos_lab.py — Laboratorio Matemático Ancestral
-Ventana GTK3 con 4 pestañas: Fórmulas, Códigos, Sistemas, Patrones
-Integra con octave-mcp y el motor de experimentación.
+Ventana GTK3 con 7 pestañas: Fórmulas, Códigos, Sistemas, Patrones, Experimentos, 3D (Blender), Simulación (Godot)
+Integra con octave-mcp, Blender, Godot, y el motor de experimentación.
 """
 
 import gi
@@ -12,6 +12,7 @@ import subprocess
 import json
 import math
 import sys
+import os
 
 # =============================================================================
 # COLORES TRITOS
@@ -451,11 +452,13 @@ class TritosLab(Gtk.Window):
         self.notebook.append_page(self._tab_sistemas(), Gtk.Label(label=" Sistemas "))
         self.notebook.append_page(self._tab_patrones(), Gtk.Label(label=" Patrones "))
         self.notebook.append_page(self._tab_experimentos(), Gtk.Label(label=" Experimentos "))
+        self.notebook.append_page(self._tab_blender(), Gtk.Label(label=" 3D (Blender) "))
+        self.notebook.append_page(self._tab_godot(), Gtk.Label(label=" Simulación "))
 
         # Status bar
         status = Gtk.Label()
         status.set_markup('<span foreground="#8892b0" size="small">'
-                         'Kernel 298KB │ 75+ comandos │ octave-mcp 326 tools</span>')
+                         'Kernel 310KB │ 75+ comandos │ octave-mcp │ Blender │ Godot</span>')
 
         # Layout
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -829,6 +832,225 @@ class TritosLab(Gtk.Window):
 
         lines.append(f"╚══════════════════════════════════════════╝")
         self._set_text(self.exp_result, '\n'.join(lines))
+
+    # -------------------------------------------------------------------------
+    # TAB 6: BLENDER (3D)
+    # -------------------------------------------------------------------------
+    def _tab_blender(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+
+        label = Gtk.Label()
+        label.set_markup('<span foreground="#ffd93d" size="medium" weight="bold">'
+                        'Visualización 3D — Blender</span>')
+
+        # Status
+        try:
+            result = subprocess.run(["which", "blender"], capture_output=True, text=True)
+            blender_ok = result.returncode == 0
+        except:
+            blender_ok = False
+
+        status_text = "✓ Blender encontrado" if blender_ok else "✗ Blender no encontrado (sudo apt install blender)"
+        status_color = "#64ffda" if blender_ok else "#e94560"
+        status = Gtk.Label()
+        status.set_markup(f'<span foreground="{status_color}" size="small">{status_text}</span>')
+
+        hbox = Gtk.Box(spacing=8)
+        self.blend_tipo = Gtk.ComboBoxText()
+        for t in ['Esferas ternarias', 'Árbol ternario', 'Sensores 3D', 'Animación']:
+            self.blend_tipo.append_text(t)
+        self.blend_tipo.set_active(0)
+
+        self.blend_entry = Gtk.Entry()
+        self.blend_entry.set_placeholder_text("Valores (ej: -2,-1,0,1,2)")
+        self.blend_entry.set_hexpand(True)
+
+        btn = Gtk.Button(label="Renderizar")
+        btn.get_style_context().add_class('lab-button')
+        btn.connect("clicked", self._on_blender)
+
+        hbox.pack_start(self.blend_tipo, False, False, 0)
+        hbox.pack_start(self.blend_entry, True, True, 0)
+        hbox.pack_start(btn, False, False, 0)
+
+        self.blend_result = Gtk.TextView()
+        self.blend_result.set_editable(False)
+        self.blend_result.set_monospace(True)
+        self.blend_result.get_style_context().add_class('lab-result')
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_vexpand(True)
+        scroll.add(self.blend_result)
+
+        box.pack_start(label, False, False, 4)
+        box.pack_start(status, False, False, 0)
+        box.pack_start(hbox, False, False, 0)
+        box.pack_start(scroll, True, True, 0)
+        return box
+
+    def _on_blender(self, btn):
+        text = self.blend_entry.get_text().strip()
+        tipo = self.blend_tipo.get_active_text()
+
+        if not text:
+            text = "-2,-1,0,1,2,-1,0,1,0"
+
+        try:
+            values = [int(x.strip()) for x in text.split(",")]
+        except:
+            values = [-2, -1, 0, 1, 2]
+
+        self._set_text(self.blend_result, "Renderizando con Blender...\n(esto puede tardar)")
+
+        try:
+            sys.path.insert(0, os.path.dirname(__file__))
+            from tritos_lab.tritos_blender import TritosBlender
+            blender = TritosBlender()
+
+            if not blender.available:
+                self._set_text(self.blend_result,
+                    "Blender no encontrado.\n\n"
+                    "Instalar:\n"
+                    "  sudo apt install blender\n\n"
+                    "O descargar desde:\n"
+                    "  https://www.blender.org/download/")
+                return
+
+            if tipo == 'Esferas ternarias':
+                result = blender.render_sphere_grid(values)
+            elif tipo == 'Árbol ternario':
+                result = blender.render_ternary_tree(values)
+            elif tipo == 'Sensores 3D':
+                sensors = {f"sensor_{i}": abs(v) * 25 for i, v in enumerate(values)}
+                result = blender.render_sensor_data(sensors)
+            elif tipo == 'Animación':
+                result = blender.create_animation(frames=60)
+            else:
+                result = {"error": "Tipo desconocido"}
+
+            lines = ["╔══════════════════════════════════════════╗",
+                     f"║  BLENDER — {tipo}",
+                     "╠══════════════════════════════════════════╣"]
+
+            if result.get("success"):
+                lines.append(f"  ✓ Renderizado exitoso")
+                lines.append(f"  Output: {result.get('output', '?')}")
+                lines.append(f"\n  Para abrir:")
+                lines.append(f"    xdg-open {result.get('output', '')}")
+            else:
+                lines.append(f"  Error: {result.get('error', '?')}")
+
+            lines.append("╚══════════════════════════════════════════╝")
+            self._set_text(self.blend_result, '\n'.join(lines))
+
+        except Exception as e:
+            self._set_text(self.blend_result, f"Error: {str(e)}")
+
+    # -------------------------------------------------------------------------
+    # TAB 7: GODOT (SIMULACIÓN)
+    # -------------------------------------------------------------------------
+    def _tab_godot(self):
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+
+        label = Gtk.Label()
+        label.set_markup('<span foreground="#ffd93d" size="medium" weight="bold">'
+                        'Simulación — Godot Engine</span>')
+
+        # Status
+        try:
+            result = subprocess.run(["which", "godot", "godot4"], capture_output=True, text=True)
+            godot_ok = result.returncode == 0
+        except:
+            godot_ok = False
+
+        status_text = "✓ Godot encontrado" if godot_ok else "✗ Godot no encontrado (sudo snap install godot-4)"
+        status_color = "#64ffda" if godot_ok else "#e94560"
+        status = Gtk.Label()
+        status.set_markup(f'<span foreground="{status_color}" size="small">{status_text}</span>')
+
+        hbox = Gtk.Box(spacing=8)
+        self.godot_tipo = Gtk.ComboBoxText()
+        for t in ['Sensores', 'Visualización ternaria', 'Partículas']:
+            self.godot_tipo.append_text(t)
+        self.godot_tipo.set_active(0)
+
+        self.godot_entry = Gtk.Entry()
+        self.godot_entry.set_placeholder_text("Parámetros (ej: 10 sensores, 30 días)")
+        self.godot_entry.set_hexpand(True)
+
+        btn = Gtk.Button(label="Simular")
+        btn.get_style_context().add_class('lab-button')
+        btn.connect("clicked", self._on_godot)
+
+        hbox.pack_start(self.godot_tipo, False, False, 0)
+        hbox.pack_start(self.godot_entry, True, True, 0)
+        hbox.pack_start(btn, False, False, 0)
+
+        self.godot_result = Gtk.TextView()
+        self.godot_result.set_editable(False)
+        self.godot_result.set_monospace(True)
+        self.godot_result.get_style_context().add_class('lab-result')
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_vexpand(True)
+        scroll.add(self.godot_result)
+
+        box.pack_start(label, False, False, 4)
+        box.pack_start(status, False, False, 0)
+        box.pack_start(hbox, False, False, 0)
+        box.pack_start(scroll, True, True, 0)
+        return box
+
+    def _on_godot(self, btn):
+        text = self.godot_entry.get_text().strip()
+        tipo = self.godot_tipo.get_active_text()
+
+        params = [int(x.strip()) for x in text.split(",")] if text else [10, 30]
+
+        self._set_text(self.godot_result, "Simulando con Godot...\n(esto puede tardar)")
+
+        try:
+            sys.path.insert(0, os.path.dirname(__file__))
+            from tritos_lab.tritos_godot import TritosGodot
+            godot = TritosGodot()
+
+            if not godot.available:
+                self._set_text(self.godot_result,
+                    "Godot no encontrado.\n\n"
+                    "Instalar:\n"
+                    "  sudo snap install godot-4\n\n"
+                    "O descargar desde:\n"
+                    "  https://godotengine.org/download/")
+                return
+
+            if tipo == 'Sensores':
+                n = params[0] if len(params) > 0 else 10
+                days = params[1] if len(params) > 1 else 30
+                result = godot.create_sensor_simulation(num_sensors=n, days=days)
+            elif tipo == 'Visualización ternaria':
+                trits = params[:8] if params else [0, 1, -1, 0, 1, 1, -1, 0]
+                result = godot.create_ternary_visualizer(trits)
+            else:
+                result = {"error": "Tipo no implementado aún"}
+
+            lines = ["╔══════════════════════════════════════════╗",
+                     f"║  GODOT — {tipo}",
+                     "╠══════════════════════════════════════════╣"]
+
+            if result.get("success"):
+                lines.append(f"  ✓ Simulación exitosa")
+                data = result.get("data", {})
+                for k, v in data.items():
+                    if isinstance(v, list) and len(v) > 5:
+                        lines.append(f"  {k}: [{', '.join(f'{x:.1f}' for x in v[:5])}...]")
+                    else:
+                        lines.append(f"  {k}: {v}")
+            else:
+                lines.append(f"  Error: {result.get('error', '?')}")
+
+            lines.append("╚══════════════════════════════════════════╝")
+            self._set_text(self.godot_result, '\n'.join(lines))
+
+        except Exception as e:
+            self._set_text(self.godot_result, f"Error: {str(e)}")
 
     # -------------------------------------------------------------------------
     # UTILS
