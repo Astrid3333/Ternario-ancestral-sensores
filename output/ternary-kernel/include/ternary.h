@@ -652,6 +652,35 @@ uint8_t usb_get_device_count(void);
 void usb_get_device_info(uint8_t index, uint16_t* vendor, uint16_t* product, uint8_t* class);
 void usb_status(void);
 
+// USB Mass Storage
+void usb_storage_detect(void);
+int usb_storage_mount(uint8_t dev_idx, const char* mount_point);
+int usb_storage_unmount(uint8_t dev_idx);
+int usb_storage_read_block(uint8_t port, uint32_t lba, uint8_t* buffer);
+int usb_storage_write_block(uint8_t port, uint32_t lba, const uint8_t* buffer);
+void usb_storage_status(void);
+
+// Dynamic ELF
+int elf_load_dynamic(const uint8_t* data, uint32_t size, uint32_t* entry_point);
+int dyn_add_symbol(const char* name, uint32_t addr, uint32_t size, uint8_t type, uint8_t bind);
+uint32_t dyn_find_symbol(const char* name);
+void dyn_list_symbols(void);
+int dyn_load_library(const char* name, const uint8_t* data, uint32_t size);
+void dyn_unload_library(const char* name);
+void dyn_list_libraries(void);
+
+// Multi-User
+void user_init(void);
+int user_create(const char* name, const char* pass, uint8_t gid);
+int user_delete(const char* name);
+int user_login(const char* name, const char* pass);
+void user_logout(void);
+int user_get_current(void);
+const char* user_get_name(uint8_t uid);
+int group_create(const char* name);
+int group_add_member(const char* group_name, const char* user_name);
+void user_status(void);
+
 // Educational module
 void edu_status(void);
 

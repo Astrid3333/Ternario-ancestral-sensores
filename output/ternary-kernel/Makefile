@@ -22,13 +22,15 @@ KERNEL_SRC = src/kernel.c src/memory.c src/scheduler.c src/net.c src/fs.c src/tl
              src/vpn.c src/doh.c src/block.c src/parental.c src/ai_client.c \
              src/ftp.c src/sockets.c src/gdt.c src/paging.c src/syscalls.c \
              src/elf.c src/libc.c src/framebuffer.c src/mouse.c \
-             src/shell_user.c src/libc_full.c src/window.c
+             src/shell_user.c src/libc_full.c src/window.c \
+             src/usb_storage.c src/elf_dynamic.c src/user.c
 KERNEL_OBJ = boot/multiboot_header.o boot/gdt_flush.o boot/context_switch.o kernel.o memory.o scheduler.o net.o fs.o tls.o \
              pkg.o firewall.o dl.o mail.o chat.o \
              vpn.o doh.o block.o parental.o ai_client.o \
              ftp.o sockets.o gdt.o paging.o syscalls.o \
              elf.o libc_full.o framebuffer.o mouse.o \
-              shell_user.o window.o process.o usb.o ac97.o edu.o tri.o phase3.o phase4.o apps.o fonts.o ternary_ops.o tric.o math_shell.o tutorials.o lab.o
+              shell_user.o window.o process.o usb.o ac97.o edu.o tri.o phase3.o phase4.o apps.o fonts.o ternary_ops.o tric.o math_shell.o tutorials.o lab.o \
+              usb_storage.o elf_dynamic.o user.o
 
 KERNEL_ELF = ternary_kernel.elf
 KERNEL_BIN = ternary_kernel.bin
@@ -174,6 +176,15 @@ tutorials.o: src/tutorials.c include/ternary.h
 
 lab.o: src/lab.c include/ternary.h
 	$(CC) $(CFLAGS) -c src/lab.c -o lab.o
+
+usb_storage.o: src/usb_storage.c include/ternary.h
+	$(CC) $(CFLAGS) -c src/usb_storage.c -o usb_storage.o
+
+elf_dynamic.o: src/elf_dynamic.c include/ternary.h
+	$(CC) $(CFLAGS) -c src/elf_dynamic.c -o elf_dynamic.o
+
+user.o: src/user.c include/ternary.h
+	$(CC) $(CFLAGS) -c src/user.c -o user.o
 
 $(KERNEL_ELF): $(MB_HEADER_OBJ) $(KERNEL_OBJ)
 	$(LD) $(LDFLAGS) -o $@ $^

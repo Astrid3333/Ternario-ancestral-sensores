@@ -705,6 +705,100 @@ static void cmd_write(const char* args);
 static void cmd_rm(const char* args);
 static void cmd_exec(const char* args);
 
+// =============================================================================
+// NEW COMMAND HANDLERS — USB Storage, Dynamic ELF, Multi-User
+// =============================================================================
+
+static void cmd_usbs(const char* args) {
+    if (strcmp_t(args, "status") == 0) {
+        usb_storage_status();
+    } else if (strcmp_t(args, "detect") == 0) {
+        usb_storage_detect();
+    } else if (strncmp_t(args, "mount", 5) == 0) {
+        const char* p = args + 6;
+        uint8_t dev = 0;
+        while (*p >= '0' && *p <= '9') { dev = dev * 10 + (*p - '0'); p++; }
+        if (*p == ' ') p++;
+        usb_storage_mount(dev, p);
+    } else if (strncmp_t(args, "unmount", 7) == 0) {
+        const char* p = args + 8;
+        uint8_t dev = 0;
+        while (*p >= '0' && *p <= '9') { dev = dev * 10 + (*p - '0'); p++; }
+        usb_storage_unmount(dev);
+    } else {
+        vga_puts("  usbs detect          - Detect USB storage\n");
+        vga_puts("  usbs status          - Show status\n");
+        vga_puts("  usbs mount <N> <mnt> - Mount device N\n");
+        vga_puts("  usbs unmount <N>     - Unmount device N\n");
+    }
+}
+
+static void cmd_dyn(const char* args) {
+    if (strcmp_t(args, "syms") == 0) {
+        dyn_list_symbols();
+    } else if (strcmp_t(args, "libs") == 0) {
+        dyn_list_libraries();
+    } else {
+        vga_puts("  dyn syms             - List symbols\n");
+        vga_puts("  dyn libs             - List libraries\n");
+    }
+}
+
+static void cmd_usermgt(const char* args) {
+    if (strcmp_t(args, "status") == 0) {
+        user_status();
+    } else if (strncmp_t(args, "login", 5) == 0) {
+        const char* p = args + 6;
+        char name[16], pass[16];
+        int ni = 0;
+        while (*p && *p != ' ' && ni < 15) { name[ni++] = *p++; }
+        name[ni] = 0;
+        if (*p == ' ') p++;
+        int pi = 0;
+        while (*p && pi < 15) { pass[pi++] = *p++; }
+        pass[pi] = 0;
+        user_login(name, pass);
+    } else if (strcmp_t(args, "logout") == 0) {
+        user_logout();
+    } else if (strncmp_t(args, "add", 3) == 0) {
+        const char* p = args + 4;
+        char name[16], pass[16];
+        int ni = 0;
+        while (*p && *p != ' ' && ni < 15) { name[ni++] = *p++; }
+        name[ni] = 0;
+        if (*p == ' ') p++;
+        int pi = 0;
+        while (*p && pi < 15) { pass[pi++] = *p++; }
+        pass[pi] = 0;
+        int uid = user_create(name, pass, 1);
+        if (uid >= 0) {
+            vga_puts("  Created user: ");
+            vga_puts(name);
+            vga_puts(" (UID=");
+            { char nb[4]; num_to_str(uid, nb); vga_puts(nb); }
+            vga_puts(")\n");
+        } else {
+            vga_puts("  Error creating user\n");
+        }
+    } else if (strncmp_t(args, "del", 3) == 0) {
+        if (user_delete(args + 4) == 0) {
+            vga_puts("  Deleted user\n");
+        } else {
+            vga_puts("  Error deleting user\n");
+        }
+    } else {
+        vga_puts("  usermgt status          - Show users\n");
+        vga_puts("  usermgt login <n> <p>   - Login\n");
+        vga_puts("  usermgt logout          - Logout\n");
+        vga_puts("  usermgt add <n> <p>     - Add user\n");
+        vga_puts("  usermgt del <name>      - Delete user\n");
+    }
+}
+
+// =============================================================================
+// DISPATCH TABLE
+// =============================================================================
+
 static void shell_process(const char* cmd) {
     if (cmd[0] == 0) return;
     
@@ -821,8 +915,6 @@ static void shell_process(const char* cmd) {
         cmd_logic("");
     } else if (strncmp_t(cmd, "compile", 7) == 0) {
         cmd_compile(cmd + 8);
-    } else if (strncmp_t(cmd, "ai", 2) == 0) {
-        cmd_ai_tri(cmd + 3);
     } else if (strcmp_t(cmd, "phase4") == 0) {
         phase4_status();
     } else if (strncmp_t(cmd, "calc", 4) == 0) {
@@ -847,8 +939,6 @@ static void shell_process(const char* cmd) {
         cmd_tric(cmd + 5);
     } else if (strncmp_t(cmd, "math", 4) == 0) {
         cmd_math(cmd + 5);
-    } else if (strncmp_t(cmd, "tutorial", 8) == 0) {
-        cmd_tutorial(cmd + 9);
     } else if (strncmp_t(cmd, "formula", 7) == 0) {
         cmd_formula(cmd + 8);
     } else if (strncmp_t(cmd, "lab", 3) == 0) {
@@ -860,12 +950,12 @@ static void shell_process(const char* cmd) {
         } else {
             cmd_lab(sub + 4);
         }
-    } else if (strncmp_t(cmd, "codigo", 6) == 0) {
-        cmd_codigo(cmd + 7);
-    } else if (strncmp_t(cmd, "ancestro", 8) == 0) {
-        cmd_ancestro(cmd + 9);
-    } else if (strncmp_t(cmd, "patron", 6) == 0) {
-        cmd_patron(cmd + 7);
+    } else if (strncmp_t(cmd, "usbs", 4) == 0) {
+        cmd_usbs(cmd + 5);
+    } else if (strncmp_t(cmd, "dyn", 3) == 0) {
+        cmd_dyn(cmd + 4);
+    } else if (strncmp_t(cmd, "usermgt", 7) == 0) {
+        cmd_usermgt(cmd + 8);
     } else {
         vga_set_color(0x0C, 0);
         vga_puts("  Unknown command: ");
@@ -1667,7 +1757,11 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     process_init();
     vga_puts("[INIT] Processes done, init USB...\n");
     usb_init();
-    vga_puts("[USB] Done, init sound...\n");
+    vga_puts("[INIT] USB done, init USB storage...\n");
+    usb_storage_detect();
+    vga_puts("[INIT] USB storage done, init user system...\n");
+    user_init();
+    vga_puts("[INIT] User system done, init sound...\n");
     ac97_init();
     
     vga_puts("  [");
