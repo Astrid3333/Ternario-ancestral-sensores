@@ -1,0 +1,39 @@
+# Parámetros del run
+# Centro de datos nodal ternario ancestral
+
+# Datos
+n_samples: 1006
+sampling_interval_min: 10
+n_days: 7
+base_temp_c: 22.0
+amplitude_c: 5.0
+noise_std_c: 0.5
+rng_seed: 42
+
+# Umbrales ternarios
+ternary_low_c: 20.0
+ternary_high_c: 25.0
+
+# Compresión residual
+block_size: 4          # trits por bloque para residuo mod-33
+modulus: 33
+
+# Checksum quipu
+quipu_block_size: 5    # trits por bloque de paridad
+
+# Landauer
+boltzmann_k: 1.380649e-23  # J/K
+temperature_K: 300          # temperatura operacional
+
+# Baselines
+methods:
+  - raw_binary
+  - gzip
+  - lz4
+  - zstd
+  - ternary_raw
+  - ternary_residual
+  - ternary_quipu
+
+# Provenance
+provenance: "measured: aritmética exacta + cómputo determinista en Octave + Python, sesión 2026-09-12"

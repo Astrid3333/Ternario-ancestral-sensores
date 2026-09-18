@@ -741,6 +741,15 @@ int int_to_ternary(int n, trit* trits, int max_len);
 int ternary_to_int(const trit* trits, int len);
 void trits_to_ternary_str(const trit* trits, int len, char* str);
 int ternary_str_to_trits(const char* str, trit* trits, int max_len);
+int ternary_add(const trit* a, const trit* b, trit* result, int max_len);
+void ternary_mul(const trit* a, int a_len, const trit* b, int b_len,
+                 trit* result, int max_len);
+void ternary_sub(const trit* a, const trit* b, trit* result, int max_len);
+
+// Base conversion
+int int_to_base60(int n, int* digits, int max_digits);
+void maya_digit_to_str(int digit, char* str);
+
 void cmd_trinary(const char* args);
 void cmd_tcalc(const char* args);
 
@@ -753,6 +762,14 @@ void cmd_math(const char* args);
 
 // Tutorials
 void cmd_tutorial(const char* args);
+
+// Lab — Ancestral Math Lab
+void cmd_formula(const char* args);
+void cmd_lab(const char* args);
+void cmd_codigo(const char* args);
+void cmd_ancestro(const char* args);
+void cmd_patron(const char* args);
+void lab_status(void);
 
 // User shell
 void shell_user_main(void);

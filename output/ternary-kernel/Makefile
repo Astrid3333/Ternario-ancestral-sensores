@@ -28,7 +28,7 @@ KERNEL_OBJ = boot/multiboot_header.o boot/gdt_flush.o boot/context_switch.o kern
              vpn.o doh.o block.o parental.o ai_client.o \
              ftp.o sockets.o gdt.o paging.o syscalls.o \
              elf.o libc_full.o framebuffer.o mouse.o \
-             shell_user.o window.o process.o usb.o ac97.o edu.o tri.o phase3.o phase4.o apps.o fonts.o ternary_ops.o tric.o math_shell.o tutorials.o
+              shell_user.o window.o process.o usb.o ac97.o edu.o tri.o phase3.o phase4.o apps.o fonts.o ternary_ops.o tric.o math_shell.o tutorials.o lab.o
 
 KERNEL_ELF = ternary_kernel.elf
 KERNEL_BIN = ternary_kernel.bin
@@ -171,6 +171,9 @@ math_shell.o: src/math_shell.c include/ternary.h
 
 tutorials.o: src/tutorials.c include/ternary.h
 	$(CC) $(CFLAGS) -c src/tutorials.c -o tutorials.o
+
+lab.o: src/lab.c include/ternary.h
+	$(CC) $(CFLAGS) -c src/lab.c -o lab.o
 
 $(KERNEL_ELF): $(MB_HEADER_OBJ) $(KERNEL_OBJ)
 	$(LD) $(LDFLAGS) -o $@ $^

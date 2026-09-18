@@ -1,0 +1,20 @@
+{
+  "figures": [
+    {
+      "basename": "fig01_mean_year_error.pdf",
+      "caption": "(a) Error de a\u00f1o medio (medido)"
+    },
+    {
+      "basename": "fig02_drift_accumulation.pdf",
+      "caption": "(b) Deriva acumulada (medido)"
+    },
+    {
+      "basename": "fig03_round_coincidence.pdf",
+      "caption": "(c) Rueda 18980 (medido)"
+    },
+    {
+      "basename": "fig04_ablation_no_leap.pdf",
+      "caption": "(d) Ablacion sin intercalacion (medido)"
+    }
+  ]
+}

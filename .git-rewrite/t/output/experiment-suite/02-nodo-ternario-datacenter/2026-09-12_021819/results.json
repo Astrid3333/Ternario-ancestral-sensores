@@ -1,0 +1,235 @@
+{
+  "task": "ternary nodal data center simulation",
+  "dataset": "SensorDataTernary-v1",
+  "metrics": [
+    "compression_ratio",
+    "energy_saving_pct",
+    "cycle_detection_pct",
+    "error_detection_pct",
+    "encoding_latency_us",
+    "memory_bytes"
+  ],
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "provenance": {
+    "mode": "measured",
+    "source": "measured run from experiment/train.py",
+    "timestamp": "2026-09-12T05:24:39Z",
+    "hardware": "Intel Celeron J4025, 2 cores, 11GB RAM"
+  },
+  "summary": {
+    "raw_binary": {
+      "compression_ratio": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 0.0,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 1006,
+        "std": 0,
+        "n_seeds": 1
+      }
+    },
+    "gzip": {
+      "compression_ratio": {
+        "mean": 0.133,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": -649.3,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 2.0,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 7538,
+        "std": 0,
+        "n_seeds": 1
+      }
+    },
+    "ternary_raw": {
+      "compression_ratio": {
+        "mean": 8.0,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": 80.19,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 0.5,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 1006,
+        "std": 0,
+        "n_seeds": 1
+      }
+    },
+    "ternary_residual": {
+      "compression_ratio": {
+        "mean": 1.996,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": 20.59,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 1.0,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 504,
+        "std": 0,
+        "n_seeds": 1
+      }
+    },
+    "ternary_quipu": {
+      "compression_ratio": {
+        "mean": 1.108,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": -43.06,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 1.5,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 908,
+        "std": 0,
+        "n_seeds": 1
+      }
+    },
+    "ternary_lz4": {
+      "compression_ratio": {
+        "mean": 1.796,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": 18.53,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 0.3,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 453,
+        "std": 0,
+        "n_seeds": 1
+      }
+    },
+    "ternary_zstd": {
+      "compression_ratio": {
+        "mean": 2.196,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "energy_saving_pct": {
+        "mean": 22.65,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "encoding_latency_us": {
+        "mean": 0.8,
+        "std": 0.0,
+        "n_seeds": 1
+      },
+      "memory_bytes": {
+        "mean": 458,
+        "std": 0,
+        "n_seeds": 1
+      }
+    }
+  },
+  "ablation": {
+    "A1_no_residual": {
+      "compression_ratio": {
+        "mean": 8.0,
+        "delta_vs_full": 6.004
+      },
+      "energy_saving_pct": {
+        "mean": 80.19
+      }
+    },
+    "A2_no_quipu": {
+      "compression_ratio": {
+        "mean": 1.996,
+        "delta_vs_full": 0.0
+      },
+      "energy_saving_pct": {
+        "mean": 20.59
+      }
+    },
+    "A3_binary_pure": {
+      "compression_ratio": {
+        "mean": 1.0,
+        "delta_vs_full": -0.996
+      },
+      "energy_saving_pct": {
+        "mean": 0.0
+      }
+    },
+    "A4_no_cycle_detection": {
+      "cycle_detection_pct": {
+        "mean": 0.0
+      }
+    },
+    "A5_rle_binary": {
+      "compression_ratio": {
+        "mean": 3.001
+      },
+      "energy_saving_pct": {
+        "mean": 66.67
+      }
+    }
+  },
+  "notes": "Datos sint\u00e9ticos (1006 muestras, 7 d\u00edas, cada 10 min). Validaci\u00f3n con OpenWeatherMap Santiago.",
+  "cycle_detection": {
+    "detected": false,
+    "period": 0,
+    "confidence": 0.0,
+    "expected_period": 144
+  },
+  "error_detection": {
+    "blocks_verified": 201,
+    "errors_detected": 201,
+    "detection_rate_pct": 100.0
+  }
+}

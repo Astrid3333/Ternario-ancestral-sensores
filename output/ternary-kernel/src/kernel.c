@@ -849,6 +849,16 @@ static void shell_process(const char* cmd) {
         cmd_math(cmd + 5);
     } else if (strncmp_t(cmd, "tutorial", 8) == 0) {
         cmd_tutorial(cmd + 9);
+    } else if (strncmp_t(cmd, "formula", 7) == 0) {
+        cmd_formula(cmd + 8);
+    } else if (strncmp_t(cmd, "lab", 3) == 0) {
+        cmd_lab(cmd + 4);
+    } else if (strncmp_t(cmd, "codigo", 6) == 0) {
+        cmd_codigo(cmd + 7);
+    } else if (strncmp_t(cmd, "ancestro", 8) == 0) {
+        cmd_ancestro(cmd + 9);
+    } else if (strncmp_t(cmd, "patron", 6) == 0) {
+        cmd_patron(cmd + 7);
     } else {
         vga_set_color(0x0C, 0);
         vga_puts("  Unknown command: ");

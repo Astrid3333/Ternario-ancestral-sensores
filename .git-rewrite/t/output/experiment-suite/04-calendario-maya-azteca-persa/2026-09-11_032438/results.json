@@ -1,0 +1,73 @@
+{
+  "simulated": false,
+  "provenance": "measured: aritmetica exacta + motor archaeoastronomy (Meeus) verificado en sesion 2026-09-11; replica Python de los .m de Octave (run_all.m OK en Octave CLI)",
+  "checks": {
+    "lcm_260_365": 18980,
+    "round_52x365": 18980,
+    "round_73x260": 18980,
+    "era_13_baktun": 1872000,
+    "persian33_days": 12053,
+    "lc_13_0_0_0_0": 2456283,
+    "lc_0_0_0_0_0": 584283,
+    "tonal_1": [
+      1,
+      1
+    ],
+    "tonal_260": [
+      13,
+      20
+    ],
+    "tonal_261": [
+      1,
+      1
+    ],
+    "persa_1403_leap": true,
+    "persa_1404_leap": false,
+    "persa_1405_leap": false
+  },
+  "metrics": {
+    "persian33_mean_year": 365.24242424242425,
+    "persian33_err_s_per_year": 20.238545455686108,
+    "gregorian_err_s_per_year": 26.7840000011347,
+    "julian_err_s_per_year": 674.7840000005453,
+    "haab_err_s_per_year": -20925.215999999455,
+    "haab_drift_days_per_52y_round": 12.593879999999672,
+    "era_13baktun_tropical_years": 5125.366267243114,
+    "tun_vs_tropical_days_per_year": -5.242189999999994
+  },
+  "ablations": {
+    "persian_no_leap_drift_s_per_year": -20925.215999999455,
+    "gregorian_no_leap_drift_s_per_year": -20925.215999999455,
+    "gmt_plus2_lc13_jdn": 2456285,
+    "tropical_alt_365_2422_persian33_err_s": 19.374545452956227
+  },
+  "anchors": {
+    "gmt_zero_julian_proleptic": "6-sep-3114 a.C. (JD 584283.0 verificado)",
+    "gmt_zero_gregorian_proleptic": "11-ago-3114 a.C. (convencion citada)",
+    "cycle_end": {
+      "lc": "13.0.0.0.0",
+      "gregorian": "2012-12-21",
+      "jd": 2456283.0
+    },
+    "equinox_march": {
+      "2024": {
+        "jd": 2460389.62797,
+        "utc_h": 3.0713,
+        "nowruz_jalali": 1403,
+        "nowruz_greg": "2024-03-20"
+      },
+      "2025": {
+        "jd": 2460754.86874,
+        "utc_h": 8.8498,
+        "nowruz_jalali": 1404,
+        "nowruz_greg": "2025-03-21"
+      },
+      "2026": {
+        "jd": 2461120.10954,
+        "utc_h": 14.629,
+        "nowruz_jalali": 1405,
+        "nowruz_greg": "2026-03-21"
+      }
+    }
+  }
+}
