@@ -1,5 +1,5 @@
 OUTPUT_FORMAT("elf32-i386")
-ENTRY(kernel_main)
+ENTRY(_start)
 SECTIONS
 {
   . = 0x100000;  /* 1MB — standard for protected mode kernels */

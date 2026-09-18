@@ -24,7 +24,7 @@ KERNEL_SRC = src/kernel.c src/memory.c src/scheduler.c src/net.c src/fs.c src/tl
              src/elf.c src/libc.c src/framebuffer.c src/mouse.c \
              src/shell_user.c src/libc_full.c src/window.c \
              src/usb_storage.c src/elf_dynamic.c src/user.c
-KERNEL_OBJ = boot/multiboot_header.o boot/gdt_flush.o boot/context_switch.o kernel.o memory.o scheduler.o net.o fs.o tls.o \
+KERNEL_OBJ = boot/start.o boot/multiboot_header.o boot/gdt_flush.o boot/context_switch.o kernel.o memory.o scheduler.o net.o fs.o tls.o \
              pkg.o firewall.o dl.o mail.o chat.o \
              vpn.o doh.o block.o parental.o ai_client.o \
              ftp.o sockets.o gdt.o paging.o syscalls.o \
@@ -49,6 +49,9 @@ boot/gdt_flush.o: boot/gdt_flush.asm
 	$(AS) -f elf32 $< -o $@
 
 boot/context_switch.o: boot/context_switch.asm
+	$(AS) -f elf32 $< -o $@
+
+boot/start.o: boot/start.asm
 	$(AS) -f elf32 $< -o $@
 
 kernel.o: src/kernel.c include/ternary.h
