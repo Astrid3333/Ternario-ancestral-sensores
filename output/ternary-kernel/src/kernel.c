@@ -852,7 +852,14 @@ static void shell_process(const char* cmd) {
     } else if (strncmp_t(cmd, "formula", 7) == 0) {
         cmd_formula(cmd + 8);
     } else if (strncmp_t(cmd, "lab", 3) == 0) {
-        cmd_lab(cmd + 4);
+        const char* sub = cmd + 4;
+        if (strncmp_t(sub, "experimento", 11) == 0) {
+            cmd_lab_experimento(sub + 12);
+        } else if (strncmp_t(sub, "tutorial", 8) == 0) {
+            cmd_lab_tutorial(sub + 9);
+        } else {
+            cmd_lab(sub + 4);
+        }
     } else if (strncmp_t(cmd, "codigo", 6) == 0) {
         cmd_codigo(cmd + 7);
     } else if (strncmp_t(cmd, "ancestro", 8) == 0) {

@@ -769,6 +769,8 @@ void cmd_lab(const char* args);
 void cmd_codigo(const char* args);
 void cmd_ancestro(const char* args);
 void cmd_patron(const char* args);
+void cmd_lab_experimento(const char* args);
+void cmd_lab_tutorial(const char* args);
 void lab_status(void);
 
 // User shell
