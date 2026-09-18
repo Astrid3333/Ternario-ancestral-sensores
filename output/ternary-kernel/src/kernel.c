@@ -1660,11 +1660,15 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     
     // Check for framebuffer info (bit 12 of flags)
     if (flags & (1 << 12)) {
-        uint32_t fb_addr = mboot[8];
-        uint32_t fb_pitch = mboot[9];
-        uint32_t fb_width = mboot[10];
-        uint32_t fb_height = mboot[11];
-        uint8_t fb_bpp = (uint8_t)(mboot[12] & 0xFF);
+        // Multiboot info: fixed fields = 88 bytes, then framebuffer
+        // Framebuffer addr is 64-bit at offset 88
+        uint32_t fb_addr_lo = mboot[22]; // offset 88 (low 32 bits)
+        uint32_t fb_addr_hi = mboot[23]; // offset 92 (high 32 bits, usually 0)
+        uint32_t fb_addr = fb_addr_lo;   // We only support <4GB
+        uint32_t fb_pitch = mboot[24];   // offset 96
+        uint32_t fb_width = mboot[25];   // offset 100
+        uint32_t fb_height = mboot[26];  // offset 104
+        uint8_t fb_bpp = (uint8_t)(mboot[27] & 0xFF); // offset 108
         
         vga_puts("[BOOT] Framebuffer: ");
         { char nb[8]; num_to_str(fb_width, nb); vga_puts(nb); vga_puts("x"); }

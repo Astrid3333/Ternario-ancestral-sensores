@@ -206,7 +206,8 @@ $(ISO_FILE): $(KERNEL_ELF)
 	@echo 'set timeout=0' > iso/boot/grub/grub.cfg
 	@echo 'set default=0' >> iso/boot/grub/grub.cfg
 	@echo '' >> iso/boot/grub/grub.cfg
-	@echo 'menuentry "Ternary Ancestral Kernel v3 (Network)" {' >> iso/boot/grub/grub.cfg
+	@echo 'set gfxpayload=keep' >> iso/boot/grub/grub.cfg
+	@echo 'menuentry "Ternary Ancestral Kernel v4.5 (GUI)" {' >> iso/boot/grub/grub.cfg
 	@echo '    multiboot /boot/ternary_kernel.elf' >> iso/boot/grub/grub.cfg
 	@echo '    boot' >> iso/boot/grub/grub.cfg
 	@echo '}' >> iso/boot/grub/grub.cfg
