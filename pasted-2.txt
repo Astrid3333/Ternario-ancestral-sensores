@@ -1,0 +1,91 @@
+1. No comprime carpetas
+Tu UCA de "Comprimir" tiene esto:
+
+xml
+<patterns>*</patterns>
+<text-files/>
+<image-files/>
+<other-files/>
+Le falta <directories/>. Añádelo así:
+
+xml
+<patterns>*</patterns>
+<text-files/>
+<image-files/>
+<other-files/>
+<directories/>
+Edita:
+
+bash
+nano ~/.config/Thunar/uca.xml
+Busca el bloque de "Comprimir" y añade <directories/> justo después de <other-files/>. Luego:
+
+bash
+thunar -q && thunar &
+Con eso ya podrás comprimir carpetas. Ojo: tu comando actual es:
+
+text
+/usr/bin/tritos_compress -c -m ternary %f %f.trc5
+Si %f es una carpeta, tritos_compress tendrá que saber empaquetarla (recorrerla, meterla en un contenedor, etc.). Si tu binario solo comprime archivos sueltos, tendrás que adaptarlo o usar tar antes.
+
+2. El archivo comprimido NO cambia de tamaño
+Esto es lo importante y hay que diagnosticarlo. Puede ser:
+
+A) El formato no está comprimiendo realmente
+Si tu "ternario ancestral" solo cambia la representación pero no reduce entropía, el tamaño puede quedar igual o incluso crecer.
+
+Comprueba con un archivo grande y repetitivo:
+
+bash
+# Crea un archivo de prueba de 10 MB muy comprimible
+yes "AAAAAAA" | head -c 10000000 > /tmp/prueba.txt
+ls -l /tmp/prueba.txt
+
+# Comprímelo con tu herramienta
+/usr/bin/tritos_compress -c -m ternary /tmp/prueba.txt /tmp/prueba.trc5
+ls -l /tmp/prueba.trc5
+Si el .trc5 pesa casi lo mismo o más, tu algoritmo no está comprimiendo, solo reempaquetando.
+
+B) Solo funciona con ciertos tipos de datos
+Muchos formatos "caseros" solo comprimen bien texto plano. Prueba con:
+
+Un .txt grande y repetitivo → debería bajar mucho
+
+Una imagen .jpg o un .mp4 → ya están comprimidos, no bajarán
+
+C) Hay un bug en el comando UCA
+Fíjate en tu comando:
+
+text
+/usr/bin/tritos_compress -c -m ternary %f %f.trc5
+Aquí %f se sustituye por el archivo seleccionado. Si seleccionas foto.jpg, el comando queda:
+
+text
+/usr/bin/tritos_compress -c -m ternary foto.jpg foto.jpg.trc5
+Eso crea foto.jpg.trc5. ¿Es lo que esperas? Puede que tu binario esté esperando otra sintaxis.
+
+D) Comprueba la salida real del binario
+Ejecútalo tú mismo desde terminal con un archivo y mira qué dice:
+
+bash
+/usr/bin/tritos_compress -c -m ternary /tmp/prueba.txt /tmp/prueba.trc5
+echo "Código de salida: $?"
+ls -l /tmp/prueba.txt /tmp/prueba.trc5
+Si el código de salida no es 0, el binario está fallando y el .trc5 puede estar vacío o ser una copia.
+
+E) Verifica que el binario hace algo
+bash
+file /tmp/prueba.trc5
+head -c 100 /tmp/prueba.trc5 | xxd | head
+Así ves si el .trc5 tiene una cabecera propia o es una copia literal del original.
+
+Lo que necesito de ti
+Pega aquí la salida de:
+
+bash
+yes "AAAAAAA" | head -c 10000000 > /tmp/prueba.txt
+ls -l /tmp/prueba.txt
+/usr/bin/tritos_compress -c -m ternary /tmp/prueba.txt /tmp/prueba.trc5
+echo "exit: $?"
+ls -l /tmp/prueba.trc5
+file /tmp/prueba.trc5

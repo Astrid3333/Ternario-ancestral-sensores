@@ -1,0 +1,44 @@
+{
+  "results": [
+    {
+      "method": "Delta+Ternary",
+      "original_bytes": 800,
+      "compressed_bytes": 3200,
+      "ratio": 4.0000,
+      "time_ms": 0.28,
+      "mse": 0.000000
+    },
+    {
+      "method": "RLE",
+      "original_bytes": 800,
+      "compressed_bytes": 4,
+      "ratio": 0.0050,
+      "time_ms": 0.00,
+      "mse": 0.000000
+    },
+    {
+      "method": "Block(32)",
+      "original_bytes": 800,
+      "compressed_bytes": 232,
+      "ratio": 0.2900,
+      "time_ms": 0.01,
+      "mse": 0.000000
+    },
+    {
+      "method": "Adaptive",
+      "original_bytes": 800,
+      "compressed_bytes": 168,
+      "ratio": 0.2100,
+      "time_ms": 0.00,
+      "mse": 0.000000
+    },
+    {
+      "method": "zlib",
+      "original_bytes": 800,
+      "compressed_bytes": 719,
+      "ratio": 0.8988,
+      "time_ms": 0.29,
+      "mse": 0.000000
+    }
+  ]
+}

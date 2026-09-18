@@ -1,4 +1,0 @@
-3.11.1
-Python 3.12.3
-/home/astrid/.local/bin/octave
-2.4.6

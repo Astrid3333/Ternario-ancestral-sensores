@@ -1,0 +1,8 @@
+{
+  "type": "DiffieHellman_Ternary",
+  "p": 27697,
+  "g": 5,
+  "private_key": 17158,
+  "public_key": 3580,
+  "security_bits": 14.8
+}

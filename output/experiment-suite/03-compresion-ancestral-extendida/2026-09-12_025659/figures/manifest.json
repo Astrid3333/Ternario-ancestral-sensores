@@ -1,0 +1,24 @@
+{
+  "figures": [
+    {
+      "basename": "fig01_trits_per_digit",
+      "description": "Trits por dígito en cada base ancestral",
+      "conclusion": "Un símbolo babilónico equivale a 3.91 trits"
+    },
+    {
+      "basename": "fig02_memory_comparison",
+      "description": "Comparación de memoria por método",
+      "conclusion": "Babilónico usa 25% menos memoria que ternario raw"
+    },
+    {
+      "basename": "fig03_quality_verification",
+      "description": "Verificación de calidad de decodificación",
+      "conclusion": "TODAS las codificaciones ancestrales decodifican EXACTAMENTE"
+    },
+    {
+      "basename": "fig04_theoretical_analysis",
+      "description": "Análisis teórico de equivalentes en bits y ahorro",
+      "conclusion": "Babilónico ahorra 74% de espacio vs ternario raw"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=Tritos
+Comment=Kernel Ternario Ancestral — Shell Científico
+Exec=bash -c "$HOME/.local/bin/tritos; exec bash"
+Icon=utilities-terminal
+Terminal=true
+Type=Application
+Categories=System;TerminalEmulator;Science;
+Keywords=ternary;kernel;science;
+StartupNotify=true

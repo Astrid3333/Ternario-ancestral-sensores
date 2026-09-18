@@ -1,0 +1,11 @@
+Package: tritos-compress
+Version: 5.0
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: zlib1g
+Maintainer: Ternario Ancestral <ternario@tritos.dev>
+Description: Tritos Compress v5 — Compresor Ternario Ancestral
+ Compresor lossless usando ternario balanceado y CRT (Teorema del Resto Chino).
+ Modos: ternary (delta+zlib), crt (mod 3,5,7,11).
+ Formato: .trc5 con CRC32 verification.

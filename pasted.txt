@@ -1,0 +1,82 @@
+Diagnóstico
+Tienes file-roller como gestor de compresión y thunar-archive-plugin conectando Thunar con él. Y ya tienes tus acciones personalizadas de Tritos creadas en ~/.config/Thunar/uca.xml, que funcionan como menú contextual propio (esas sí te aparecen porque son acciones UCA de Thunar).
+
+El problema: quieres que .trc5 aparezca también en el menú "Extraer aquí" / "Comprimir" que genera thunar-archive-plugin junto con file-roller. Eso no va a pasar fácilmente, y te explico por qué:
+
+thunar-archive-plugin no tiene su propia lista de formatos: delega en file-roller.
+
+file-roller tiene una lista hardcodeada en su código fuente de formatos que soporta. No lee tipos MIME del sistema para decidir qué mostrar. Si .trc5 no está compilado dentro de file-roller, no aparecerá ahí nunca.
+
+Lo que sí puedes hacer
+Opción A (la que ya tienes): usar tus acciones UCA
+Tus acciones "Tritos: Comprimir" y "Tritos: Descomprimir" ya funcionan. Eso es lo correcto para un formato propio. No necesitas que aparezca en el menú de file-roller.
+
+Si quieres que se vean más integradas, puedes:
+
+Ponerlas en un submenú para que no ocupen tanto espacio.
+
+Añadir el icono adecuado.
+
+Por ejemplo, edita ~/.config/Thunar/uca.xml y en tus dos acciones de Tritos cambia:
+
+xml
+<submenu></submenu>
+por:
+
+xml
+<submenu>Tritos</submenu>
+Opción B: registrar el tipo MIME para que el sistema reconozca .trc5
+Esto no lo hará aparecer en file-roller, pero sí ayuda a que Thunar muestre el tipo correcto, iconos, y que otras apps sepan qué es.
+
+Crea el archivo:
+
+bash
+mkdir -p ~/.local/share/mime/packages
+nano ~/.local/share/mime/packages/tritos-trc5.xml
+Contenido:
+
+xml
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/x-tritos-trc5">
+    <comment>Tritos Ternary Ancestral Archive</comment>
+    <comment xml:lang="es">Archivo Ternario Ancestral Tritos</comment>
+    <glob pattern="*.trc5"/>
+    <magic priority="50">
+      <match value="TRC5" type="string" offset="0"/>
+    </magic>
+  </mime-type>
+</mime-info>
+Luego actualiza la base de datos:
+
+bash
+update-mime-database ~/.local/share/mime
+Verifica:
+
+bash
+xdg-mime query filetype archivo.trc5
+(Ajusta el magic al encabezado real que use tu formato.)
+
+Opción C: engañar a file-roller (NO recomendado)
+Podrías renombrar tus .trc5 a .zip o similar, pero romperías tu formato. No lo hagas.
+
+Verificación de dónde está tu binario
+Antes de nada, confirma que el binario existe donde lo llamas:
+
+bash
+ls -l /usr/bin/tritos_compress
+which tritos_compress
+Si no está en /usr/bin/, o lo mueves ahí:
+
+bash
+sudo cp tritos_compress /usr/local/bin/
+sudo chmod +x /usr/local/bin/tritos_compress
+…y actualizas la ruta en uca.xml a /usr/local/bin/tritos_compress.
+
+Resumen
+Qué quieres	Se puede	Cómo
+Que aparezca en menú contextual de Thunar	✅ Ya lo tienes	Acciones UCA en uca.xml
+Que aparezca en "Extraer aquí" de file-roller	❌ No sin recompilar file-roller	Imposible desde config
+Que el sistema reconozca .trc5 como tipo propio	✅	XML MIME + update-mime-database
+Que aparezca en el diálogo de "Abrir con"	✅ tras registrar el MIME	Opción B
+Mi recomendación: quédate con tus acciones UCA (Opción A), agrúpalas en un submenú "Tritos" y registra el tipo MIME (Opción B) para que todo se vea coherente. Olvídate de file-roller para formatos propios: no está diseñado para eso.

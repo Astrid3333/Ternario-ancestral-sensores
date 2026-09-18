@@ -1,0 +1,11 @@
+{
+  "n_inputs": 2,
+  "n_outputs": 1,
+  "learning_rate": 0.5000,
+  "epochs": 100,
+  "accuracy": 0.0000,
+  "weights": [
+    [-1,-1]
+  ],
+  "bias": [1]
+}

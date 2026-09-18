@@ -1,4 +1,0 @@
-fig01_ternary_efficiency: OK
-fig02_residual_cycles: OK
-fig03_compression_ratio: OK
-fig04_energy_landauer: OK

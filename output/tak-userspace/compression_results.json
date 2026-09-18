@@ -1,0 +1,41 @@
+{
+  "n_samples": 1000,
+  "original_size_bytes": 4000,
+  "results": [
+    {
+      "method": "Ternary",
+      "original_size": 4000,
+      "compressed_size": 16000,
+      "ratio": 4.0000,
+      "time_ms": 1.33
+    },
+    {
+      "method": "Maya (Base20)",
+      "original_size": 4000,
+      "compressed_size": 12000,
+      "ratio": 3.0000,
+      "time_ms": 0.01
+    },
+    {
+      "method": "Persian (Base60)",
+      "original_size": 4000,
+      "compressed_size": 12000,
+      "ratio": 3.0000,
+      "time_ms": 0.01
+    },
+    {
+      "method": "zlib",
+      "original_size": 4000,
+      "compressed_size": 3549,
+      "ratio": 0.8873,
+      "time_ms": 0.46
+    },
+    {
+      "method": "bzip2",
+      "original_size": 4000,
+      "compressed_size": 4030,
+      "ratio": 1.0075,
+      "time_ms": 2.70
+    }
+  ]
+}

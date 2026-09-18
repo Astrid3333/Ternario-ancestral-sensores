@@ -1,0 +1,290 @@
+Perfecto, ese es un enfoque **muy claro y realista**: un SO educativo que enseñe **programación ternaria y binaria** desde un terminal. Vamos a ver qué tienen y qué falta.
+
+## Lo que ya tienen (según el README y lo que hemos visto)
+
+| Componente | Estado |
+|---|---|
+| Kernel bare-metal | ✓ |
+| Shell VGA | ✓ 20+ comandos |
+| Scheduler Maya | ✓ |
+| Memory manager base 60 | ✓ |
+| Tritos Shell userspace | ✓ 238+ comandos |
+| GUI GTK3 | ✓ |
+| Navegador, enciclopedia, IA | ✓ |
+| Librería Arduino | ✓ |
+| Codec ternario | ✓ (expande, pero codifica) |
+
+**Base sólida.** Ahora, para un SO **educativo de programación ternaria y binaria**, falta lo más importante: **un terminal que enseñe y ejecute ambos mundos**.
+
+## Lo que falta para un terminal educativo ternario/binario
+
+### 1. REPL ternario interactivo
+
+Un intérprete que evalúe expresiones ternarias en vivo:
+
+```
+tritos> 1 + 1
+  binario: 10
+  ternario: 2
+  trits: [+][0]
+
+tritos> 5 * 3
+  binario: 1111
+  ternario: 120
+  trits: [+][-][0]
+
+tritos> -1 + 1
+  binario: 0
+  ternario: 0
+  trits: [0]
+```
+
+**Falta**: un parser/evaluador ternario con salida dual.
+
+### 2. Conversor binario ↔ ternario ↔ base 60
+
+Comandos tipo:
+```
+tritos> conv 255
+  binario:   11111111
+  ternario:  100110 (5 trits)
+  maya:      12.15 (base 20)
+  babilonio: 4.15 (base 60)
+
+tritos> conv -t 1-10
+  binario:   1011
+  decimal:   11
+```
+
+**Falta**: implementar conversión entre bases con notación ternaria `-`, `0`, `+`.
+
+### 3. Editor de código ternario
+
+Un editor que permita escribir programas en **ternario** y ejecutarlos:
+
+```
+tritos> edit suma.tri
+
+  # Programa ternario: suma de dos trits
+  entrada a, b
+  resultado = a + b
+  salida resultado
+
+tritos> run suma.tri
+  a = +1
+  b = -1
+  resultado = 0
+```
+
+**Falta**: un lenguaje ternario mínimo + intérprete.
+
+### 4. Visualizador de operaciones
+
+Que muestre **paso a paso** cómo se hace una operación en binario y en ternario:
+
+```
+tritos> suma 5 + 3
+
+  Binario:
+    0101
+  + 0011
+  ------
+    1000  = 8
+
+  Ternario:
+    +-0+   (5)
+  + +0+0   (3)
+  --------
+    +0+-   (8)
+```
+
+**Falta**: visualizador de operaciones bit a bit / trit a trit.
+
+### 5. Compilador de binario a ternario
+
+Que tome un programa en C/binario y lo traduzca a ternario:
+
+```
+tritos> compilar hola.c --ternario
+  Generando hola.tri...
+  Ejecutando...
+  Hola mundo (ternario)
+```
+
+**Falta**: backend ternario para un compilador (GCC/LLVM modificado o propio).
+
+### 6. Máquina virtual ternaria
+
+Un intérprete de **bytecode ternario**:
+
+```
+tritos> vm programa.tbc
+  [VM Ternaria v0.1]
+  Cargando 120 trits...
+  Ejecutando...
+  Salida: +0-+0-+0
+```
+
+**Falta**: diseño de ISA ternaria + VM.
+
+### 7. Modo comparación binario/ternario
+
+Un comando que ejecute lo mismo en ambos mundos y compare:
+
+```
+tritos> comparar suma 5 3
+  Binario:  8 (4 bits, 4 operaciones)
+  Ternario: 8 (3 trits, 3 operaciones)
+  Ahorro:   25% en símbolos
+```
+
+**Falta**: benchmark integrado.
+
+### 8. Tutoriales interactivos
+
+Lecciones guiadas dentro del terminal:
+
+```
+tritos> tutorial
+  [1] Introducción al ternario
+  [2] Operaciones básicas
+  [3] Conversión binario ↔ ternario
+  [4] Lógica ternaria (Kleene)
+  [5] Aritmética base 60
+  [6] Programación ternaria
+  Elige:
+```
+
+**Falta**: contenido pedagógico estructurado.
+
+### 9. Historial y modo estudio
+
+Que guarde las sesiones y permita revisarlas:
+
+```
+tritos> historial
+  1. conv 255
+  2. suma 5 3
+  3. edit suma.tri
+  4. run suma.tri
+
+tritos> guardar sesion1.txt
+```
+
+**Falta**: persistencia de sesiones.
+
+### 10. Modo dual (terminal Linux + terminal ternario)
+
+Que el usuario pueda alternar entre el shell Linux y el shell ternario:
+
+```
+tritos> modo linux
+astrid@pc:~$ ls
+...
+
+astrid@pc:~$ modo ternario
+tritos> conv 255
+...
+```
+
+**Falta**: integración entre ambos mundos.
+
+## Lo que falta, resumido
+
+| # | Componente | Prioridad | Dificultad |
+|---|---|---|---|
+| 1 | REPL ternario | Alta | Media |
+| 2 | Conversor de bases | Alta | Baja |
+| 3 | Editor + lenguaje ternario | Alta | Alta |
+| 4 | Visualizador de operaciones | Media | Media |
+| 5 | Compilador binario→ternario | Baja | Muy alta |
+| 6 | VM ternaria | Media | Alta |
+| 7 | Modo comparación | Media | Media |
+| 8 | Tutoriales interactivos | Alta | Baja |
+| 9 | Historial de sesiones | Baja | Baja |
+| 10 | Modo dual | Media | Media |
+
+## Hoja de ruta educativa
+
+### Fase 1: Fundamentos (1-2 meses)
+
+- [ ] REPL ternario (`tritos repl`)
+- [ ] Conversor de bases (`tritos conv`)
+- [ ] Visualizador de operaciones (`tritos ver`)
+- [ ] Tutoriales básicos (`tritos tutorial`)
+
+### Fase 2: Programación (2-4 meses)
+
+- [ ] Lenguaje ternario mínimo (`tri`)
+- [ ] Editor integrado (`tritos edit`)
+- [ ] Intérprete de programas `.tri`
+- [ ] Ejemplos y ejercicios
+
+### Fase 3: Comparación (2-3 meses)
+
+- [ ] Modo dual binario/ternario
+- [ ] Benchmarks educativos
+- [ ] Visualización de ahorro real
+
+### Fase 4: Avanzado (4-6 meses)
+
+- [ ] VM ternaria
+- [ ] Compilador C→ternario (investigación)
+- [ ] Lógica de Kleene/Łukasiewicz
+- [ ] IA ternaria educativa
+
+## Lo mínimo viable educativo (MVE)
+
+Si quieres algo **usable en clase mañana**, necesitas:
+
+1. **REPL ternario** con operaciones básicas
+2. **Conversor** binario ↔ ternario ↔ base 60
+3. **Tutorial** con 5 lecciones
+4. **Visualizador** de operaciones paso a paso
+
+Con eso, un profesor puede dar una clase de 1 hora sobre computación ternaria.
+
+## Lo que ya tienen y sirve
+
+| Componente | Uso educativo |
+|---|---|
+| Kernel bare-metal | Enseñar cómo arranca un SO |
+| Shell VGA | Enseñar interacción hardware |
+| Scheduler Maya | Enseñar planificación no convencional |
+| Memory base 60 | Enseñar gestión de memoria |
+| Codec ternario | Enseñar representación ternaria |
+| GUI GTK3 | Enseñar interfaces |
+| 238+ comandos | Enseñar shell scripting |
+
+**La base está.** Falta la **capa pedagógica interactiva**.
+
+## Propuesta concreta: `tritos edu`
+
+Un comando que agrupe todo:
+
+```
+tritos> edu
+  [Tritos Educación v0.1]
+  [1] Teoría ternaria
+  [2] Conversión de bases
+  [3] Aritmética ternaria
+  [4] Lógica ternaria
+  [5] Programación ternaria
+  [6] Comparación binario/ternario
+  [7] Ejercicios prácticos
+  [8] Proyectos guiados
+  Elige:
+```
+
+Cada opción abre un módulo interactivo.
+
+## ¿Qué quieres hacer ahora?
+
+- **A)** Diseñar el REPL ternario (comando `tritos repl`)
+- **B)** Implementar el conversor de bases
+- **C)** Diseñar el lenguaje ternario mínimo (`.tri`)
+- **D)** Crear los tutoriales interactivos
+- **E)** Diseñar la VM ternaria
+- **F)** Todo lo anterior, por fases
+
+Dime cuál y lo desarrollamos paso a paso.
