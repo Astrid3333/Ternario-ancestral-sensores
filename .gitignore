@@ -13,6 +13,15 @@ __pycache__/
 .openscience/
 notes/.gitkeep
 
+# Compiled files
+*.o
+*.bin
+*.elf
+*.iso
+*.img
+output/ternary-kernel/iso/
+output/releases/
+
 # Temporary files
 *.tmp
 *.log

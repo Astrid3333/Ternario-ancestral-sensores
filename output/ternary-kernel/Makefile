@@ -34,8 +34,9 @@ KERNEL_OBJ = boot/start.o boot/multiboot_header.o boot/gdt_flush.o boot/context_
 
 KERNEL_ELF = ternary_kernel.elf
 KERNEL_BIN = ternary_kernel.bin
-DISK_IMG = disk.img
-ISO_FILE = ternary_os.iso
+RELEASE_DIR = ../releases
+DISK_IMG = $(RELEASE_DIR)/disk.img
+ISO_FILE = $(RELEASE_DIR)/ternary_os.iso
 
 all: $(ISO_FILE) $(DISK_IMG)
 
@@ -214,17 +215,18 @@ $(ISO_FILE): $(KERNEL_ELF)
 	grub-mkrescue -o $@ iso/ 2>&1 || genisoimage -R -b boot/grub/grub.cfg -no-emul-boot -o $@ iso/
 
 run: $(ISO_FILE)
-	qemu-system-i386 -cdrom $(ISO_FILE) -m 4M -serial stdio -device rtl8139,netdev=net0 -netdev user,id=net0
+	qemu-system-i386 -cdrom $(ISO_FILE) -m 8M -serial stdio -device rtl8139,netdev=net0 -netdev user,id=net0
 
 debug: $(ISO_FILE)
-	qemu-system-i386 -cdrom $(ISO_FILE) -m 4M -serial stdio -s -S -device rtl8139,netdev=net0 -netdev user,id=net0 &
+	qemu-system-i386 -cdrom $(ISO_FILE) -m 8M -serial stdio -s -S -device rtl8139,netdev=net0 -netdev user,id=net0 &
 	gdb -ex "target remote :1234"
 
 run-disk: $(DISK_IMG)
-	qemu-system-i386 -drive file=$(DISK_IMG),format=raw -m 4M -serial stdio -device rtl8139,netdev=net0 -netdev user,id=net0
+	qemu-system-i386 -drive file=$(DISK_IMG),format=raw -m 8M -serial stdio -device rtl8139,netdev=net0 -netdev user,id=net0
 
 clean:
-	rm -f $(BOOT_OBJ) $(KERNEL_OBJ) $(KERNEL_ELF) $(KERNEL_BIN) $(DISK_IMG) $(ISO_FILE)
+	rm -f $(BOOT_OBJ) $(KERNEL_OBJ) $(KERNEL_ELF) $(KERNEL_BIN)
+	rm -f $(RELEASE_DIR)/disk.img $(RELEASE_DIR)/ternary_os.iso
 	rm -rf iso/
 
 info: $(KERNEL_BIN)
