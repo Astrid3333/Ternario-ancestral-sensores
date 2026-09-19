@@ -175,9 +175,11 @@ typedef struct {
 
 static quipu_file_t files[MAX_FILES];
 static uint8_t n_files = 0;
+static uint8_t quipu_data[MAX_FILES][60]; // in-memory file data
 
 void fs_quipu_init(void) {
     memset_t(files, 0, sizeof(files));
+    memset_t(quipu_data, 0, sizeof(quipu_data));
     
     files[0].name[0] = '/';
     for (uint8_t j = 1; j < 8; j++) files[0].name[j] = 0;
@@ -351,6 +353,7 @@ static void cmd_help(void) {
     vga_puts("  touch <fn>  Create file\n");
     vga_puts("  write <fn>  Write to file\n");
     vga_puts("  rm <fn>     Delete file\n");
+    vga_puts("  cat <fn>    Show file contents\n");
     vga_puts("  exec <fn>   Execute ELF program\n");
     vga_puts("  conv <n>    Convert between bases\n");
     vga_puts("  repl        Ternary REPL\n");
@@ -453,6 +456,11 @@ static void cmd_fs(void) {
         vga_puts(fs_get_name(i));
         vga_set_color(0x07, 0);
         if (fs_get_type(i) == 1) vga_puts("/");
+        if (files[i].size > 0) {
+            vga_puts("  (");
+            char nb[8]; num_to_str(files[i].size, nb);
+            vga_puts(nb); vga_puts("B)");
+        }
         vga_putc('\n');
     }
     vga_putc('\n');
@@ -703,6 +711,7 @@ static void cmd_sound(const char* args);
 static void cmd_touch(const char* args);
 static void cmd_write(const char* args);
 static void cmd_rm(const char* args);
+static void cmd_cat(const char* args);
 static void cmd_exec(const char* args);
 
 // =============================================================================
@@ -889,6 +898,8 @@ static void shell_process(const char* cmd) {
         cmd_write(cmd + 6);
     } else if (strncmp_t(cmd, "rm", 2) == 0) {
         cmd_rm(cmd + 3);
+    } else if (strncmp_t(cmd, "cat", 3) == 0) {
+        cmd_cat(cmd + 4);
     } else if (strncmp_t(cmd, "exec", 4) == 0) {
         cmd_exec(cmd + 5);
     } else if (strncmp_t(cmd, "conv", 4) == 0) {
@@ -1498,9 +1509,17 @@ static void cmd_touch(const char* args) {
         return;
     }
     
-    if (fs_create(args) == 0) {
+    // Truncate to 7 chars for Quipu
+    char name[8];
+    int len = strlen_t(args);
+    if (len > 7) len = 7;
+    for (int i = 0; i < len; i++) name[i] = args[i];
+    name[len] = 0;
+    
+    int8_t idx = quipu_create(name, 0);
+    if (idx >= 0) {
         vga_puts("  Created: ");
-        vga_puts(args);
+        vga_puts(name);
         vga_puts("\n");
     } else {
         vga_puts("  Error creating file\n");
@@ -1525,35 +1544,35 @@ static void cmd_write(const char* args) {
         return;
     }
     
-    // Extract filename (up to 8 chars)
-    char filename[13];
+    // Extract filename (up to 7 chars for Quipu)
+    char filename[8];
     int nlen = space - args;
-    if (nlen > 8) nlen = 8;
+    if (nlen > 7) nlen = 7;
     for (int i = 0; i < nlen; i++) filename[i] = args[i];
     filename[nlen] = 0;
     
     const char* data = space + 1;
+    uint32_t dlen = strlen_t(data);
+    if (dlen > 59) dlen = 59;
     
-    int8_t fd = fs_open(filename, 1); // write mode
-    if (fd < 0) {
-        // Create file first
-        if (fs_create(filename) < 0) {
+    // Find existing or create
+    int8_t idx = fs_find(filename);
+    if (idx < 0) {
+        idx = quipu_create(filename, 0);
+        if (idx < 0) {
             vga_puts("  Error creating file\n");
-            return;
-        }
-        fd = fs_open(filename, 1);
-        if (fd < 0) {
-            vga_puts("  Error opening file\n");
             return;
         }
     }
     
-    int32_t written = fs_write(fd, (const uint8_t*)data, strlen_t(data));
-    fs_close(fd);
+    // Copy data to Quipu block
+    for (uint32_t i = 0; i < dlen; i++) quipu_data[idx][i] = data[i];
+    quipu_data[idx][dlen] = 0;
+    files[idx].size = dlen;
     
     vga_puts("  Wrote ");
     char nb[8];
-    num_to_str(written, nb);
+    num_to_str(dlen, nb);
     vga_puts(nb);
     vga_puts(" bytes to ");
     vga_puts(filename);
@@ -1566,13 +1585,46 @@ static void cmd_rm(const char* args) {
         return;
     }
     
-    if (fs_delete(args) == 0) {
+    int8_t idx = fs_find(args);
+    if (idx < 0) {
+        vga_puts("  File not found\n");
+        return;
+    }
+    if (idx == 0) {
+        vga_puts("  Cannot delete root\n");
+        return;
+    }
+    
+    if (quipu_delete(idx) == 0) {
         vga_puts("  Deleted: ");
         vga_puts(args);
         vga_puts("\n");
     } else {
         vga_puts("  Error deleting file\n");
     }
+}
+
+static void cmd_cat(const char* args) {
+    if (args[0] == 0) {
+        vga_puts("  Usage: cat <filename>\n");
+        return;
+    }
+    
+    int8_t idx = fs_find(args);
+    if (idx < 0) {
+        vga_puts("  File not found\n");
+        return;
+    }
+    
+    if (files[idx].size == 0) {
+        vga_puts("  (empty)\n");
+        return;
+    }
+    
+    for (uint8_t i = 0; i < files[idx].size; i++) {
+        vga_putc(quipu_data[idx][i]);
+    }
+    vga_putc('\n');
 }
 
 static void cmd_exec(const char* args) {
