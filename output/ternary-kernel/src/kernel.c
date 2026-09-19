@@ -870,11 +870,15 @@ static void shell_process(const char* cmd) {
         cmd_sock(cmd + 5);
     } else if (strncmp_t(cmd, "wm", 2) == 0) {
         cmd_wm(cmd + 3);
+    } else if (strncmp_t(cmd, "usermgt", 7) == 0) {
+        cmd_usermgt(cmd + 8);
     } else if (strncmp_t(cmd, "user", 4) == 0) {
         vga_puts("\n  Launching user shell (Ring 3)...\n");
         shell_user_main();
     } else if (strncmp_t(cmd, "proc", 4) == 0) {
         cmd_proc(cmd + 5);
+    } else if (strncmp_t(cmd, "usbs", 4) == 0) {
+        cmd_usbs(cmd + 5);
     } else if (strncmp_t(cmd, "usb", 3) == 0) {
         cmd_usb(cmd + 4);
     } else if (strncmp_t(cmd, "sound", 5) == 0) {
@@ -950,12 +954,8 @@ static void shell_process(const char* cmd) {
         } else {
             cmd_lab(sub + 4);
         }
-    } else if (strncmp_t(cmd, "usbs", 4) == 0) {
-        cmd_usbs(cmd + 5);
     } else if (strncmp_t(cmd, "dyn", 3) == 0) {
         cmd_dyn(cmd + 4);
-    } else if (strncmp_t(cmd, "usermgt", 7) == 0) {
-        cmd_usermgt(cmd + 8);
     } else {
         vga_set_color(0x0C, 0);
         vga_puts("  Unknown command: ");
