@@ -5,3 +5,6 @@
 *.img
 iso/
 linker.ld
+*.o
+*.bin
+*.elf
