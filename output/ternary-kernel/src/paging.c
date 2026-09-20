@@ -55,26 +55,23 @@ void paging_init(void) {
 }
 
 // Map a page
+static uint32_t pt_alloc_ptr = 0x200000; // Free area after 2MB for new page tables
 void paging_map_page(uint32_t virtual, uint32_t physical, uint32_t flags) {
-    // Calculate page directory and table indices
     uint32_t dir_index = virtual >> 22;
     uint32_t table_index = (virtual >> 12) & 0x3FF;
     
-    // Get or create page table
-    uint32_t* page_table_ptr;
+    uint32_t* pt_ptr;
     if (page_directory[dir_index] & PAGE_PRESENT) {
-        page_table_ptr = (uint32_t*)(page_directory[dir_index] & 0xFFFFF000);
+        pt_ptr = (uint32_t*)(page_directory[dir_index] & 0xFFFFF000);
     } else {
-        // Allocate new page table
-        page_table_ptr = (uint32_t*)0x100000; // Temporary location
-        for (int i = 0; i < 1024; i++) {
-            page_table_ptr[i] = 0;
-        }
-        page_directory[dir_index] = (uint32_t)page_table_ptr | PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
+        pt_ptr = (uint32_t*)pt_alloc_ptr;
+        pt_alloc_ptr += 0x1000;
+        for (int i = 0; i < 1024; i++) pt_ptr[i] = 0;
+        page_directory[dir_index] = (uint32_t)pt_ptr | PAGE_PRESENT | PAGE_WRITABLE | PAGE_USER;
     }
     
-    // Set page table entry
-    page_table_ptr[table_index] = (physical & 0xFFFFF000) | flags;
+    pt_ptr[table_index] = (physical & 0xFFFFF000) | flags;
+    asm volatile("invlpg (%0)" : : "r"(virtual) : "memory");
 }
 
 // Unmap a page

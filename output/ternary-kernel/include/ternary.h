@@ -564,6 +564,7 @@ int8_t elf_execute(const uint8_t* data, uint32_t size);
 
 // Framebuffer
 void framebuffer_init(uint32_t addr, uint32_t width, uint32_t height, uint32_t pitch, uint8_t bpp);
+uint8_t fb_is_active(void);
 void fb_set_pixel(uint32_t x, uint32_t y, uint32_t color);
 uint32_t fb_get_pixel(uint32_t x, uint32_t y);
 void fb_fill(uint32_t color);
@@ -621,16 +622,15 @@ void mouse_status(void);
 
 // Window Manager
 void wm_init(void);
-int8_t wm_create_window(const char* title, int32_t x, int32_t y, int32_t w, int32_t h, uint32_t bg);
+int8_t wm_create_window(const char* title, uint8_t col, uint8_t row, uint8_t w, uint8_t h, uint8_t bg_attr);
 void wm_close_window(int8_t id);
 void wm_minimize_window(int8_t id);
 void wm_restore_window(int8_t id);
 void wm_maximize_window(int8_t id);
 void wm_focus_window(int8_t id);
-void wm_move_window(int8_t id, int32_t x, int32_t y);
-void wm_resize_window(int8_t id, int32_t w, int32_t h);
-void wm_redraw(void);
-void wm_handle_click(int32_t mx, int32_t my);
+void wm_move_window(int8_t id, uint8_t col, uint8_t row);
+void wm_resize_window(int8_t id, uint8_t w, uint8_t h);
+void wm_handle_click(uint8_t x, uint8_t y);
 void wm_handle_drag(int32_t mx, int32_t my);
 void wm_handle_release(void);
 uint8_t wm_get_window_count(void);

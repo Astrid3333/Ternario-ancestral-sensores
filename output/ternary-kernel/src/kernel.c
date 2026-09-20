@@ -1408,7 +1408,7 @@ static void cmd_wm(const char* args) {
     } else if (strcmp_t(args, "redraw") == 0) {
         wm_redraw();
     } else if (strncmp_t(args, "create", 6) == 0) {
-        int8_t id = wm_create_window("Window", 100, 100, 400, 300, 0x2D2D44);
+        int8_t id = wm_create_window("Window", 10, 3, 40, 15, 0x1E);
         if (id > 0) {
             vga_puts("  Created window ");
             { char nb[4]; num_to_str(id, nb); vga_puts(nb); }
@@ -1421,9 +1421,9 @@ static void cmd_wm(const char* args) {
         while (*p >= '0' && *p <= '9') { id = id * 10 + (*p - '0'); p++; }
         if (id > 0) { wm_close_window(id); }
     } else if (strncmp_t(args, "demo", 4) == 0) {
-        wm_create_window("Terminal", 50, 50, 350, 250, 0x1E1E2E);
-        wm_create_window("Files", 150, 80, 300, 200, 0x1E2E1E);
-        wm_create_window("System", 250, 120, 350, 250, 0x2E1E1E);
+        wm_create_window("Terminal", 2, 2, 36, 12, 0x1E);
+        wm_create_window("Files", 20, 5, 30, 10, 0x2E);
+        wm_create_window("System", 40, 3, 35, 12, 0x4E);
         wm_redraw();
         vga_puts("  3 demo windows created\n");
     } else {
@@ -1710,45 +1710,8 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     { char nb[12]; num_to_hex(flags, nb); vga_puts(nb); }
     vga_puts("\n");
     
-    // Check for framebuffer info (bit 12 of flags)
-    if (flags & (1 << 12)) {
-        // Multiboot info: fixed fields = 88 bytes, then framebuffer
-        // Framebuffer addr is 64-bit at offset 88
-        uint32_t fb_addr_lo = mboot[22]; // offset 88 (low 32 bits)
-        uint32_t fb_addr_hi = mboot[23]; // offset 92 (high 32 bits, usually 0)
-        uint32_t fb_addr = fb_addr_lo;   // We only support <4GB
-        uint32_t fb_pitch = mboot[24];   // offset 96
-        uint32_t fb_width = mboot[25];   // offset 100
-        uint32_t fb_height = mboot[26];  // offset 104
-        uint8_t fb_bpp = (uint8_t)(mboot[27] & 0xFF); // offset 108
-        
-        vga_puts("[BOOT] Framebuffer: ");
-        { char nb[8]; num_to_str(fb_width, nb); vga_puts(nb); vga_puts("x"); }
-        { char nb[8]; num_to_str(fb_height, nb); vga_puts(nb); }
-        vga_puts("@");
-        { char nb[4]; num_to_str(fb_bpp, nb); vga_puts(nb); }
-        vga_puts("bpp\n");
-        
-        vga_puts("[BOOT] FB address: 0x");
-        { char nb[12]; num_to_hex(fb_addr, nb); vga_puts(nb); }
-        vga_puts("\n");
-        
-        // Initialize framebuffer
-        framebuffer_init(fb_addr, fb_width, fb_height, fb_pitch, fb_bpp);
-        
-        // Fill with ternary background
-        fb_fill(TRIT_000);
-        
-        // Draw ternary grid pattern
-        fb_draw_ternary_grid(0, 0, fb_width, fb_height);
-        
-        // Draw title
-        fb_draw_string(10, 10, "TERNARY ANCESTRAL KERNEL v4.4", TRIT_220, TRIT_000);
-        fb_draw_string(10, 20, "GUI Ternaria - 27 Colors", TRIT_121, TRIT_000);
-    } else {
-        vga_puts("[BOOT] No framebuffer info from GRUB\n");
-        vga_puts("[BOOT] Using VGA text mode\n");
-    }
+    // VGA text mode (no framebuffer)
+    vga_puts("[BOOT] VGA text mode 80x25\n");
     
     vga_puts("  [");
     vga_set_color(0x0A, 0);
@@ -1845,7 +1808,11 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
         net_poll();
         
         if (inb(0x64) & 1) {
+            uint8_t status = inb(0x64);
             uint8_t scancode = inb(0x60);
+            
+            // Skip mouse data (bit 5 = mouse data available)
+            if (status & 0x20) continue;
             
             if (scancode & 0x80) continue;
             if (scancode == 0 || scancode >= 128) continue;
@@ -1870,22 +1837,25 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
         }
         
         // Also check serial input (for -nographic QEMU)
-        if (inb(0x3FD) & 0x01) {  // LSR bit 0 = data ready
-            char sc = inb(0x3F8);  // Read from serial port
-            if (sc == '\r' || sc == '\n') {
-                vga_putc('\n');
-                cmd_buf[cmd_idx] = 0;
-                shell_process(cmd_buf);
-                cmd_idx = 0;
-                shell_prompt();
-            } else if (sc == '\b' || sc == 0x7F) {
-                if (cmd_idx > 0) {
-                    cmd_idx--;
-                    vga_putc('\b');
+        // Only poll serial if no PS/2 data available (avoids conflict with GPIO display)
+        if (!(inb(0x64) & 1)) {
+            if (inb(0x3FD) & 0x01) {  // LSR bit 0 = data ready
+                char sc = inb(0x3F8);  // Read from serial port
+                if (sc == '\r' || sc == '\n') {
+                    vga_putc('\n');
+                    cmd_buf[cmd_idx] = 0;
+                    shell_process(cmd_buf);
+                    cmd_idx = 0;
+                    shell_prompt();
+                } else if (sc == '\b' || sc == 0x7F) {
+                    if (cmd_idx > 0) {
+                        cmd_idx--;
+                        vga_putc('\b');
+                    }
+                } else if (sc >= 0x20 && sc < 0x7F && cmd_idx < CMD_MAX - 1) {
+                    cmd_buf[cmd_idx++] = sc;
+                    vga_putc(sc);
                 }
-            } else if (sc >= 0x20 && sc < 0x7F && cmd_idx < CMD_MAX - 1) {
-                cmd_buf[cmd_idx++] = sc;
-                vga_putc(sc);
             }
         }
         // No hlt — poll continuously for serial input

@@ -82,15 +82,23 @@ void framebuffer_init(uint32_t addr, uint32_t width, uint32_t height, uint32_t p
     framebuffer = (uint32_t*)addr;
     fb_width = width;
     fb_height = height;
-    fb_pitch = pitch;
     fb_bpp = bpp;
+    // Always compute pitch from width and bpp (GRUB pitch can be wrong)
+    fb_pitch = width * (bpp / 8);
     
     vga_puts("[FB] Framebuffer initialized\n");
     vga_puts("[FB] Resolution: ");
     { char nb[8]; num_to_str(width, nb); vga_puts(nb); vga_puts("x"); }
     { char nb[8]; num_to_str(height, nb); vga_puts(nb); }
     vga_puts("\n");
+    vga_puts("[FB] Pitch: ");
+    { char nb[8]; num_to_str(fb_pitch, nb); vga_puts(nb); }
+    vga_puts(" bytes\n");
     vga_puts("[FB] Ternary color palette loaded (27 colors)\n");
+}
+
+uint8_t fb_is_active(void) {
+    return framebuffer != 0;
 }
 
 // Set pixel
@@ -222,9 +230,9 @@ void fb_draw_char(uint32_t x, uint32_t y, char c, uint32_t color, uint32_t bg) {
     
     for (int row = 0; row < 8; row++) {
         for (int col = 0; col < 8; col++) {
-            if (glyph[row] & (1 << col)) {
+            if (glyph[row] & (1 << (7 - col))) {
                 fb_set_pixel(x + col, y + row, color);
-            } else if (bg != TRIT_000) {  // Use ternary empty color
+            } else if (bg != TRIT_000) {
                 fb_set_pixel(x + col, y + row, bg);
             }
         }

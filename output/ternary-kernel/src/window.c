@@ -1,60 +1,91 @@
 /**
- * window.c — Sistema de ventanas para kernel ternario ancestral
- *
- * Window manager con drag, resize, minimize, close
+ * window.c — VGA text-mode window manager for Tritos kernel
+ * 80x25 characters with color attributes
  */
 
 #include "../include/ternary.h"
 
-// Window limits
 #define MAX_WINDOWS 16
-#define MAX_TITLE_LEN 32
+#define MAX_TITLE_LEN 40
+#define VGA_WIDTH 80
+#define VGA_HEIGHT 25
 
-// Window states
-#define WIN_STATE_NORMAL  0
-#define WIN_STATE_MINIMIZED 1
-#define WIN_STATE_MAXIMIZED 2
-
-// Title bar height
-#define TITLE_BAR_HEIGHT 20
-#define BORDER_WIDTH 2
-
-// Window structure
 typedef struct {
     uint8_t id;
     char title[MAX_TITLE_LEN];
-    int32_t x, y;
-    int32_t width, height;
-    uint32_t bg_color;
-    uint32_t title_color;
-    uint8_t state;
+    uint8_t col, row;       // position in text cells
+    uint8_t w, h;           // size in text cells
+    uint8_t bg_attr;        // VGA color attribute
+    uint8_t title_attr;
+    uint8_t state;          // 0=normal, 1=minimized, 2=maximized
     uint8_t visible;
     uint8_t focused;
-    uint8_t has_close;
-    uint8_t has_minimize;
-    uint8_t has_maximize;
 } window_t;
 
-// Window manager state
 static window_t windows[MAX_WINDOWS];
 static uint8_t window_count = 0;
 static int8_t focused_window = -1;
-static int8_t drag_window = -1;
-static int32_t drag_offset_x, drag_offset_y;
-static uint8_t wm_initialized = 0;
 
-// Desktop colors — Ternary ancestral theme
-#define DESKTOP_BG      TRIT_000    // Fondo: vacío ternario
-#define TITLE_BAR_BG    TRIT_100    // Título: espíritu
-#define TITLE_BAR_FOCUSED TRIT_200  // Título activo: sangre
-#define TITLE_TEXT       TRIT_221    // Texto: luz suave
-#define CLOSE_BTN_COLOR TRIT_202    // Cerrar: sangre intensa
-#define MINIMIZE_BTN_COLOR TRIT_120 // Minimizar: sol
-#define MAXIMIZE_BTN_COLOR TRIT_110 // Maximizar: vida
-#define BORDER_COLOR    TRIT_011    // Borde: tierra fuerte
-#define BORDER_FOCUSED  TRIT_101    // Borde activo: espíritu+agua
+// VGA text buffer
+static volatile uint16_t* const VGA = (uint16_t*)0xB8000;
 
-// Initialize window manager
+static void vga_cell(uint8_t x, uint8_t y, char c, uint8_t attr) {
+    if (x < VGA_WIDTH && y < VGA_HEIGHT)
+        VGA[y * VGA_WIDTH + x] = (uint16_t)attr << 8 | c;
+}
+
+static void vga_hline(uint8_t x, uint8_t y, uint8_t len, char c, uint8_t attr) {
+    for (uint8_t i = 0; i < len; i++) vga_cell(x + i, y, c, attr);
+}
+
+static void vga_rect(uint8_t x, uint8_t y, uint8_t w, uint8_t h, char c, uint8_t attr) {
+    for (uint8_t j = 0; j < h; j++)
+        for (uint8_t i = 0; i < w; i++)
+            vga_cell(x + i, y + j, c, attr);
+}
+
+static void vga_str(uint8_t x, uint8_t y, const char* s, uint8_t attr) {
+    while (*s && x < VGA_WIDTH) { vga_cell(x++, y, *s, attr); s++; }
+}
+
+// Draw single window
+static void wm_draw(window_t* w) {
+    if (!w->visible || w->state == 1) return;
+
+    uint8_t ta = w->focused ? 0x70 : 0x30; // title bar: white-on-blue or white-on-cyan
+    uint8_t ba = w->bg_attr;                // body attribute
+
+    // Top border with title
+    vga_cell(w->col, w->row, '+', ta);
+    vga_hline(w->col + 1, w->row, w->w - 2, '-', ta);
+    vga_cell(w->col + w->w - 1, w->row, '+', ta);
+
+    // Title text centered
+    uint8_t tlen = 0;
+    { const char* p = w->title; while (*p++) tlen++; }
+    uint8_t tx = w->col + 1 + (w->w - 2 - tlen) / 2;
+    if (tx + tlen > w->col + w->w - 1) tx = w->col + 1;
+    vga_str(tx, w->row, w->title, ta);
+
+    // Close/minimize buttons on right
+    vga_cell(w->col + w->w - 3, w->row, '[', 0x4F);
+    vga_cell(w->col + w->w - 2, w->row, 'X', 0x4F);
+    vga_cell(w->col + w->w - 1, w->row, ']', 0x4F);
+
+    // Side borders + body
+    for (uint8_t j = 1; j < w->h - 1; j++) {
+        vga_cell(w->col, w->row + j, '|', ta);
+        vga_hline(w->col + 1, w->row + j, w->w - 2, ' ', ba);
+        vga_cell(w->col + w->w - 1, w->row + j, '|', ta);
+    }
+
+    // Bottom border
+    vga_cell(w->col, w->row + w->h - 1, '+', ta);
+    vga_hline(w->col + 1, w->row + w->h - 1, w->w - 2, '-', ta);
+    vga_cell(w->col + w->w - 1, w->row + w->h - 1, '+', ta);
+}
+
+// Init
 void wm_init(void) {
     for (int i = 0; i < MAX_WINDOWS; i++) {
         windows[i].id = 0;
@@ -62,341 +93,157 @@ void wm_init(void) {
     }
     window_count = 0;
     focused_window = -1;
-    wm_initialized = 1;
-    
-    // Fill desktop
-    uint32_t fb_w, fb_h;
-    fb_get_info(&fb_w, &fb_h);
-    fb_fill(DESKTOP_BG);
 }
 
-// Create window
-int8_t wm_create_window(const char* title, int32_t x, int32_t y,
-                        int32_t w, int32_t h, uint32_t bg) {
+// Create window (sizes in text cells)
+int8_t wm_create_window(const char* title, uint8_t col, uint8_t row,
+                        uint8_t w, uint8_t h, uint8_t bg_attr) {
     if (window_count >= MAX_WINDOWS) return -1;
-    
+    if (col + w > VGA_WIDTH) w = VGA_WIDTH - col;
+    if (row + h > VGA_HEIGHT) h = VGA_HEIGHT - row;
+
     window_t* win = &windows[window_count];
     win->id = window_count + 1;
-    strncpy(win->title, title, MAX_TITLE_LEN - 1);
-    win->x = x;
-    win->y = y;
-    win->width = w;
-    win->height = h;
-    win->bg_color = bg;
-    win->title_color = TITLE_BAR_BG;
-    win->state = WIN_STATE_NORMAL;
+    uint8_t i = 0;
+    while (*title && i < MAX_TITLE_LEN - 1) { win->title[i++] = *title++; }
+    win->title[i] = 0;
+    win->col = col;
+    win->row = row;
+    win->w = w;
+    win->h = h;
+    win->bg_attr = bg_attr;
+    win->state = 0;
     win->visible = 1;
-    win->focused = 0;
-    win->has_close = 1;
-    win->has_minimize = 1;
-    win->has_maximize = 1;
-    
+    win->focused = 1;
+
     window_count++;
     focused_window = win->id - 1;
-    
+
     return win->id;
 }
 
-// Draw title bar
-static void wm_draw_title_bar(window_t* win) {
-    uint32_t bar_color = win->focused ? TITLE_BAR_FOCUSED : TITLE_BAR_BG;
-    uint32_t border_color = win->focused ? BORDER_FOCUSED : BORDER_COLOR;
-    
-    // Title bar background
-    fb_draw_rect(win->x, win->y, win->width, TITLE_BAR_HEIGHT, bar_color);
-    
-    // Border
-    fb_draw_rect(win->x, win->y, win->width, BORDER_WIDTH, border_color);
-    fb_draw_rect(win->x, win->y + win->height - BORDER_WIDTH, win->width, BORDER_WIDTH, border_color);
-    fb_draw_rect(win->x, win->y, BORDER_WIDTH, win->height, border_color);
-    fb_draw_rect(win->x + win->width - BORDER_WIDTH, win->y, BORDER_WIDTH, win->height, border_color);
-    
-    // Title text
-    fb_draw_string(win->x + 8, win->y + 6, win->title, TITLE_TEXT, bar_color);
-    
-    // Close button (X)
-    if (win->has_close) {
-        int32_t bx = win->x + win->width - 22;
-        int32_t by = win->y + 4;
-        fb_draw_rect(bx, by, 16, 14, CLOSE_BTN_COLOR);
-        fb_draw_string(bx + 4, by + 3, "X", 0xFFFFFF, CLOSE_BTN_COLOR);
-    }
-    
-    // Minimize button (_)
-    if (win->has_minimize) {
-        int32_t bx = win->x + win->width - 42;
-        int32_t by = win->y + 4;
-        fb_draw_rect(bx, by, 16, 14, MINIMIZE_BTN_COLOR);
-        fb_draw_string(bx + 4, by + 3, "_", 0xFFFFFF, MINIMIZE_BTN_COLOR);
-    }
-    
-    // Maximize button ([])
-    if (win->has_maximize) {
-        int32_t bx = win->x + win->width - 62;
-        int32_t by = win->y + 4;
-        fb_draw_rect(bx, by, 16, 14, MAXIMIZE_BTN_COLOR);
-        fb_draw_string(bx + 2, by + 3, "[]", 0xFFFFFF, MAXIMIZE_BTN_COLOR);
-    }
-}
-
-// Draw window content area
-static void wm_draw_content(window_t* win) {
-    // Content background
-    fb_draw_rect(win->x + BORDER_WIDTH, win->y + TITLE_BAR_HEIGHT,
-                 win->width - 2 * BORDER_WIDTH,
-                 win->height - TITLE_BAR_HEIGHT - BORDER_WIDTH,
-                 win->bg_color);
-}
-
-// Draw a window
-static void wm_draw_window(window_t* win) {
-    if (!win->visible || win->state == WIN_STATE_MINIMIZED) return;
-    
-    wm_draw_title_bar(win);
-    wm_draw_content(win);
-}
-
-// Redraw all windows
+// Redraw desktop
 void wm_redraw(void) {
-    // Fill desktop
-    uint32_t fb_w, fb_h;
-    fb_get_info(&fb_w, &fb_h);
-    fb_fill(DESKTOP_BG);
-    
-    // Draw taskbar
-    fb_draw_rect(0, fb_h - 30, fb_w, 30, 0x0F3460);
-    fb_draw_string(8, fb_h - 22, "Tritos", 0xE0E0E0, 0x0F3460);
-    
-    // Draw each window
+    // Fill screen
+    for (uint8_t y = 0; y < VGA_HEIGHT; y++)
+        for (uint8_t x = 0; x < VGA_WIDTH; x++)
+            vga_cell(x, y, ' ', 0x07);
+
+    // Title bar at top
+    vga_hline(0, 0, VGA_WIDTH, ' ', 0x70);
+    vga_str(2, 0, "TRITOS OS v4.5", 0x70);
+    vga_str(60, 0, "Ternary Ancestral", 0x70);
+
+    // Taskbar at bottom
+    vga_hline(0, VGA_HEIGHT - 1, VGA_WIDTH, ' ', 0x1F);
+    vga_str(2, VGA_HEIGHT - 1, "[TRITOS]", 0x1F);
+    vga_str(12, VGA_HEIGHT - 1, "mem: 3600B", 0x1E);
+    vga_str(30, VGA_HEIGHT - 1, "users: 2", 0x1E);
+    vga_str(45, VGA_HEIGHT - 1, "proc: 2", 0x1E);
+
+    // Draw windows
     for (int i = 0; i < MAX_WINDOWS; i++) {
-        if (windows[i].visible) {
-            wm_draw_window(&windows[i]);
-        }
+        if (windows[i].visible) wm_draw(&windows[i]);
     }
-    
-    // Draw mouse cursor
-    mouse_draw_cursor();
 }
 
 // Close window
 void wm_close_window(int8_t id) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    window_t* win = &windows[id - 1];
-    win->visible = 0;
-    
-    // Focus next visible window
+    windows[id - 1].visible = 0;
     if (focused_window == id - 1) {
         focused_window = -1;
         for (int i = 0; i < MAX_WINDOWS; i++) {
             if (windows[i].visible) {
                 focused_window = i;
                 windows[i].focused = 1;
-            } else {
-                windows[i].focused = 0;
+                break;
             }
         }
     }
-    
     wm_redraw();
 }
 
-// Minimize window
 void wm_minimize_window(int8_t id) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    window_t* win = &windows[id - 1];
-    win->state = WIN_STATE_MINIMIZED;
-    win->visible = 0;
-    
+    windows[id - 1].state = 1;
+    windows[id - 1].visible = 0;
     wm_redraw();
 }
 
-// Restore window
 void wm_restore_window(int8_t id) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    window_t* win = &windows[id - 1];
-    win->state = WIN_STATE_NORMAL;
-    win->visible = 1;
-    
+    windows[id - 1].state = 0;
+    windows[id - 1].visible = 1;
     wm_redraw();
 }
 
-// Maximize window
 void wm_maximize_window(int8_t id) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    window_t* win = &windows[id - 1];
-    
-    if (win->state == WIN_STATE_MAXIMIZED) {
-        // Restore
-        win->state = WIN_STATE_NORMAL;
-        // Would need to save previous size
+    window_t* w = &windows[id - 1];
+    if (w->state == 2) {
+        w->state = 0;
     } else {
-        win->state = WIN_STATE_MAXIMIZED;
-        uint32_t fb_w, fb_h;
-        fb_get_info(&fb_w, &fb_h);
-        win->x = 0;
-        win->y = 0;
-        win->width = fb_w;
-        win->height = fb_h - 30; // Leave taskbar
+        w->state = 2;
+        w->col = 0; w->row = 1;
+        w->w = VGA_WIDTH; w->h = VGA_HEIGHT - 2;
     }
-    
     wm_redraw();
 }
 
-// Focus window
 void wm_focus_window(int8_t id) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    // Unfocus all
-    for (int i = 0; i < MAX_WINDOWS; i++) {
-        windows[i].focused = 0;
-    }
-    
-    // Focus this one
+    for (int i = 0; i < MAX_WINDOWS; i++) windows[i].focused = 0;
     windows[id - 1].focused = 1;
     focused_window = id - 1;
-    
     wm_redraw();
 }
 
-// Move window
-void wm_move_window(int8_t id, int32_t x, int32_t y) {
+void wm_move_window(int8_t id, uint8_t col, uint8_t row) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    window_t* win = &windows[id - 1];
-    win->x = x;
-    win->y = y;
-    
+    windows[id - 1].col = col;
+    windows[id - 1].row = row;
     wm_redraw();
 }
 
-// Resize window
-void wm_resize_window(int8_t id, int32_t w, int32_t h) {
+void wm_resize_window(int8_t id, uint8_t w, uint8_t h) {
     if (id < 1 || id > MAX_WINDOWS) return;
-    
-    window_t* win = &windows[id - 1];
-    win->width = w;
-    win->height = h;
-    
+    windows[id - 1].w = w;
+    windows[id - 1].h = h;
     wm_redraw();
 }
 
-// Handle mouse click
-void wm_handle_click(int32_t mx, int32_t my) {
-    // Check taskbar clicks (restore/minimize)
-    uint32_t fb_w, fb_h;
-    fb_get_info(&fb_w, &fb_h);
-    
-    if (my >= (int32_t)(fb_h - 30)) {
-        // Taskbar click - restore minimized windows
-        for (int i = 0; i < MAX_WINDOWS; i++) {
-            if (!windows[i].visible && windows[i].state == WIN_STATE_MINIMIZED) {
-                wm_restore_window(windows[i].id);
-                return;
-            }
-        }
-        return;
-    }
-    
+void wm_handle_click(uint8_t x, uint8_t y) {
     // Check window clicks (reverse order for z-order)
     for (int i = MAX_WINDOWS - 1; i >= 0; i--) {
         if (!windows[i].visible) continue;
-        
-        window_t* win = &windows[i];
-        
-        // Check title bar
-        if (mx >= win->x && mx < win->x + win->width &&
-            my >= win->y && my < win->y + TITLE_BAR_HEIGHT) {
-            
-            // Check close button
-            if (win->has_close) {
-                int32_t bx = win->x + win->width - 22;
-                int32_t by = win->y + 4;
-                if (mx >= bx && mx < bx + 16 && my >= by && my < by + 14) {
-                    wm_close_window(win->id);
-                    return;
-                }
-            }
-            
-            // Check minimize button
-            if (win->has_minimize) {
-                int32_t bx = win->x + win->width - 42;
-                int32_t by = win->y + 4;
-                if (mx >= bx && mx < bx + 16 && my >= by && my < by + 14) {
-                    wm_minimize_window(win->id);
-                    return;
-                }
-            }
-            
-            // Check maximize button
-            if (win->has_maximize) {
-                int32_t bx = win->x + win->width - 62;
-                int32_t by = win->y + 4;
-                if (mx >= bx && mx < bx + 16 && my >= by && my < by + 14) {
-                    wm_maximize_window(win->id);
-                    return;
-                }
-            }
-            
-            // Start drag
-            wm_focus_window(win->id);
-            drag_window = i;
-            drag_offset_x = mx - win->x;
-            drag_offset_y = my - win->y;
-            return;
-        }
-        
-        // Check content area
-        if (mx >= win->x && mx < win->x + win->width &&
-            my >= win->y + TITLE_BAR_HEIGHT && my < win->y + win->height) {
-            wm_focus_window(win->id);
+        window_t* w = &windows[i];
+        if (x >= w->col && x < w->col + w->w && y >= w->row && y < w->row + w->h) {
+            wm_focus_window(w->id);
             return;
         }
     }
 }
 
-// Handle mouse drag
-void wm_handle_drag(int32_t mx, int32_t my) {
-    if (drag_window < 0) return;
-    
-    window_t* win = &windows[drag_window];
-    win->x = mx - drag_offset_x;
-    win->y = my - drag_offset_y;
-    
-    wm_redraw();
-}
+uint8_t wm_get_window_count(void) { return window_count; }
+int8_t wm_get_focused(void) { return focused_window; }
 
-// Handle mouse release
-void wm_handle_release(void) {
-    drag_window = -1;
-}
-
-// Get window count
-uint8_t wm_get_window_count(void) {
-    return window_count;
-}
-
-// Get focused window
-int8_t wm_get_focused(void) {
-    return focused_window;
-}
-
-// Window manager status
 void wm_status(void) {
-    printf("\n  Window Manager:\n\n");
-    printf("  Windows: %d/%d\n", window_count, MAX_WINDOWS);
-    printf("  Focused: %d\n", focused_window + 1);
-    printf("  Desktop: DESKTOP_BG\n");
-    
+    vga_puts("\n  Window Manager:\n\n");
+    vga_puts("  Windows: ");
+    { char nb[4]; num_to_str(window_count, nb); vga_puts(nb); }
+    vga_puts("/");
+    vga_puts("16\n");
+    vga_puts("  Focused: ");
+    { char nb[4]; num_to_str(focused_window + 1, nb); vga_puts(nb); }
+    vga_puts("\n\n");
     for (int i = 0; i < MAX_WINDOWS; i++) {
         if (windows[i].visible) {
-            printf("  [%d] %s at (%d,%d) %dx%d\n",
-                   windows[i].id, windows[i].title,
-                   windows[i].x, windows[i].y,
-                   windows[i].width, windows[i].height);
+            vga_puts("  [");
+            { char nb[4]; num_to_str(windows[i].id, nb); vga_puts(nb); }
+            vga_puts("] ");
+            vga_puts(windows[i].title);
+            vga_puts("\n");
         }
     }
 }
