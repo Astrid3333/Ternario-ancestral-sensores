@@ -1459,58 +1459,161 @@ static void cmd_wm(const char* args) {
         while (*p >= '0' && *p <= '9') { id = id * 10 + (*p - '0'); p++; }
         if (id > 0) { wm_close_window(id); }
     } else if (strncmp_t(args, "demo", 4) == 0) {
-        // VGA text GUI demo — draw windows using colored ASCII
-        // Clear screen
-        for (int i = 0; i < 80*25; i++) { vga_buffer[i] = 0x0720; }
+        // Modern Linux-style desktop (GNOME/Fedora look)
         
+        // === BACKGROUND — dark charcoal ===
+        for (int i = 0; i < 80*25; i++) vga_buffer[i] = 0x0820;
+        
+        // === TOP PANEL (GNOME-style) — dark gray bar ===
+        for (int x = 0; x < 80; x++) vga_buffer[x] = (0x07 << 8) | ' ';
+        // Left: Activities
+        vga_puts_at(1, 0, "Activities", 0x0F);
+        vga_puts_at(11, 0, "|", 0x08);
+        vga_puts_at(13, 0, "Tritos", 0x0F);
+        // Center: clock
+        vga_puts_at(34, 0, "Tue Sep 20  01:42", 0x0F);
+        // Right: system tray
+        vga_puts_at(56, 0, "|", 0x08);
+        vga_puts_at(58, 0, "vol", 0x07);
+        vga_puts_at(62, 0, "net", 0x0A);
+        vga_puts_at(66, 0, "bat", 0x0B);
+        vga_puts_at(70, 0, "|", 0x08);
+        vga_puts_at(72, 0, "power", 0x0C);
+        
+        // === BOTTOM DOCK (GNOME-style) — centered icons ===
+        for (int x = 0; x < 80; x++) vga_buffer[24*80+x] = (0x07 << 8) | ' ';
+        // Dock icons centered
+        vga_puts_at(25, 24, "[Term]", 0x0B);
+        vga_puts_at(32, 24, "[Files]", 0x0B);
+        vga_puts_at(39, 24, "[Sys]", 0x0B);
+        vga_puts_at(45, 24, "[Net]", 0x0B);
+        vga_puts_at(51, 24, "[Mem]", 0x0B);
+        // Active indicator (dot under Term)
+        vga_puts_at(27, 23, ".", 0x0A);
+        
+        // === WINDOW 1: Terminal (top-left, dark bg) ===
         // Title bar
-        vga_set_color(0x0F, 0x1);
-        for (int x = 0; x < 80; x++) { vga_buffer[x] = (0x1F << 8) | ' '; }
-        vga_puts_at(2, 0, "TRITOS OS v4.5 - Ternary Ancestral Kernel", 0x1F);
-        vga_puts_at(62, 0, "GUI Demo", 0x1F);
+        for (int x = 2; x < 38; x++) vga_buffer[2*80+x] = (0x07 << 8) | ' ';
+        vga_buffer[2*80+2] = (0x0A << 8) | ' ';
+        vga_puts_at(4, 2, "Terminal", 0x0F);
+        vga_buffer[2*80+37] = (0x08 << 8) | '_';
+        // Close/minimize/maximize buttons (right side of title)
+        vga_puts_at(34, 2, "-", 0x0A);
+        vga_puts_at(35, 2, "+", 0x0A);
+        vga_puts_at(36, 2, "x", 0x0C);
+        // Border
+        for (int y = 3; y < 14; y++) {
+            vga_buffer[y*80+2] = (0x08 << 8) | '|';
+            vga_buffer[y*80+37] = (0x08 << 8) | '|';
+        }
+        for (int x = 2; x < 38; x++) {
+            vga_buffer[14*80+x] = (0x08 << 8) | '_';
+        }
+        // Content — dark bg (0x00)
+        for (int y = 3; y < 14; y++)
+            for (int x = 3; x < 37; x++)
+                vga_buffer[y*80+x] = 0x0020;
+        // Terminal text
+        vga_puts_at(3, 3, "astrid@tritos:~$ neofetch", 0x0A);
+        vga_puts_at(3, 4, "       ___          ", 0x0C);
+        vga_puts_at(3, 5, "      /   \\  OS: TritOS v4.5", 0x07);
+        vga_puts_at(3, 6, "     / \\ / \\ Kernel: ternary-ancestral", 0x07);
+        vga_puts_at(3, 7, "    /  0 +  -\\ Shell: bash 1.0", 0x07);
+        vga_puts_at(3, 8, "   /___|_|___\\ DE: TritDE 1.0", 0x07);
+        vga_puts_at(3, 9, "   Ternary Ancestral", 0x0B);
+        vga_puts_at(3, 10, " ", 0x00);
+        vga_puts_at(3, 11, " Uptime: 1 tick", 0x08);
+        vga_puts_at(3, 12, " Memory: 3600B / 3600B", 0x08);
+        vga_puts_at(3, 13, "astrid@tritos:~$ _", 0x0A);
         
-        // Window 1: Terminal
-        vga_draw_window(1, 2, 38, 12, "Terminal", 0x1E, 0x70);
-        vga_puts_at(3, 4, "ternary@mayan$ help", 0x0A);
-        vga_puts_at(3, 5, "  help    - Show commands", 0x07);
-        vga_puts_at(3, 6, "  ps      - List processes", 0x07);
-        vga_puts_at(3, 7, "  mem     - Memory status", 0x07);
-        vga_puts_at(3, 8, "  touch   - Create file", 0x07);
-        vga_puts_at(3, 9, "  wm demo - This GUI", 0x07);
-        vga_puts_at(3, 10, "ternary@mayan$ _", 0x0A);
+        // === WINDOW 2: Files (right, with sidebar) ===
+        for (int x = 40; x < 78; x++) vga_buffer[2*80+x] = (0x07 << 8) | ' ';
+        vga_buffer[2*80+40] = (0x0B << 8) | ' ';
+        vga_puts_at(42, 2, "Files", 0x0F);
+        vga_buffer[2*80+77] = (0x08 << 8) | '_';
+        vga_puts_at(74, 2, "-", 0x0A);
+        vga_puts_at(75, 2, "+", 0x0A);
+        vga_puts_at(76, 2, "x", 0x0C);
+        for (int y = 3; y < 12; y++) {
+            vga_buffer[y*80+40] = (0x08 << 8) | '|';
+            vga_buffer[y*80+77] = (0x08 << 8) | '|';
+        }
+        for (int x = 40; x < 78; x++) vga_buffer[12*80+x] = (0x08 << 8) | '_';
+        // Sidebar
+        for (int y = 3; y < 12; y++) {
+            vga_buffer[y*80+50] = (0x08 << 8) | '|';
+            for (int x = 41; x < 50; x++) vga_buffer[y*80+x] = 0x0720;
+        }
+        for (int x = 41; x < 50; x++) vga_buffer[3*80+x] = (0x07 << 8) | '-';
+        // Sidebar items
+        vga_puts_at(41, 4, " > Home", 0x0F);
+        vga_puts_at(41, 5, "   Docs", 0x07);
+        vga_puts_at(41, 6, "   Downloads", 0x07);
+        vga_puts_at(41, 7, "   Music", 0x07);
+        vga_puts_at(41, 8, "   Pictures", 0x07);
+        vga_puts_at(41, 9, "   Trash", 0x08);
+        // File list
+        vga_puts_at(52, 4, "readme.txt    128B", 0x07);
+        vga_puts_at(52, 5, "config.cfg     32B", 0x07);
+        vga_puts_at(52, 6, "data/          <DIR>", 0x0B);
+        vga_puts_at(52, 7, "image.bmp     256B", 0x07);
+        vga_puts_at(52, 8, "notes.md       64B", 0x07);
+        // Empty space
+        for (int y = 9; y < 12; y++)
+            for (int x = 41; x < 77; x++) vga_buffer[y*80+x] = 0x0720;
         
-        // Window 2: Files
-        vga_draw_window(42, 2, 36, 10, "Files", 0x2E, 0x70);
-        vga_puts_at(44, 4, "/ (root)", 0x0B);
-        vga_puts_at(44, 5, "  readme  (128B)", 0x07);
-        vga_puts_at(44, 6, "  test    (64B)", 0x07);
-        vga_puts_at(44, 7, "  config  (32B)", 0x07);
+        // === WINDOW 3: System Monitor (bottom-left) ===
+        for (int x = 2; x < 38; x++) vga_buffer[15*80+x] = (0x07 << 8) | ' ';
+        vga_buffer[15*80+2] = (0x0C << 8) | ' ';
+        vga_puts_at(4, 15, "System Monitor", 0x0F);
+        vga_buffer[15*80+37] = (0x08 << 8) | '_';
+        vga_puts_at(34, 15, "-", 0x0A);
+        vga_puts_at(35, 15, "+", 0x0A);
+        vga_puts_at(36, 15, "x", 0x0C);
+        for (int y = 16; y < 23; y++) {
+            vga_buffer[y*80+2] = (0x08 << 8) | '|';
+            vga_buffer[y*80+37] = (0x08 << 8) | '|';
+        }
+        for (int x = 2; x < 38; x++) vga_buffer[23*80+x] = (0x08 << 8) | '_';
+        // Content
+        vga_puts_at(3, 16, "  CPU:  0%  [          ]", 0x07);
+        vga_puts_at(3, 17, "  MEM:  2%  [##        ]", 0x0A);
+        vga_puts_at(3, 18, "  DISK: 0%  [          ]", 0x07);
+        vga_puts_at(3, 19, " ", 0x00);
+        vga_puts_at(3, 20, "  Processes: 3", 0x07);
+        vga_puts_at(3, 21, "  Threads:   3", 0x07);
+        vga_puts_at(3, 22, "  Uptime:    1 tick", 0x08);
         
-        // Window 3: System
-        vga_draw_window(1, 16, 38, 8, "System", 0x4E, 0x70);
-        vga_puts_at(3, 18, "PID  STATE   MEM", 0x0F);
-        vga_puts_at(3, 19, " 0   ACTIVE  0B", 0x0A);
-        vga_puts_at(3, 20, " 1   SLEEP   0B", 0x07);
-        vga_puts_at(3, 21, " 2   READY   0B", 0x07);
+        // === WINDOW 4: Network (bottom-right) ===
+        for (int x = 40; x < 78; x++) vga_buffer[13*80+x] = (0x07 << 8) | ' ';
+        vga_buffer[13*80+40] = (0x0D << 8) | ' ';
+        vga_puts_at(42, 13, "Network", 0x0F);
+        vga_buffer[13*80+77] = (0x08 << 8) | '_';
+        vga_puts_at(74, 13, "-", 0x0A);
+        vga_puts_at(75, 13, "+", 0x0A);
+        vga_puts_at(76, 13, "x", 0x0C);
+        for (int y = 14; y < 23; y++) {
+            vga_buffer[y*80+40] = (0x08 << 8) | '|';
+            vga_buffer[y*80+77] = (0x08 << 8) | '|';
+        }
+        for (int x = 40; x < 78; x++) vga_buffer[23*80+x] = (0x08 << 8) | '_';
+        // Content
+        vga_puts_at(42, 14, "Interface: eth0", 0x07);
+        vga_puts_at(42, 15, "Status:    up", 0x0A);
+        vga_puts_at(42, 16, "IP:        10.0.2.15", 0x07);
+        vga_puts_at(42, 17, "Gateway:   10.0.2.2", 0x07);
+        vga_puts_at(42, 18, "DNS:       8.8.8.8", 0x07);
+        vga_puts_at(42, 19, " ", 0x00);
+        vga_puts_at(42, 20, "  TX:      0 B", 0x08);
+        vga_puts_at(42, 21, "  RX:      0 B", 0x08);
         
-        // Window 4: Memory
-        vga_draw_window(42, 14, 36, 10, "Memory", 0x5E, 0x70);
-        vga_puts_at(44, 16, "Base 60 Quipu:", 0x0F);
-        vga_puts_at(44, 17, "Used:  5 blocks", 0x0A);
-        vga_puts_at(44, 18, "Free:  55 blocks", 0x07);
-        vga_puts_at(44, 19, "Total: 60 x 60B", 0x07);
+        // === DESKTOP ICONS ===
+        vga_puts_at(1, 3, " >", 0x0B);
+        vga_puts_at(4, 3, "Home", 0x07);
+        vga_puts_at(1, 5, " >", 0x0B);
+        vga_puts_at(4, 5, "Trash", 0x07);
         
-        // Taskbar
-        vga_set_color(0x0F, 0x1);
-        for (int x = 0; x < 80; x++) { vga_buffer[24*80+x] = (0x1F << 8) | ' '; }
-        vga_puts_at(2, 24, "[TRITOS]", 0x1F);
-        vga_puts_at(12, 24, "Terminal", 0x1E);
-        vga_puts_at(22, 24, "Files", 0x2E);
-        vga_puts_at(30, 24, "System", 0x4E);
-        vga_puts_at(40, 24, "Memory", 0x5E);
-        vga_puts_at(60, 24, "mem: 3600B", 0x0B);
-        
-        vga_puts("  4 demo windows created\n");
+        vga_puts("  Desktop ready\n");
     } else {
         vga_puts("  wm status          - Show status\n");
         vga_puts("  wm redraw          - Redraw desktop\n");
