@@ -356,6 +356,9 @@ void fs_close(int8_t fd);
 // VGA (defined in kernel.c)
 extern void vga_puts(const char* str);
 extern void vga_putc(char c);
+extern void vga_set_color(uint8_t fg, uint8_t bg);
+extern void vga_puts_at(int x, int y, const char* str, uint8_t color);
+extern void vga_draw_window(int x, int y, int w, int h, const char* title, uint8_t border_color, uint8_t title_color);
 
 // PCI
 typedef struct {
@@ -565,6 +568,8 @@ int8_t elf_execute(const uint8_t* data, uint32_t size);
 // Framebuffer
 void framebuffer_init(uint32_t addr, uint32_t width, uint32_t height, uint32_t pitch, uint8_t bpp);
 uint8_t fb_is_active(void);
+void fb_console_init(uint32_t width, uint32_t height);
+void fb_console_putc(char c, uint8_t color);
 void fb_set_pixel(uint32_t x, uint32_t y, uint32_t color);
 uint32_t fb_get_pixel(uint32_t x, uint32_t y);
 void fb_fill(uint32_t color);

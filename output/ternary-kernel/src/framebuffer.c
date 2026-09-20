@@ -297,3 +297,101 @@ void fb_draw_ternary_grid(uint32_t x, uint32_t y, uint32_t w, uint32_t h) {
         }
     }
 }
+
+// =============================================================================
+// FRAMEBUFFER CONSOLE — Text rendering on pixel framebuffer
+// =============================================================================
+
+#define FB_CHAR_W 8
+#define FB_CHAR_H 8
+
+static uint32_t fb_con_w = 0;   // console width in chars
+static uint32_t fb_con_h = 0;   // console height in chars
+static uint32_t fb_con_x = 0;   // cursor x (chars)
+static uint32_t fb_con_y = 0;   // cursor y (chars)
+static uint32_t fb_con_fg = 0xCCCCCC; // foreground color
+static uint32_t fb_con_bg = 0x1E1E2E; // background color
+
+void fb_console_init(uint32_t width, uint32_t height) {
+    fb_con_w = width / FB_CHAR_W;
+    fb_con_h = height / FB_CHAR_H;
+    fb_con_x = 0;
+    fb_con_y = 0;
+}
+
+static void fb_con_scroll(void) {
+    // Move everything up by one char row
+    uint32_t row_bytes = fb_pitch;
+    uint32_t char_row_bytes = FB_CHAR_H * row_bytes;
+    uint32_t total = char_row_bytes * (fb_con_h - 1);
+    
+    // Copy pixel data up
+    uint8_t* dst = (uint8_t*)framebuffer;
+    uint8_t* src = dst + char_row_bytes;
+    for (uint32_t i = 0; i < total; i++) dst[i] = src[i];
+    
+    // Clear last row
+    uint8_t* last = dst + total;
+    uint32_t clear_bytes = char_row_bytes;
+    for (uint32_t i = 0; i < clear_bytes; i++) last[i] = 0;
+    
+    fb_con_y = fb_con_h - 1;
+}
+
+// VGA color attribute to RGB
+static uint32_t vga_attr_to_rgb(uint8_t attr) {
+    uint8_t fg_idx = attr & 0x0F;
+    uint8_t bg_idx = (attr >> 4) & 0x0F;
+    
+    // Standard VGA colors
+    static const uint32_t vga_colors[16] = {
+        0x000000, 0x0000AA, 0x00AA00, 0x00AAAA,
+        0xAA0000, 0xAA00AA, 0xAA5500, 0xAAAAAA,
+        0x555555, 0x5555FF, 0x55FF55, 0x55FFFF,
+        0xFF5555, 0xFF55FF, 0xFFFF55, 0xFFFFFF
+    };
+    
+    // Use fg for text, bg for background
+    return vga_colors[fg_idx]; // We draw fg pixels only, bg is already set
+}
+
+void fb_console_putc(char c, uint8_t color) {
+    if (!framebuffer) return;
+    
+    uint32_t fg = vga_attr_to_rgb(color);
+    uint32_t bg = vga_attr_to_rgb((color >> 4) & 0x0F);
+    
+    if (c == '\n') {
+        fb_con_x = 0;
+        fb_con_y++;
+        if (fb_con_y >= fb_con_h) fb_con_scroll();
+        return;
+    }
+    if (c == '\b') {
+        if (fb_con_x > 0) {
+            fb_con_x--;
+            // Clear the character
+            fb_draw_rect(fb_con_x * FB_CHAR_W, fb_con_y * FB_CHAR_H, FB_CHAR_W, FB_CHAR_H, bg);
+        }
+        return;
+    }
+    if (c == '\t') {
+        fb_con_x = (fb_con_x + 4) & ~3;
+        if (fb_con_x >= fb_con_w) {
+            fb_con_x = 0;
+            fb_con_y++;
+            if (fb_con_y >= fb_con_h) fb_con_scroll();
+        }
+        return;
+    }
+    
+    // Draw character
+    fb_draw_char(fb_con_x * FB_CHAR_W, fb_con_y * FB_CHAR_H, c, fg, bg);
+    
+    fb_con_x++;
+    if (fb_con_x >= fb_con_w) {
+        fb_con_x = 0;
+        fb_con_y++;
+        if (fb_con_y >= fb_con_h) fb_con_scroll();
+    }
+}

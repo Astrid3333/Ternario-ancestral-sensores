@@ -11,8 +11,4 @@ align 4
     dd MAGIC
     dd FLAGS
     dd CHECKSUM
-    dd 0    ; header_addr
-    dd 0    ; load_addr
-    dd 0    ; load_end_addr
-    dd 0    ; bss_end_addr
-    dd 0    ; entry_addr
+    dd 0, 0, 0, 0, 0

@@ -55,7 +55,8 @@ static void vga_scroll(void) {
 }
 
 void vga_putc(char c) {
-    if (serial_input_enabled) serial_putc(c);  // Only mirror to serial after shell is ready
+    if (serial_input_enabled) serial_putc(c);
+    
     if (c == '\n') {
         vga_x = 0;
         vga_y++;
@@ -96,6 +97,43 @@ void vga_puts(const char* str) {
 
 void vga_set_color(uint8_t fg, uint8_t bg) {
     vga_color = (bg << 4) | fg;
+}
+
+void vga_puts_at(int x, int y, const char* str, uint8_t color) {
+    while (*str && x < 80) {
+        vga_buffer[y * 80 + x] = (color << 8) | (uint8_t)*str;
+        x++;
+        str++;
+    }
+}
+
+void vga_draw_window(int x, int y, int w, int h, const char* title, uint8_t border_color, uint8_t title_color) {
+    // Top border
+    vga_buffer[y * 80 + x] = (border_color << 8) | 0xDA;
+    for (int i = 1; i < w - 1; i++) vga_buffer[y * 80 + x + i] = (border_color << 8) | 0xC4;
+    vga_buffer[y * 80 + x + w - 1] = (border_color << 8) | 0xBF;
+    
+    // Title in top border
+    int tx = x + 2;
+    while (*title && tx < x + w - 2) {
+        vga_buffer[y * 80 + tx] = (title_color << 8) | (uint8_t)*title;
+        tx++;
+        title++;
+    }
+    
+    // Side borders and empty content
+    for (int row = 1; row < h - 1; row++) {
+        vga_buffer[(y + row) * 80 + x] = (border_color << 8) | 0xB3;
+        for (int col = 1; col < w - 1; col++) {
+            vga_buffer[(y + row) * 80 + x + col] = 0x0720;
+        }
+        vga_buffer[(y + row) * 80 + x + w - 1] = (border_color << 8) | 0xB3;
+    }
+    
+    // Bottom border
+    vga_buffer[(y + h - 1) * 80 + x] = (border_color << 8) | 0xC0;
+    for (int i = 1; i < w - 1; i++) vga_buffer[(y + h - 1) * 80 + x + i] = (border_color << 8) | 0xC4;
+    vga_buffer[(y + h - 1) * 80 + x + w - 1] = (border_color << 8) | 0xD9;
 }
 
 void vga_print_trit(trit_t t) {
@@ -1421,11 +1459,58 @@ static void cmd_wm(const char* args) {
         while (*p >= '0' && *p <= '9') { id = id * 10 + (*p - '0'); p++; }
         if (id > 0) { wm_close_window(id); }
     } else if (strncmp_t(args, "demo", 4) == 0) {
-        wm_create_window("Terminal", 2, 2, 36, 12, 0x1E);
-        wm_create_window("Files", 20, 5, 30, 10, 0x2E);
-        wm_create_window("System", 40, 3, 35, 12, 0x4E);
-        wm_redraw();
-        vga_puts("  3 demo windows created\n");
+        // VGA text GUI demo — draw windows using colored ASCII
+        // Clear screen
+        for (int i = 0; i < 80*25; i++) { vga_buffer[i] = 0x0720; }
+        
+        // Title bar
+        vga_set_color(0x0F, 0x1);
+        for (int x = 0; x < 80; x++) { vga_buffer[x] = (0x1F << 8) | ' '; }
+        vga_puts_at(2, 0, "TRITOS OS v4.5 - Ternary Ancestral Kernel", 0x1F);
+        vga_puts_at(62, 0, "GUI Demo", 0x1F);
+        
+        // Window 1: Terminal
+        vga_draw_window(1, 2, 38, 12, "Terminal", 0x1E, 0x70);
+        vga_puts_at(3, 4, "ternary@mayan$ help", 0x0A);
+        vga_puts_at(3, 5, "  help    - Show commands", 0x07);
+        vga_puts_at(3, 6, "  ps      - List processes", 0x07);
+        vga_puts_at(3, 7, "  mem     - Memory status", 0x07);
+        vga_puts_at(3, 8, "  touch   - Create file", 0x07);
+        vga_puts_at(3, 9, "  wm demo - This GUI", 0x07);
+        vga_puts_at(3, 10, "ternary@mayan$ _", 0x0A);
+        
+        // Window 2: Files
+        vga_draw_window(42, 2, 36, 10, "Files", 0x2E, 0x70);
+        vga_puts_at(44, 4, "/ (root)", 0x0B);
+        vga_puts_at(44, 5, "  readme  (128B)", 0x07);
+        vga_puts_at(44, 6, "  test    (64B)", 0x07);
+        vga_puts_at(44, 7, "  config  (32B)", 0x07);
+        
+        // Window 3: System
+        vga_draw_window(1, 16, 38, 8, "System", 0x4E, 0x70);
+        vga_puts_at(3, 18, "PID  STATE   MEM", 0x0F);
+        vga_puts_at(3, 19, " 0   ACTIVE  0B", 0x0A);
+        vga_puts_at(3, 20, " 1   SLEEP   0B", 0x07);
+        vga_puts_at(3, 21, " 2   READY   0B", 0x07);
+        
+        // Window 4: Memory
+        vga_draw_window(42, 14, 36, 10, "Memory", 0x5E, 0x70);
+        vga_puts_at(44, 16, "Base 60 Quipu:", 0x0F);
+        vga_puts_at(44, 17, "Used:  5 blocks", 0x0A);
+        vga_puts_at(44, 18, "Free:  55 blocks", 0x07);
+        vga_puts_at(44, 19, "Total: 60 x 60B", 0x07);
+        
+        // Taskbar
+        vga_set_color(0x0F, 0x1);
+        for (int x = 0; x < 80; x++) { vga_buffer[24*80+x] = (0x1F << 8) | ' '; }
+        vga_puts_at(2, 24, "[TRITOS]", 0x1F);
+        vga_puts_at(12, 24, "Terminal", 0x1E);
+        vga_puts_at(22, 24, "Files", 0x2E);
+        vga_puts_at(30, 24, "System", 0x4E);
+        vga_puts_at(40, 24, "Memory", 0x5E);
+        vga_puts_at(60, 24, "mem: 3600B", 0x0B);
+        
+        vga_puts("  4 demo windows created\n");
     } else {
         vga_puts("  wm status          - Show status\n");
         vga_puts("  wm redraw          - Redraw desktop\n");
@@ -1710,7 +1795,7 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     { char nb[12]; num_to_hex(flags, nb); vga_puts(nb); }
     vga_puts("\n");
     
-    // VGA text mode (no framebuffer)
+    // VGA text mode
     vga_puts("[BOOT] VGA text mode 80x25\n");
     
     vga_puts("  [");
@@ -1766,7 +1851,8 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     gdt_init();
     vga_puts("[INIT] GDT done, enabling paging...\n");
     paging_init();
-    vga_puts("[INIT] Paging done, setting up syscalls...\n");
+    vga_puts("[INIT] Paging done\n");
+    vga_puts("[INIT] Setting up syscalls...\n");
     syscalls_init();
     vga_puts("[INIT] Syscalls done, init mouse...\n");
     mouse_init();
