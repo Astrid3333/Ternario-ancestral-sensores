@@ -14,7 +14,7 @@ import sys
 import os
 import json
 import struct
-import hashlib
+import zlib
 from pathlib import Path
 
 # Trit values: -1 (minus), 0 (zero), +1 (plus)
@@ -24,7 +24,9 @@ TRIT_PLUS = 1
 
 # Format constants
 FORMAT_ID = b'TRC5'
-FORMAT_VERSION = 1
+FORMAT_VERSION = 2          # v2: CRC32 real (v1 usaba una suma simple; se sigue leyendo)
+HEADER_SIZE = 9             # 'TRC5'(4) + version(1) + num_trits(4)
+CHECKSUM_SIZE = 4
 TRITS_PER_BYTE = 5
 MAX_TRIT_VALUE = 2  # 0, 1, 2 (stored as 0, 1, 2 internally)
 
@@ -76,13 +78,13 @@ class TritosCodec:
             trits.extend(chunk)
         return trits[:num_trits]
     
-    def _calculate_checksum(self, data):
-        """Calcula checksum CRC32 simplificado."""
-        checksum = 0
-        for byte in data:
-            checksum = (checksum + byte) & 0xFFFFFFFF
-        return checksum
-    
+    @staticmethod
+    def _calculate_checksum(data, version=FORMAT_VERSION):
+        """v2: CRC32 real. v1 (legado): suma de bytes mod 2^32."""
+        if version == 1:
+            return sum(data) & 0xFFFFFFFF
+        return zlib.crc32(data) & 0xFFFFFFFF
+
     def encode(self, trits):
         """
         Codifica una lista de trits a formato TRC5.
@@ -93,9 +95,6 @@ class TritosCodec:
         Returns:
             bytes: Datos codificados en formato TRC5
         """
-        if not trits:
-            return b''
-        
         # Validate trits
         for t in trits:
             if t not in (TRIT_MINUS, TRIT_ZERO, TRIT_PLUS):
@@ -114,7 +113,7 @@ class TritosCodec:
         header.extend(struct.pack('>I', num_trits))
         
         # Calculate checksum
-        checksum = self._calculate_checksum(packed)
+        checksum = self._calculate_checksum(packed, self.version)
         
         # Build result
         result = bytearray()
@@ -134,29 +133,32 @@ class TritosCodec:
         Returns:
             list: Lista de trits (-1, 0, +1)
         """
-        if len(data) < 9:  # Minimum: 4 header + 4 num_trits + 4 checksum
+        if len(data) < HEADER_SIZE + CHECKSUM_SIZE:
             raise ValueError("Data too short")
-        
-        # Parse header
+
         if data[:4] != FORMAT_ID:
             raise ValueError("Invalid format ID")
-        
+
         version = data[4]
-        if version > FORMAT_VERSION:
+        if version not in (1, FORMAT_VERSION):
             raise ValueError(f"Unsupported version: {version}")
-        
+
         num_trits = struct.unpack('>I', data[5:9])[0]
-        
-        # Extract packed data
-        packed_data = data[9:-4]
-        
-        # Verify checksum
-        expected_checksum = struct.unpack('>I', data[-4:])[0]
-        actual_checksum = self._calculate_checksum(packed_data)
-        
-        if actual_checksum != expected_checksum:
+        packed_data = data[HEADER_SIZE:-CHECKSUM_SIZE]
+
+        expected_len = -(-num_trits // TRITS_PER_BYTE)
+        if len(packed_data) != expected_len:
+            raise ValueError(
+                f"Length mismatch: {len(packed_data)} bytes, expected {expected_len} for {num_trits} trits")
+
+        expected_checksum = struct.unpack('>I', data[-CHECKSUM_SIZE:])[0]
+        if self._calculate_checksum(packed_data, version) != expected_checksum:
             raise ValueError("Checksum mismatch")
-        
+
+        # Bytes 243-255 no representan ningun grupo de 5 trits (3^5 = 243)
+        if any(b > 242 for b in packed_data):
+            raise ValueError("Invalid packed byte (>242)")
+
         # Unpack trits
         trits = self._unpack_trits(packed_data, num_trits)
         

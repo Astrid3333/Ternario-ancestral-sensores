@@ -293,7 +293,7 @@ Checksum quipu detecta errores sin overhead de ACK.
 Puentes y edificios: **estable / advertencia / peligro**. Detección de patrones de carga.
 
 ### 6. Wearables y salud
-Temperatura corporal: **normal / fiebra / hipertemia**.
+Temperatura corporal: **normal / fiebre / hipertermia**.
 
 ---
 

@@ -15,25 +15,12 @@
 // LOOKUP TABLES — Evitar operaciones costosas
 // =============================================================================
 
-// Mapeo de trits a valores empaquetados (3 trits → 5 bits)
-// Índice: valor empaquetado (0-24)
-// Valor: [t1, t2, t3] mapeado a -1, 0, +1
-static const int8_t TRIT_UNPACK[25][3] PROGMEM = {
-    {-1,-1,-1}, {-1,-1, 0}, {-1,-1,+1}, {-1, 0,-1}, {-1, 0, 0},
-    {-1, 0,+1}, {-1,+1,-1}, {-1,+1, 0}, {-1,+1,+1}, { 0,-1,-1},
-    { 0,-1, 0}, { 0,-1,+1}, { 0, 0,-1}, { 0, 0, 0}, { 0, 0,+1},
-    { 0,+1,-1}, { 0,+1, 0}, { 0,+1,+1}, {+1,-1,-1}, {+1,-1, 0},
-    {+1,-1,+1}, {+1, 0,-1}, {+1, 0, 0}, {+1, 0,+1}, {+1,+1,-1}
-};
+// Empaquetado aritmetico: 3 trits = 27 estados (cabe en 5 bits, 0..26).
+// Sin tablas -> sin PROGMEM, sin riesgo de colisiones.
 
-// Mapeo de trits a valor empaquetado (3 trits → 5 bits)
-// Índice: [t1+1, t2+1, t3+1] (cada uno 0-2)
-// Valor: 0-24
-static const uint8_t TRIT_PACK[3][3][3] PROGMEM = {
-    {{ 0, 1, 2}, { 3, 4, 5}, { 6, 7, 8}},   // t1 = -1
-    {{ 9,10,11}, {12,13,14}, {15,16,17}},   // t1 =  0
-    {{18,19,20}, {21,22,23}, {24,24,24}}    // t1 = +1
-};
+static inline uint8_t pack3(int8_t t1, int8_t t2, int8_t t3) {
+    return (uint8_t)((t1 + 1) * 9 + (t2 + 1) * 3 + (t3 + 1));
+}
 
 // =============================================================================
 // TERNARY CODEC
@@ -85,7 +72,7 @@ uint8_t packTrits(const int8_t* trits, uint8_t n, uint8_t* bits) {
     
     // Empaquetar de 3 en 3
     while (i + 2 < n) {
-        uint8_t packed = TRIT_PACK[trits[i]+1][trits[i+1]+1][trits[i+2]+1];
+        uint8_t packed = pack3(trits[i], trits[i+1], trits[i+2]);
         bits[out_idx++] = packed;
         i += 3;
     }
@@ -95,7 +82,7 @@ uint8_t packTrits(const int8_t* trits, uint8_t n, uint8_t* bits) {
         int8_t t1 = trits[i++];
         int8_t t2 = (i < n) ? trits[i++] : 0;
         int8_t t3 = (i < n) ? trits[i++] : 0;
-        bits[out_idx++] = TRIT_PACK[t1+1][t2+1][t3+1];
+        bits[out_idx++] = pack3(t1, t2, t3);
     }
     
     return out_idx;
@@ -108,10 +95,11 @@ void unpackTrits(const uint8_t* bits, uint8_t n, int8_t* trits) {
     while (out_idx < n) {
         uint8_t packed = bits[bit_idx++];
         
-        // Lookup table para desempaquetar
-        trits[out_idx++] = TRIT_UNPACK[packed][0];
-        if (out_idx < n) trits[out_idx++] = TRIT_UNPACK[packed][1];
-        if (out_idx < n) trits[out_idx++] = TRIT_UNPACK[packed][2];
+        // Desempaquetar aritmeticamente (valores validos: 0..26)
+        if (packed > 26) packed = 26;  // dato corrupto: no salir de rango
+        trits[out_idx++] = (int8_t)(packed / 9) - 1;
+        if (out_idx < n) trits[out_idx++] = (int8_t)((packed / 3) % 3) - 1;
+        if (out_idx < n) trits[out_idx++] = (int8_t)(packed % 3) - 1;
     }
 }
 
@@ -141,33 +129,29 @@ uint8_t detectCycle(const uint8_t* residues, uint8_t n, uint8_t* period) {
     return 0;
 }
 
+// Compresion RLE sobre bloques de 4 trits.
+// Cada bloque = valor 0..80 (3^4 estados), guardado completo => SIN PERDIDA.
+// Salida maxima: 2 bytes por bloque. El llamador debe reservar 2*(n/4) bytes.
 uint8_t compressResidual(const int8_t* trits, uint8_t n, uint8_t* compressed) {
     uint8_t n_blocks = n / 4;
     uint8_t out_idx = 0;
-    
-    // Calcular residuos
-    uint8_t residues[25];
-    for (uint8_t i = 0; i < n_blocks; i++) {
-        int32_t val = 0;
-        for (uint8_t j = 0; j < 4; j++) {
-            val = val * 3 + (trits[i * 4 + j] + 1);
-        }
-        residues[i] = val % 33;
-    }
-    
-    // Run-length encoding
     uint8_t i = 0;
+
     while (i < n_blocks) {
-        uint8_t current = residues[i];
+        uint8_t current = 0;
+        for (uint8_t j = 0; j < 4; j++) current = current * 3 + (uint8_t)(trits[i * 4 + j] + 1);
+
         uint8_t count = 1;
-        while (i + count < n_blocks && residues[i + count] == current) {
+        while (i + count < n_blocks && count < 255) {
+            uint8_t v = 0;
+            for (uint8_t j = 0; j < 4; j++) v = v * 3 + (uint8_t)(trits[(i + count) * 4 + j] + 1);
+            if (v != current) break;
             count++;
         }
         compressed[out_idx++] = current;
         compressed[out_idx++] = count;
         i += count;
     }
-    
     return out_idx;
 }
 
