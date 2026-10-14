@@ -171,3 +171,38 @@ void paging_status(void) {
     vga_set_color(0x07, 0);
     vga_puts("\n");
 }
+
+
+// Mapea (identidad) una region fisica por encima de 4MB, p.ej. el framebuffer.
+// Usa tablas estaticas (en .bss) para no depender de memoria libre.
+#define EXTRA_TABLES 4   // hasta 16MB
+static uint32_t extra_tables[EXTRA_TABLES][1024] __attribute__((aligned(4096)));
+static uint8_t extra_used = 0;
+
+int8_t paging_map_region(uint32_t phys, uint32_t size) {
+    uint32_t start = phys & 0xFFFFF000;
+    uint32_t end = (phys + size + 0xFFF) & 0xFFFFF000;
+    if (end <= start) return -1;
+
+    for (uint32_t p = start; p < end; p += 0x1000) {
+        uint32_t di = p >> 22;
+        uint32_t ti = (p >> 12) & 0x3FF;
+        if (di == 0) continue;  // los primeros 4MB ya estan mapeados
+        uint32_t* pt;
+        if (page_directory[di] & PAGE_PRESENT) {
+            pt = (uint32_t*)(page_directory[di] & 0xFFFFF000);
+        } else {
+            if (extra_used >= EXTRA_TABLES) return -1;
+            pt = extra_tables[extra_used++];
+            for (int i = 0; i < 1024; i++) pt[i] = 0;
+            page_directory[di] = (uint32_t)pt | PAGE_PRESENT | PAGE_WRITABLE;
+        }
+        pt[ti] = p | PAGE_PRESENT | PAGE_WRITABLE;
+        if (p + 0x1000 < p) break;  // evita desbordar en 4GB
+    }
+    // Vaciar TLB
+    uint32_t cr3;
+    asm volatile("mov %%cr3, %0" : "=r"(cr3));
+    asm volatile("mov %0, %%cr3" : : "r"(cr3) : "memory");
+    return 0;
+}

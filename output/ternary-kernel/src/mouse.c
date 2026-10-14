@@ -1,175 +1,198 @@
 /**
- * mouse.c — Driver PS/2 Mouse para kernel ternario ancestral
+ * mouse.c — Driver PS/2 Mouse (polling) + cursor grafico sobre el framebuffer
  *
- * Maneja ratón PS/2 básico
+ * Los bytes del mouse los entrega el loop principal (bit 5 del puerto 0x64)
+ * a mouse_feed(); no hace falta IRQ12 ni IDT.
  */
 
 #include "../include/ternary.h"
 
-// Mouse state
-static int8_t mouse_x = 0;
-static int8_t mouse_y = 0;
+#define CUR_W 12
+#define CUR_H 16
+
+// 'X' = contorno negro, 'O' = relleno blanco, ' ' = transparente
+static const char* const cursor_sprite[CUR_H] = {
+    "X           ",
+    "XX          ",
+    "XOX         ",
+    "XOOX        ",
+    "XOOOX       ",
+    "XOOOOX      ",
+    "XOOOOOX     ",
+    "XOOOOOOX    ",
+    "XOOOOOOOX   ",
+    "XOOOOOXXXXX ",
+    "XOOXOOX     ",
+    "XOX XOOX    ",
+    "XX  XOOX    ",
+    "X    XOOX   ",
+    "     XOOX   ",
+    "      XX    "
+};
+
+static int32_t cursor_x = 0;
+static int32_t cursor_y = 0;
 static uint8_t mouse_buttons = 0;
 static uint8_t mouse_cycle = 0;
-static int8_t mouse_bytes[3];
+static uint8_t mouse_bytes[3];
 
-// Mouse cursor position
-static uint32_t cursor_x = 0;
-static uint32_t cursor_y = 0;
+static uint8_t  cur_visible = 0;
+static uint8_t  cur_dirty = 1;
+static int32_t  cur_draw_x = 0, cur_draw_y = 0;
+static uint32_t cur_saved[CUR_W * CUR_H];
 
-// Wait for mouse output
-static void mouse_wait(uint8_t a_type) {
-    uint32_t timeout = 100000;
-    if (a_type == 0) {
-        while (timeout--) {
-            if ((inb(0x64) & 1) == 1) return;
-        }
-    } else {
-        while (timeout--) {
-            if ((inb(0x64) & 2) == 0) return;
-        }
-    }
+// ---------------------------------------------------------------- controlador PS/2
+static int mouse_wait_out(void) {      // espera dato para leer
+    for (uint32_t t = 100000; t; t--) if (inb(0x64) & 1) return 1;
+    return 0;
 }
 
-// Send mouse command
-static void mouse_send(uint8_t data) {
-    mouse_wait(1);
+static int mouse_wait_in(void) {       // espera que se pueda escribir
+    for (uint32_t t = 100000; t; t--) if ((inb(0x64) & 2) == 0) return 1;
+    return 0;
+}
+
+static void mouse_write(uint8_t data) {
+    mouse_wait_in();
     outb(0x64, 0xD4);
-    mouse_wait(1);
+    mouse_wait_in();
     outb(0x60, data);
 }
 
-// Read mouse output
-static uint8_t mouse_read(void) {
-    mouse_wait(0);
+static int mouse_read_byte(void) {     // -1 si no hay respuesta
+    if (!mouse_wait_out()) return -1;
     return inb(0x60);
 }
 
-// Mouse IRQ handler (IRQ12)
-void mouse_handler(uint8_t* regs) {
-    uint8_t data = inb(0x60);
-    
-    mouse_bytes[mouse_cycle] = data;
-    mouse_cycle++;
-    
-    if (mouse_cycle == 3) {
-        mouse_cycle = 0;
-        
-        // Parse mouse packet
-        mouse_buttons = mouse_bytes[0] & 0x07;
-        mouse_x = mouse_bytes[1];
-        mouse_y = mouse_bytes[2];
-        
-        // Update cursor position
-        cursor_x += mouse_x;
-        cursor_y -= mouse_y;  // Y is inverted
-        
-        // Bounds checking
-        uint32_t fb_w, fb_h;
-        fb_get_info(&fb_w, &fb_h);
-        
-        if (cursor_x < 0) cursor_x = 0;
-        if (cursor_x >= fb_w) cursor_x = fb_w - 1;
-        if (cursor_y < 0) cursor_y = 0;
-        if (cursor_y >= fb_h) cursor_y = fb_h - 1;
-    }
+static void mouse_flush(void) {
+    for (int i = 0; i < 32 && (inb(0x64) & 1); i++) inb(0x60);
 }
 
-// Initialize mouse
 void mouse_init(void) {
     vga_puts("[MOUSE] Initializing PS/2 mouse...\n");
-    
-    // Enable auxiliary device
-    mouse_wait(1);
-    outb(0x64, 0xA8);
-    
-    // Enable interrupts
-    mouse_wait(1);
+
+    mouse_flush();
+
+    mouse_wait_in();
+    outb(0x64, 0xA8);                  // habilitar puerto auxiliar
+
+    // Modo polling: sin IRQ12 (bit 1 = 0) y con reloj del mouse activo (bit 5 = 0)
+    mouse_wait_in();
     outb(0x64, 0x20);
-    mouse_wait(0);
-    uint8_t status = inb(0x60);
-    status |= 0x02;
-    mouse_wait(1);
-    outb(0x64, 0x60);
-    mouse_wait(1);
-    outb(0x60, status);
-    
-    // Reset mouse
-    mouse_send(0xFF);
-    mouse_read();
-    
-    // Enable data reporting
-    mouse_send(0xF4);
-    mouse_read();
-    
-    // Set default values
-    mouse_x = 0;
-    mouse_y = 0;
-    mouse_buttons = 0;
+    int st = mouse_read_byte();
+    if (st >= 0) {
+        uint8_t cfg = (uint8_t)st & (uint8_t)~0x22;
+        mouse_wait_in();
+        outb(0x64, 0x60);
+        mouse_wait_in();
+        outb(0x60, cfg);
+    }
+
+    mouse_write(0xFF);                 // reset: ACK(0xFA), BAT(0xAA), ID(0x00)
+    mouse_read_byte();
+    mouse_read_byte();
+    mouse_read_byte();
+
+    mouse_write(0xF6);                 // valores por defecto
+    mouse_read_byte();
+    mouse_write(0xF4);                 // activar envio de datos
+    int ack = mouse_read_byte();
+
+    mouse_flush();
     mouse_cycle = 0;
-    
-    // Center cursor
-    uint32_t fb_w, fb_h;
+    mouse_buttons = 0;
+
+    uint32_t fb_w = 0, fb_h = 0;
     fb_get_info(&fb_w, &fb_h);
-    cursor_x = fb_w / 2;
-    cursor_y = fb_h / 2;
-    
-    vga_puts("[MOUSE] Mouse initialized\n");
+    cursor_x = (int32_t)(fb_w / 2);
+    cursor_y = (int32_t)(fb_h / 2);
+    cur_dirty = 1;
+
+    vga_puts(ack == 0xFA ? "[MOUSE] Mouse initialized\n" : "[MOUSE] No ACK from mouse (continuing)\n");
 }
 
-// Get mouse position
+// Recibe un byte crudo del mouse (desde el loop principal)
+void mouse_feed(uint8_t b) {
+    if (mouse_cycle == 0 && !(b & 0x08)) return;   // bit 3 siempre 1: si no, resincronizar
+
+    mouse_bytes[mouse_cycle++] = b;
+    if (mouse_cycle < 3) return;
+    mouse_cycle = 0;
+
+    uint8_t b0 = mouse_bytes[0];
+    if (b0 & 0xC0) return;                         // overflow en X/Y: descartar paquete
+
+    int32_t dx = (int32_t)mouse_bytes[1] - ((b0 & 0x10) ? 256 : 0);
+    int32_t dy = (int32_t)mouse_bytes[2] - ((b0 & 0x20) ? 256 : 0);
+    mouse_buttons = b0 & 0x07;
+
+    cursor_x += dx;
+    cursor_y -= dy;                                // Y de PS/2 va hacia arriba
+
+    uint32_t fb_w = 0, fb_h = 0;
+    fb_get_info(&fb_w, &fb_h);
+    if (cursor_x < 0) cursor_x = 0;
+    if (cursor_y < 0) cursor_y = 0;
+    if (fb_w && cursor_x >= (int32_t)fb_w) cursor_x = (int32_t)fb_w - 1;
+    if (fb_h && cursor_y >= (int32_t)fb_h) cursor_y = (int32_t)fb_h - 1;
+    cur_dirty = 1;
+}
+
+// ---------------------------------------------------------------- cursor grafico
+void mouse_cursor_hide(void) {
+    if (!cur_visible) return;
+    for (int y = 0; y < CUR_H; y++)
+        for (int x = 0; x < CUR_W; x++)
+            fb_set_pixel(cur_draw_x + x, cur_draw_y + y, cur_saved[y * CUR_W + x]);
+    cur_visible = 0;
+}
+
+void mouse_update_cursor(void) {
+    if (!fb_is_active()) return;
+    if (cur_visible && !cur_dirty) return;
+
+    mouse_cursor_hide();
+    cur_draw_x = cursor_x;
+    cur_draw_y = cursor_y;
+
+    for (int y = 0; y < CUR_H; y++)
+        for (int x = 0; x < CUR_W; x++)
+            cur_saved[y * CUR_W + x] = fb_get_pixel(cur_draw_x + x, cur_draw_y + y);
+
+    for (int y = 0; y < CUR_H; y++) {
+        for (int x = 0; x < CUR_W; x++) {
+            char c = cursor_sprite[y][x];
+            if (c == 'X') fb_set_pixel(cur_draw_x + x, cur_draw_y + y, 0x000000);
+            else if (c == 'O') fb_set_pixel(cur_draw_x + x, cur_draw_y + y, 0xFFFFFF);
+        }
+    }
+    cur_visible = 1;
+    cur_dirty = 0;
+}
+
+void mouse_draw_cursor(void) {
+    mouse_update_cursor();
+}
+
+// ---------------------------------------------------------------- consulta
 void mouse_get_position(int32_t* x, int32_t* y) {
     if (x) *x = cursor_x;
     if (y) *y = cursor_y;
 }
 
-// Get mouse buttons
-uint8_t mouse_get_buttons(void) {
-    return mouse_buttons;
-}
+uint8_t mouse_get_buttons(void) { return mouse_buttons; }
+uint8_t mouse_left_button(void) { return mouse_buttons & 0x01; }
+uint8_t mouse_right_button(void) { return mouse_buttons & 0x02; }
+uint8_t mouse_middle_button(void) { return mouse_buttons & 0x04; }
 
-// Check if left button pressed
-uint8_t mouse_left_button(void) {
-    return mouse_buttons & 0x01;
-}
-
-// Check if right button pressed
-uint8_t mouse_right_button(void) {
-    return mouse_buttons & 0x02;
-}
-
-// Check if middle button pressed
-uint8_t mouse_middle_button(void) {
-    return mouse_buttons & 0x04;
-}
-
-// Draw mouse cursor with ternary colors
-void mouse_draw_cursor(void) {
-    // Simple cross cursor with ternary colors
-    int32_t x, y;
-    mouse_get_position(&x, &y);
-    
-    // Draw crosshair with ternary color scheme
-    fb_draw_line(x - 5, y, x + 5, y, TRIT_220);  // White line
-    fb_draw_line(x, y - 5, x, y + 5, TRIT_220);
-    fb_draw_line(x - 5, y, x - 4, y, TRIT_000);   // Dark outline
-    fb_draw_line(x + 4, y, x + 5, y, TRIT_000);
-    fb_draw_line(x, y - 5, x, y - 4, TRIT_000);
-    fb_draw_line(x, y + 4, x, y + 5, TRIT_000);
-    
-    // Center point
-    fb_set_pixel(x, y, TRIT_020);  // Fire red center
-}
-
-// Mouse status
 void mouse_status(void) {
     vga_puts("\n  Mouse status:\n\n");
-    
+
     vga_puts("  Position: ");
-    { char nb[8]; num_to_str(cursor_x, nb); vga_puts(nb); vga_puts(","); }
-    { char nb[8]; num_to_str(cursor_y, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str((uint32_t)cursor_x, nb); vga_puts(nb); vga_puts(","); }
+    { char nb[12]; num_to_str((uint32_t)cursor_y, nb); vga_puts(nb); }
     vga_puts("\n");
-    
+
     vga_puts("  Buttons: ");
     if (mouse_left_button()) vga_puts("L ");
     if (mouse_right_button()) vga_puts("R ");

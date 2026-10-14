@@ -624,6 +624,10 @@ uint8_t mouse_right_button(void);
 uint8_t mouse_middle_button(void);
 void mouse_draw_cursor(void);
 void mouse_status(void);
+void mouse_feed(uint8_t byte);
+void mouse_update_cursor(void);
+void mouse_cursor_hide(void);
+int8_t paging_map_region(uint32_t phys, uint32_t size);
 
 // Window Manager
 void wm_init(void);

@@ -29,6 +29,11 @@ static uint8_t vga_y = 0;
 static uint8_t vga_color = 0x07;
 static volatile uint8_t serial_input_enabled = 0;
 
+// Framebuffer grafico (si GRUB lo entrega); si no, se queda en texto VGA
+static uint32_t fb_boot_addr = 0, fb_boot_w = 0, fb_boot_h = 0, fb_boot_pitch = 0;
+static uint8_t fb_boot_ok = 0;
+static uint8_t fb_console_on = 0;
+
 static const char* color_names[] = {
     "black", "blue", "green", "cyan",
     "red", "magenta", "brown", "lightgray",
@@ -56,6 +61,12 @@ static void vga_scroll(void) {
 
 void vga_putc(char c) {
     if (serial_input_enabled) serial_putc(c);
+
+    if (fb_console_on) {          // modo grafico: texto sobre el framebuffer
+        mouse_cursor_hide();      // no dejar el cursor pegado al texto
+        fb_console_putc(c, vga_color);
+        return;
+    }
     
     if (c == '\n') {
         vga_x = 0;
@@ -1835,6 +1846,19 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     { char nb[12]; num_to_hex(flags, nb); vga_puts(nb); }
     vga_puts("\n");
     
+    // Framebuffer lineal pedido en el header multiboot (flags bit 12)
+    if (flags & (1u << 12)) {
+        uint8_t fb_type = ((uint8_t*)mboot)[109];
+        uint8_t fb_bpp  = ((uint8_t*)mboot)[108];
+        if (fb_type == 1 && fb_bpp == 32 && mboot[23] == 0 && mboot[25] > 0 && mboot[26] > 0) {
+            fb_boot_addr  = mboot[22];
+            fb_boot_pitch = mboot[24];
+            fb_boot_w     = mboot[25];
+            fb_boot_h     = mboot[26];
+            fb_boot_ok    = 1;
+        }
+    }
+
     // VGA text mode
     vga_puts("[BOOT] VGA text mode 80x25\n");
     
@@ -1892,6 +1916,22 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     vga_puts("[INIT] GDT done, enabling paging...\n");
     paging_init();
     vga_puts("[INIT] Paging done\n");
+
+    // Activar framebuffer grafico (debe mapearse DESPUES de paging_init)
+    if (fb_boot_ok) {
+        uint32_t pitch = fb_boot_pitch > fb_boot_w * 4 ? fb_boot_pitch : fb_boot_w * 4;
+        if (paging_map_region(fb_boot_addr, pitch * fb_boot_h) == 0) {
+            framebuffer_init(fb_boot_addr, fb_boot_w, fb_boot_h, pitch, 32);
+            fb_fill(0x000000);
+            fb_console_init(fb_boot_w, fb_boot_h);
+            fb_console_on = 1;
+            vga_puts("[FB] Graphics console active\n");
+        } else {
+            vga_puts("[FB] Could not map framebuffer; staying in text mode\n");
+        }
+    } else {
+        vga_puts("[FB] No linear framebuffer from bootloader; text mode (no mouse cursor)\n");
+    }
     vga_puts("[INIT] Setting up syscalls...\n");
     syscalls_init();
     vga_puts("[INIT] Syscalls done, init mouse...\n");
@@ -1932,13 +1972,14 @@ void kernel_main(uint32_t magic, uint32_t mboot_addr) {
     while (1) {
         // Poll network
         net_poll();
+        mouse_update_cursor();
         
         if (inb(0x64) & 1) {
             uint8_t status = inb(0x64);
             uint8_t scancode = inb(0x60);
             
             // Skip mouse data (bit 5 = mouse data available)
-            if (status & 0x20) continue;
+            if (status & 0x20) { mouse_feed(scancode); continue; }
             
             if (scancode & 0x80) continue;
             if (scancode == 0 || scancode >= 128) continue;

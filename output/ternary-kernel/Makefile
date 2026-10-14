@@ -205,9 +205,10 @@ $(ISO_FILE): $(KERNEL_ELF)
 	mkdir -p iso/boot/grub
 	cp $(KERNEL_ELF) iso/boot/ternary_kernel.elf
 	@echo 'set timeout=0' > iso/boot/grub/grub.cfg
+	@echo 'insmod all_video' >> iso/boot/grub/grub.cfg
 	@echo 'set default=0' >> iso/boot/grub/grub.cfg
 	@echo '' >> iso/boot/grub/grub.cfg
-	@echo 'set gfxpayload=keep' >> iso/boot/grub/grub.cfg
+	@echo 'set gfxpayload=1024x768x32' >> iso/boot/grub/grub.cfg
 	@echo 'menuentry "Ternary Ancestral Kernel v4.5 (GUI)" {' >> iso/boot/grub/grub.cfg
 	@echo '    multiboot /boot/ternary_kernel.elf' >> iso/boot/grub/grub.cfg
 	@echo '    boot' >> iso/boot/grub/grub.cfg
