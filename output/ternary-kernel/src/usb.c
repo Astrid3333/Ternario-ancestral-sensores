@@ -188,7 +188,7 @@ void usb_init(void) {
     for (int port = 0; port < 2; port++) {
         if (usb_port_status(port)) {
             vga_puts("[USB] Device detected on port ");
-            { char nb[2]; num_to_str(port, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(port, nb, 12); vga_puts(nb); }
             vga_puts("\n");
             
             // Reset port
@@ -208,7 +208,7 @@ void usb_init(void) {
     }
     
     vga_puts("[USB] USB initialized, ");
-    { char nb[2]; num_to_str(usb_device_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(usb_device_count, nb, 12); vga_puts(nb); }
     vga_puts(" device(s) found\n");
 }
 
@@ -248,12 +248,12 @@ void usb_status(void) {
     }
     
     vga_puts("  Devices: ");
-    { char nb[2]; num_to_str(usb_device_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(usb_device_count, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     for (int i = 0; i < usb_device_count; i++) {
         vga_puts("    Port ");
-        { char nb[2]; num_to_str(usb_devices[i].port, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(usb_devices[i].port, nb, 12); vga_puts(nb); }
         vga_puts(": ");
         vga_puts(usb_devices[i].name);
         vga_puts("\n");

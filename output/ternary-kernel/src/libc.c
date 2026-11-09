@@ -126,7 +126,6 @@ int memcmp(const void* s1, const void* s2, size_t n) {
 // Internal put char to screen+serial
 static void kernel_putchar(char c) {
     extern void vga_putc(char c);
-    extern void serial_putc(char c);
     vga_putc(c);
     serial_putc(c);
 }

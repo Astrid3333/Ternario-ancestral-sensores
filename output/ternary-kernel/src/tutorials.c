@@ -116,8 +116,8 @@ void tutorials_show(void) {
     vga_puts("\n  [Tutoriales Ternarios]\n\n");
     for (int i = 0; i < NUM_TUTORIALS; i++) {
         vga_puts("  [");
-        char nb[4];
-        num_to_str(i + 1, nb);
+        char nb[12];
+        num_to_str_bounded(i + 1, nb, 12);
         vga_puts(nb);
         vga_puts("] ");
         vga_puts(tutorials[i].title);
@@ -138,7 +138,7 @@ void tutorials_show_one(int index) {
     
     vga_puts("\n  ════════════════════════════════════════\n");
     vga_puts("  Tutorial ");
-    { char nb[4]; num_to_str(index + 1, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(index + 1, nb, 12); vga_puts(nb); }
     vga_puts(": ");
     vga_puts(t->title);
     vga_puts("\n  ════════════════════════════════════════\n\n");

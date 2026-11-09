@@ -134,6 +134,6 @@ void block_status(void) {
     vga_puts("\n");
     
     vga_puts("  Blocked domains: ");
-    { char nb[4]; num_to_str(n_blocked, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_blocked, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

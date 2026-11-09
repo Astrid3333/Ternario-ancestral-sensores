@@ -264,7 +264,7 @@ void syscalls_init(void) {
     
     vga_puts("[SYSCALL] Syscall interface ready\n");
     vga_puts("[SYSCALL] ");
-    { char nb[8]; num_to_str(SYS_MAX_SYSCALL, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(SYS_MAX_SYSCALL, nb, 12); vga_puts(nb); }
     vga_puts(" syscalls available\n");
 }
 

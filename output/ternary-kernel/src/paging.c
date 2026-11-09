@@ -121,7 +121,7 @@ void page_fault_handler(uint32_t error_code) {
     vga_puts("\n");
     
     vga_puts("  Error code: ");
-    { char nb[8]; num_to_str(error_code, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(error_code, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("  Details:\n");
@@ -154,7 +154,7 @@ void paging_status(void) {
     vga_puts("\n");
     
     vga_puts("  Page faults: ");
-    { char nb[8]; num_to_str(page_fault_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(page_fault_count, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     // Check if paging is enabled

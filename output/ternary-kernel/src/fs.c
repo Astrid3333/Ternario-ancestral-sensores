@@ -168,7 +168,7 @@ void fs_init(void) {
     
     vga_puts("[FS] FAT16 initialized\n");
     vga_puts("[FS] Sectors/cluster: ");
-    { char nb[8]; num_to_str(bpb.sectors_per_cluster, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(bpb.sectors_per_cluster, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     fs_initialized = 1;
@@ -193,7 +193,7 @@ void fs_list_files(void) {
         fat16_dir_entry_t* entries = (fat16_dir_entry_t*)sector;
         for (int i = 0; i < 16; i++) {
             if (entries[i].name[0] == 0) goto done;
-            if (entries[i].name[0] == 0xE5) continue;
+            if ((uint8_t)entries[i].name[0] == 0xE5) continue;
             if (entries[i].attr == 0x0F) continue; // Long filename
             
             // Print filename
@@ -210,8 +210,8 @@ void fs_list_files(void) {
             
             // Print size
             vga_puts("  ");
-            char nb[8];
-            num_to_str(entries[i].file_size, nb);
+            char nb[12];
+            num_to_str_bounded(entries[i].file_size, nb, 12);
             vga_puts(nb);
             vga_puts(" bytes\n");
         }
@@ -267,7 +267,7 @@ int8_t fs_open(const char* filename, uint8_t mode) {
         fat16_dir_entry_t* entries = (fat16_dir_entry_t*)sector;
         for (int i = 0; i < 16; i++) {
             if (entries[i].name[0] == 0) return -1;
-            if (entries[i].name[0] == 0xE5) continue;
+            if ((uint8_t)entries[i].name[0] == 0xE5) continue;
             if (entries[i].attr == 0x0F) continue;
             
             // Compare name and ext
@@ -438,7 +438,7 @@ static int32_t fat_find_free_dir_entry(uint32_t* sector_out, uint32_t* offset_ou
         
         fat16_dir_entry_t* entries = (fat16_dir_entry_t*)sector;
         for (int i = 0; i < 16; i++) {
-            if (entries[i].name[0] == 0 || entries[i].name[0] == 0xE5) {
+            if (entries[i].name[0] == 0 || (uint8_t)entries[i].name[0] == 0xE5) {
                 if (sector_out) *sector_out = root_start + s;
                 if (offset_out) *offset_out = i;
                 return 0;
@@ -481,7 +481,7 @@ static void fat_update_dir_entry(const char* filename, uint16_t first_cluster, u
         
         fat16_dir_entry_t* entries = (fat16_dir_entry_t*)sector;
         for (int i = 0; i < 16; i++) {
-            if (entries[i].name[0] == 0 || entries[i].name[0] == 0xE5) {
+            if (entries[i].name[0] == 0 || (uint8_t)entries[i].name[0] == 0xE5) {
                 // Found slot — write entry
                 memcpy_t(entries[i].name, name, 8);
                 memcpy_t(entries[i].ext, ext, 3);
@@ -629,7 +629,7 @@ int8_t fs_delete(const char* filename) {
         fat16_dir_entry_t* entries = (fat16_dir_entry_t*)sector;
         for (int i = 0; i < 16; i++) {
             if (entries[i].name[0] == 0) return -1;
-            if (entries[i].name[0] == 0xE5) continue;
+            if ((uint8_t)entries[i].name[0] == 0xE5) continue;
             if (entries[i].attr == 0x0F) continue;
             
             if (memcmp_t(entries[i].name, name, 8) == 0 &&
@@ -639,7 +639,7 @@ int8_t fs_delete(const char* filename) {
                 fat_free_chain(entries[i].first_cluster);
                 
                 // Mark directory entry as deleted
-                entries[i].name[0] = 0xE5;
+                entries[i].name[0] = (char)0xE5;
                 ata_write_sector(root_start + s, sector);
                 
                 return 0;
@@ -685,7 +685,7 @@ int32_t fs_get_size(const char* filename) {
         fat16_dir_entry_t* entries = (fat16_dir_entry_t*)sector;
         for (int i = 0; i < 16; i++) {
             if (entries[i].name[0] == 0) return -1;
-            if (entries[i].name[0] == 0xE5) continue;
+            if ((uint8_t)entries[i].name[0] == 0xE5) continue;
             if (entries[i].attr == 0x0F) continue;
             
             if (memcmp_t(entries[i].name, name, 8) == 0 &&

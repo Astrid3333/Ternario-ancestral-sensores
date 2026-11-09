@@ -91,6 +91,6 @@ void ai_status(void) {
     vga_puts("\n");
     
     vga_puts("  History entries: ");
-    { char nb[4]; num_to_str(n_history, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_history, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

@@ -56,7 +56,7 @@ void cmd_formula(const char* args) {
     vga_puts("  ╠══════════════════════════════════════╣\n");
     vga_puts("  ║  Número: ");
 
-    { char nb[8]; num_to_str(val, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(val, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     // Binario
@@ -84,8 +84,8 @@ void cmd_formula(const char* args) {
         // Reinterpretar como base 20
         vga_puts("  ║  Maya:        ");
         for (int i = len - 1; i >= 0; i--) {
-            char nb[4];
-            num_to_str(digits[i], nb);
+            char nb[12];
+            num_to_str_bounded(digits[i], nb, 12);
             vga_puts(nb);
             if (i > 0) vga_puts(".");
         }
@@ -98,8 +98,8 @@ void cmd_formula(const char* args) {
         int len = int_to_base60(val, digits, 8);
         vga_puts("  ║  Babilónico:  ");
         for (int i = len - 1; i >= 0; i--) {
-            char nb[4];
-            num_to_str(digits[i], nb);
+            char nb[12];
+            num_to_str_bounded(digits[i], nb, 12);
             vga_puts(nb);
             if (i > 0) vga_puts(".");
         }
@@ -119,11 +119,11 @@ void cmd_formula(const char* args) {
             n /= 10;
         }
         vga_puts("  ║  Quipu:       ");
-        { char nb[8]; num_to_str(simple, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(simple, nb, 12); vga_puts(nb); }
         vga_puts(" simples, ");
-        { char nb[8]; num_to_str(doble, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(doble, nb, 12); vga_puts(nb); }
         vga_puts(" dobles, ");
-        { char nb[8]; num_to_str(triple, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(triple, nb, 12); vga_puts(nb); }
         vga_puts(" triples\n");
     }
 
@@ -154,12 +154,12 @@ void cmd_formula(const char* args) {
         tmp = val;
         while (tmp > 0) { trits++; tmp /= 3; }
         vga_puts("  ║  Bits necesarios:   ");
-        { char nb[8]; num_to_str(bits, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(bits, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Trits necesarios:  ");
-        { char nb[8]; num_to_str(trits, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(trits, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Ahorro ternario:   ");
         int savings = bits > 0 ? (bits - trits) * 100 / bits : 0;
-        { char nb[8]; num_to_str(savings, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(savings, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
     }
 
@@ -229,46 +229,46 @@ void cmd_lab(const char* args) {
             int bl = int_to_base60(b, db, 8);
             vga_puts("  ║  Método Maya:\n");
             vga_puts("  ║  ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
             for (i = al - 1; i >= 0; i--) {
-                char nb[4]; num_to_str(da[i], nb); vga_puts(nb);
+                char nb[12]; num_to_str_bounded(da[i], nb, 12); vga_puts(nb);
                 if (i > 0) vga_puts(".");
             }
             vga_puts("\n  ║  ");
-            { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
             for (i = bl - 1; i >= 0; i--) {
-                char nb[4]; num_to_str(db[i], nb); vga_puts(nb);
+                char nb[12]; num_to_str_bounded(db[i], nb, 12); vga_puts(nb);
                 if (i > 0) vga_puts(".");
             }
             vga_puts("\n  ║  Suma: ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" + ");
-            { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
-            { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
             vga_puts("\n  ║  En base 60: ");
             int rd[8];
             int rl = int_to_base60(result, rd, 8);
             for (i = rl - 1; i >= 0; i--) {
-                char nb[4]; num_to_str(rd[i], nb); vga_puts(nb);
+                char nb[12]; num_to_str_bounded(rd[i], nb, 12); vga_puts(nb);
                 if (i > 0) vga_puts(".");
             }
         } else if (sys == 2) {
             // Babilónico
             vga_puts("  ║  Método Babilónico:\n");
             vga_puts("  ║  ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" + ");
-            { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts("\n  ║  Producto: ");
-            { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
             vga_puts("\n  ║  En base 60: ");
             int rd[8];
             int rl = int_to_base60(result, rd, 8);
             for (i = rl - 1; i >= 0; i--) {
-                char nb[4]; num_to_str(rd[i], nb); vga_puts(nb);
+                char nb[12]; num_to_str_bounded(rd[i], nb, 12); vga_puts(nb);
                 if (i > 0) vga_puts(".");
             }
         } else {
@@ -284,11 +284,11 @@ void cmd_lab(const char* args) {
 
             vga_puts("  ║  Método Ternario:\n");
             vga_puts("  ║  ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
             vga_puts(a_str);
             vga_puts("\n  ║  ");
-            { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
             vga_puts(b_str);
             vga_puts("\n  ║  Suma ternaria:\n");
@@ -301,7 +301,7 @@ void cmd_lab(const char* args) {
         }
 
         vga_puts("\n  ║  Resultado: ");
-        { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
         vga_puts("\n  ╚══════════════════════════════════════╝\n\n");
 
     } else if (strcmp_t(op, "mul") == 0 || strcmp_t(op, "multiplicacion") == 0) {
@@ -314,16 +314,16 @@ void cmd_lab(const char* args) {
         if (sys == 2) {
             vga_puts("  ║  Método Babilónico:\n");
             vga_puts("  ║  ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" × ");
-            { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts("\n  ║  Producto: ");
-            { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
             vga_puts("\n  ║  En base 60: ");
             int rd[8];
             int rl = int_to_base60(result, rd, 8);
             for (i = rl - 1; i >= 0; i--) {
-                char nb[4]; num_to_str(rd[i], nb); vga_puts(nb);
+                char nb[12]; num_to_str_bounded(rd[i], nb, 12); vga_puts(nb);
                 if (i > 0) vga_puts(".");
             }
         } else {
@@ -338,11 +338,11 @@ void cmd_lab(const char* args) {
 
             vga_puts("  ║  Método Ternario:\n");
             vga_puts("  ║  ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
             vga_puts(a_str);
             vga_puts("\n  ║  ");
-            { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts(" = ");
             vga_puts(b_str);
             vga_puts("\n  ║  Producto:\n");
@@ -355,7 +355,7 @@ void cmd_lab(const char* args) {
         }
 
         vga_puts("\n  ║  Resultado: ");
-        { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
         vga_puts("\n  ╚══════════════════════════════════════╝\n\n");
 
     } else if (strcmp_t(op, "conv") == 0) {
@@ -363,7 +363,7 @@ void cmd_lab(const char* args) {
         vga_puts("  ║  CONVERSIÓN PASO A PASO              ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Número: ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Paso 1: Binario
@@ -398,8 +398,8 @@ void cmd_lab(const char* args) {
             int digits[8];
             int len = int_to_base60(a, digits, 8);
             for (i = len - 1; i >= 0; i--) {
-                char nb[4];
-                num_to_str(digits[i], nb);
+                char nb[12];
+                num_to_str_bounded(digits[i], nb, 12);
                 vga_puts(nb);
                 if (i > 0) vga_puts(".");
             }
@@ -464,7 +464,7 @@ void cmd_codigo(const char* args) {
         vga_puts("  ║  CÓDIGO TRITS-5                     ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Valor: ");
-        { char nb[8]; num_to_str(val, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(val, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Representación: [");
         for (i = len - 1; i >= 0; i--) {
             vga_putc(trit_to_char(trits[i]));
@@ -493,12 +493,12 @@ void cmd_codigo(const char* args) {
         int tmp = val;
         while (tmp > 0) { bits_needed++; tmp /= 2; }
         vga_puts("  ║  Bits necesarios: ");
-        { char nb[8]; num_to_str(bits_needed, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(bits_needed, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Trits usados: ");
-        { char nb[8]; num_to_str(len, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(len, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Eficiencia: ");
         int eff = bits_needed > 0 ? (len * 100 + bits_needed / 2) / bits_needed : 0;
-        { char nb[8]; num_to_str(eff, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(eff, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
         vga_puts("  ╚══════════════════════════════════════╝\n\n");
 
@@ -520,13 +520,13 @@ void cmd_codigo(const char* args) {
         vga_puts("  ║  CÓDIGO QUIPU                       ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Valor: ");
-        { char nb[8]; num_to_str(val, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(val, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Nudos simples (1-3): ");
-        { char nb[8]; num_to_str(simple, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(simple, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Nudos dobles (4-6):  ");
-        { char nb[8]; num_to_str(doble, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(doble, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Nudos triples (7-9): ");
-        { char nb[8]; num_to_str(triple, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(triple, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Paridad
@@ -542,7 +542,7 @@ void cmd_codigo(const char* args) {
         tmp = total;
         while (tmp > 0) { checksum += tmp % 10; tmp /= 10; }
         vga_puts("  ║  Checksum: ");
-        { char nb[8]; num_to_str(checksum, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(checksum, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Detección: 100% (parity + checksum)\n");
         vga_puts("  ╚══════════════════════════════════════╝\n\n");
 
@@ -555,7 +555,7 @@ void cmd_codigo(const char* args) {
         vga_puts("  ║  EMPAQUETADO TERNARIO               ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Valor: ");
-        { char nb[8]; num_to_str(val, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(val, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Trits: ");
         for (i = len - 1; i >= 0; i--) {
             vga_putc(trit_to_char(trits[i]));
@@ -578,7 +578,7 @@ void cmd_codigo(const char* args) {
         }
         vga_puts("\n  ║  Ahorro: ");
         int savings = (8 - len) * 100 / 8;
-        { char nb[8]; num_to_str(savings, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(savings, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
         vga_puts("  ╚══════════════════════════════════════╝\n\n");
 
@@ -600,14 +600,14 @@ void cmd_codigo(const char* args) {
         vga_puts("  ║  ENTROPÍA DE SHANNON                ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Valor: ");
-        { char nb[8]; num_to_str(val, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(val, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Frecuencia de dígitos:\n");
         vga_puts("  ║    0: ");
-        { char nb[8]; num_to_str(freq[0], nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(freq[0], nb, 12); vga_puts(nb); }
         vga_puts("\n  ║    1: ");
-        { char nb[8]; num_to_str(freq[1], nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(freq[1], nb, 12); vga_puts(nb); }
         vga_puts("\n  ║    2: ");
-        { char nb[8]; num_to_str(freq[2], nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(freq[2], nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Calcular entropía (aproximada)
@@ -631,11 +631,11 @@ void cmd_codigo(const char* args) {
         vga_puts("  ║  Entropía: ~");
         {
             int e_int = (int)(entropy * 100);
-            char nb[8];
-            num_to_str(e_int / 100, nb);
+            char nb[12];
+            num_to_str_bounded(e_int / 100, nb, 12);
             vga_puts(nb);
             vga_putc('.');
-            num_to_str(e_int % 100, nb);
+            num_to_str_bounded(e_int % 100, nb, 12);
             if (e_int % 100 < 10) vga_putc('0');
             vga_puts(nb);
         }
@@ -695,9 +695,9 @@ void cmd_ancestro(const char* args) {
         vga_puts("  ║  CALENDARIO MAYA                     ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Fecha gregoriana: ");
-        { char nb[8]; num_to_str(year, nb); vga_puts(nb); vga_putc('-');
-          num_to_str(month, nb); vga_puts(nb); vga_putc('-');
-          num_to_str(day, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(year, nb, 12); vga_puts(nb); vga_putc('-');
+          num_to_str_bounded(month, nb, 12); vga_puts(nb); vga_putc('-');
+          num_to_str_bounded(day, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         if (strcmp_t(opt, "tzolkin") == 0) {
@@ -712,7 +712,7 @@ void cmd_ancestro(const char* args) {
                 "Cib","Caban","Etznab","Cauac","Ahau"};
 
             vga_puts("  ║  Tzolk'in: ");
-            { char nb[8]; num_to_str(tzolkin_num, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(tzolkin_num, nb, 12); vga_puts(nb); }
             vga_puts(" ");
             vga_puts(names[tzolkin_name]);
             vga_puts("\n");
@@ -731,7 +731,7 @@ void cmd_ancestro(const char* args) {
             vga_puts("  ║  Haab': ");
             vga_puts(months[hab_month < 19 ? hab_month : 18]);
             vga_puts(" ");
-            { char nb[8]; num_to_str(hab_day_in, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(hab_day_in, nb, 12); vga_puts(nb); }
             vga_puts("\n");
         } else if (strcmp_t(opt, "larga") == 0) {
             // Cuenta Larga: 5 números (Baktun.Katun.Tun.Uinal.Kin)
@@ -743,14 +743,14 @@ void cmd_ancestro(const char* args) {
             int kin = jdn % 20;
 
             vga_puts("  ║  Cuenta Larga: ");
-            { char nb[8]; num_to_str(baktun, nb); vga_puts(nb); vga_putc('.');
-              num_to_str(katun, nb); vga_puts(nb); vga_putc('.');
-              num_to_str(tun, nb); vga_puts(nb); vga_putc('.');
-              num_to_str(uinal, nb); vga_puts(nb); vga_putc('.');
-              num_to_str(kin, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(baktun, nb, 12); vga_puts(nb); vga_putc('.');
+              int_to_str_bounded(katun, nb, 12); vga_puts(nb); vga_putc('.');
+              int_to_str_bounded(tun, nb, 12); vga_puts(nb); vga_putc('.');
+              int_to_str_bounded(uinal, nb, 12); vga_puts(nb); vga_putc('.');
+              int_to_str_bounded(kin, nb, 12); vga_puts(nb); }
             vga_puts("\n");
             vga_puts("  ║  Baktun: ");
-            { char nb[8]; num_to_str(baktun, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(baktun, nb, 12); vga_puts(nb); }
             vga_puts(" (ciclo de 13)\n");
         } else {
             vga_puts("  ║  Usa: --tzolkin, --hab, o --larga\n");
@@ -763,9 +763,9 @@ void cmd_ancestro(const char* args) {
         vga_puts("  ║  CALENDARIO PERSA                    ║\n");
         vga_puts("  ╠══════════════════════════════════════╣\n");
         vga_puts("  ║  Fecha gregoriana: ");
-        { char nb[8]; num_to_str(year, nb); vga_puts(nb); vga_putc('-');
-          num_to_str(month, nb); vga_puts(nb); vga_putc('-');
-          num_to_str(day, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(year, nb, 12); vga_puts(nb); vga_putc('-');
+          num_to_str_bounded(month, nb, 12); vga_puts(nb); vga_putc('-');
+          num_to_str_bounded(day, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Conversión simplificada
@@ -777,11 +777,11 @@ void cmd_ancestro(const char* args) {
         if (persian_month <= 0) { persian_month += 12; persian_year--; }
 
         vga_puts("  ║  Año: ");
-        { char nb[8]; num_to_str(persian_year, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(persian_year, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Mes: ");
         vga_puts(months[persian_month > 0 ? persian_month - 1 : 0]);
         vga_puts("\n  ║  Día: ");
-        { char nb[8]; num_to_str(day, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(day, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Estación
@@ -845,7 +845,7 @@ void cmd_patron(const char* args) {
     vga_puts("  ║  PATRÓN NUMÉRICO                    ║\n");
     vga_puts("  ╠══════════════════════════════════════╣\n");
     vga_puts("  ║  Número: ");
-    { char nb[8]; num_to_str(val, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(val, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     if (sys == 0) {
@@ -868,13 +868,13 @@ void cmd_patron(const char* args) {
                 run_len++;
             } else {
                 vga_putc(trit_to_char(trits[i + 1]));
-                { char nb[4]; num_to_str(run_len, nb); vga_puts(nb); }
+                { char nb[12]; int_to_str_bounded(run_len, nb, 12); vga_puts(nb); }
                 vga_puts(", ");
                 run_len = 1;
             }
         }
         vga_putc(trit_to_char(trits[0]));
-        { char nb[4]; num_to_str(run_len, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(run_len, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Simetría
@@ -892,7 +892,7 @@ void cmd_patron(const char* args) {
             if (trits[i] == 0) zeros++;
         }
         vga_puts("  ║  Densidad de ceros: ");
-        { char nb[8]; num_to_str(zeros * 100 / len, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(zeros * 100 / len, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
 
     } else if (sys == 1) {
@@ -912,7 +912,7 @@ void cmd_patron(const char* args) {
         // Ciclos
         vga_puts("  ║  Ciclos: ");
         for (int i = len - 1; i >= 0; i--) {
-            { char nb[8]; num_to_str(digits[i], nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(digits[i], nb, 12); vga_puts(nb); }
             if (i > 0) {
                 vga_puts("×60 + ");
             }
@@ -946,13 +946,13 @@ void cmd_patron(const char* args) {
                 run_len++;
             } else {
                 vga_putc(next ? '1' : '0');
-                { char nb[4]; num_to_str(run_len, nb); vga_puts(nb); }
+                { char nb[12]; int_to_str_bounded(run_len, nb, 12); vga_puts(nb); }
                 vga_puts(", ");
                 run_len = 1;
             }
         }
         vga_putc(val & 1 ? '1' : '0');
-        { char nb[4]; num_to_str(run_len, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(run_len, nb, 12); vga_puts(nb); }
         vga_puts("\n");
     }
 
@@ -1056,18 +1056,18 @@ void cmd_lab_experimento(const char* args) {
         while (tmp > 0) { trits++; tmp /= 3; }
 
         vga_puts("  ║  Número: ");
-        { char nb[8]; num_to_str(param, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(param, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Binario:    ");
-        { char nb[8]; num_to_str(bits, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(bits, nb, 12); vga_puts(nb); }
         vga_puts(" bits\n  ║  Ternario:   ");
-        { char nb[8]; num_to_str(trits, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(trits, nb, 12); vga_puts(nb); }
         vga_puts(" trits\n  ║  Empaquetado: ");
-        { char nb[8]; num_to_str(trits, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(trits, nb, 12); vga_puts(nb); }
         vga_puts(" bits\n");
 
         int ahorro = bits > 0 ? (bits - trits) * 100 / bits : 0;
         vga_puts("  ║  Ahorro real:    ");
-        { char nb[8]; num_to_str(ahorro, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(ahorro, nb, 12); vga_puts(nb); }
         vga_puts("%\n  ║  Ahorro teórico: 37% (hardware ternario)\n");
         vga_puts("  ║  Conclusión: El ternario ahorra ~37% en hardware\n");
 
@@ -1076,7 +1076,7 @@ void cmd_lab_experimento(const char* args) {
         if (year < 100) year = 2026;
 
         vga_puts("  ║  Año: ");
-        { char nb[8]; num_to_str(year, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(year, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Maya
@@ -1088,27 +1088,27 @@ void cmd_lab_experimento(const char* args) {
         int kin = jdn % 20;
 
         vga_puts("  ║  Maya:       ");
-        { char nb[8]; num_to_str(baktun, nb); vga_puts(nb); vga_putc('.');
-          num_to_str(katun, nb); vga_puts(nb); vga_putc('.');
-          num_to_str(tun, nb); vga_puts(nb); vga_putc('.');
-          num_to_str(uinal, nb); vga_puts(nb); vga_putc('.');
-          num_to_str(kin, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(baktun, nb, 12); vga_puts(nb); vga_putc('.');
+          int_to_str_bounded(katun, nb, 12); vga_puts(nb); vga_putc('.');
+          int_to_str_bounded(tun, nb, 12); vga_puts(nb); vga_putc('.');
+          int_to_str_bounded(uinal, nb, 12); vga_puts(nb); vga_putc('.');
+          int_to_str_bounded(kin, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         // Persa
         int persian_year = year - 621;
         vga_puts("  ║  Persa:      ");
-        { char nb[8]; num_to_str(persian_year, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(persian_year, nb, 12); vga_puts(nb); }
         vga_puts("-06-25\n");
 
         vga_puts("  ║  Gregoriano: ");
-        { char nb[8]; num_to_str(year, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(year, nb, 12); vga_puts(nb); }
         vga_puts("-09-16\n");
         vga_puts("  ║  Error medio: 0.00%\n");
 
     } else if (strcmp_t(nombre, "landauer") == 0) {
         vga_puts("  ║  Símbolos: ");
-        { char nb[8]; num_to_str(param, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(param, nb, 12); vga_puts(nb); }
         vga_puts("\n");
         vga_puts("  ║  Fórmula: E = kT × ln(base)\n");
         vga_puts("  ║  k = 1.380649 × 10⁻²³ J/K\n");
@@ -1122,9 +1122,9 @@ void cmd_lab_experimento(const char* args) {
         while (val2 < 1) { val2 *= 10; exp--; }
 
         vga_puts("  ║  Energía mínima: ~");
-        { char nb[4]; num_to_str((int)val2, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded((int)val2, nb, 12); vga_puts(nb); }
         vga_puts(" × 10^");
-        { char nb[4]; num_to_str(exp, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(exp, nb, 12); vga_puts(nb); }
         vga_puts(" J\n");
         vga_puts("  ║  Diferencia bin/tern: 0%\n");
         vga_puts("  ║  Conclusión: Landauer no depende de la base\n");
@@ -1142,13 +1142,13 @@ void cmd_lab_experimento(const char* args) {
         }
 
         vga_puts("  ║  Valor: ");
-        { char nb[8]; num_to_str(n, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(n, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Nudos simples: ");
-        { char nb[8]; num_to_str(simple, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(simple, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Nudos dobles:  ");
-        { char nb[8]; num_to_str(doble, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(doble, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Nudos triples: ");
-        { char nb[8]; num_to_str(triple, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(triple, nb, 12); vga_puts(nb); }
         vga_puts("\n");
 
         int parity = 0;
@@ -1162,7 +1162,7 @@ void cmd_lab_experimento(const char* args) {
         tmp = n;
         while (tmp > 0) { checksum += tmp % 10; tmp /= 10; }
         vga_puts("  ║  Checksum: ");
-        { char nb[8]; num_to_str(checksum, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(checksum, nb, 12); vga_puts(nb); }
         vga_puts("\n  ║  Detección de errores: 100%\n");
 
     } else {

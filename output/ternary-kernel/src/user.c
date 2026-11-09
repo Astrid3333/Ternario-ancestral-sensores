@@ -304,7 +304,7 @@ void user_status(void) {
     vga_puts("\n");
 
     vga_puts("  Users: ");
-    { char nb[2]; num_to_str(user_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(user_count, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     for (int i = 0; i < user_count; i++) {
@@ -312,9 +312,9 @@ void user_status(void) {
             vga_puts("    [");
             vga_putc(users[i].is_admin ? 'A' : ' ');
             vga_puts("] UID=");
-            { char nb[2]; num_to_str(users[i].uid, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(users[i].uid, nb, 12); vga_puts(nb); }
             vga_puts(" GID=");
-            { char nb[2]; num_to_str(users[i].gid, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(users[i].gid, nb, 12); vga_puts(nb); }
             vga_puts(" ");
             vga_puts(users[i].name);
             vga_puts("\n");
@@ -322,16 +322,16 @@ void user_status(void) {
     }
 
     vga_puts("  Groups: ");
-    { char nb[2]; num_to_str(group_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(group_count, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     for (int i = 0; i < group_count; i++) {
         vga_puts("    GID=");
-        { char nb[2]; num_to_str(groups[i].gid, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(groups[i].gid, nb, 12); vga_puts(nb); }
         vga_puts(" ");
         vga_puts(groups[i].name);
         vga_puts(" (");
-        { char nb[2]; num_to_str(groups[i].member_count, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(groups[i].member_count, nb, 12); vga_puts(nb); }
         vga_puts(" members)\n");
     }
     vga_puts("\n");

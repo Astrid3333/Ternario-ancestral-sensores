@@ -59,15 +59,15 @@ void cmd_math(const char* args) {
         trits_to_ternary_str(rt, 16, r_str);
         
         vga_puts("\n  ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(a_str);
         vga_puts(") + ");
-        { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(b, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(b_str);
         vga_puts(")\n  = ");
-        { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(r_str);
         vga_puts(")\n\n");
@@ -85,15 +85,15 @@ void cmd_math(const char* args) {
         trits_to_ternary_str(rt, 16, r_str);
         
         vga_puts("\n  ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(a_str);
         vga_puts(") - ");
-        { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(b, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(b_str);
         vga_puts(")\n  = ");
-        { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(r_str);
         vga_puts(")\n\n");
@@ -111,15 +111,15 @@ void cmd_math(const char* args) {
         trits_to_ternary_str(rt, 16, r_str);
         
         vga_puts("\n  ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(a_str);
         vga_puts(") × ");
-        { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(b, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(b_str);
         vga_puts(")\n  = ");
-        { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(r_str);
         vga_puts(")\n\n");
@@ -131,7 +131,7 @@ void cmd_math(const char* args) {
         trits_to_ternary_str(trits, len, ter);
         
         vga_puts("\n  Decimal: ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts("\n  Ternary: ");
         vga_puts(ter);
         vga_puts("\n  Trits: ");
@@ -146,11 +146,11 @@ void cmd_math(const char* args) {
         int len = int_to_base60(a, digits, 8);
         
         vga_puts("\n  Decimal: ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts("\n  Base-60: ");
         for (i = len - 1; i >= 0; i--) {
-            char nb[4];
-            num_to_str(digits[i], nb);
+            char nb[12];
+            num_to_str_bounded(digits[i], nb, 12);
             vga_puts(nb);
             if (i > 0) vga_puts(".");
         }
@@ -181,7 +181,7 @@ void cmd_math(const char* args) {
             double energy_bin = a * 2.87e-21;
             double energy_ter = a * 4.56e-21;
             vga_puts("  Para ");
-            { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" símbolos:\n");
             vga_puts("    Binario: ");
             // Simple scientific notation
@@ -189,9 +189,9 @@ void cmd_math(const char* args) {
             double val_bin = energy_bin;
             while (val_bin >= 10) { val_bin /= 10; exp_bin++; }
             while (val_bin < 1) { val_bin *= 10; exp_bin--; }
-            { char nb[4]; num_to_str((int)val_bin, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded((int)val_bin, nb, 12); vga_puts(nb); }
             vga_puts(" × 10^");
-            { char nb[4]; num_to_str(exp_bin, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(exp_bin, nb, 12); vga_puts(nb); }
             vga_puts(" J\n");
             
             vga_puts("    Ternario: ");
@@ -199,9 +199,9 @@ void cmd_math(const char* args) {
             double val_ter = energy_ter;
             while (val_ter >= 10) { val_ter /= 10; exp_ter++; }
             while (val_ter < 1) { val_ter *= 10; exp_ter--; }
-            { char nb[4]; num_to_str((int)val_ter, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded((int)val_ter, nb, 12); vga_puts(nb); }
             vga_puts(" × 10^");
-            { char nb[4]; num_to_str(exp_ter, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(exp_ter, nb, 12); vga_puts(nb); }
             vga_puts(" J\n");
         }
         vga_puts("\n");
@@ -209,7 +209,7 @@ void cmd_math(const char* args) {
     } else if (strcmp_t(cmd, "compare") == 0) {
         vga_puts("\n  [Comparación de Sistemas]\n\n");
         vga_puts("  Número: ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts("\n\n");
         
         // Binary
@@ -233,8 +233,8 @@ void cmd_math(const char* args) {
         int dlen = int_to_base60(a, digits, 8);
         vga_puts("  Maya:       ");
         for (i = dlen - 1; i >= 0; i--) {
-            char nb[4];
-            num_to_str(digits[i], nb);
+            char nb[12];
+            num_to_str_bounded(digits[i], nb, 12);
             vga_puts(nb);
             if (i > 0) vga_puts(".");
         }

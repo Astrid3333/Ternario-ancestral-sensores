@@ -55,7 +55,7 @@ int8_t vpn_connect(const char* server, uint16_t port) {
     vga_puts("[VPN] Connected to ");
     vga_puts(server);
     vga_puts(":");
-    { char nb[8]; num_to_str(port, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(port, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     vga_set_color(0x07, 0);
     
@@ -80,7 +80,7 @@ void vpn_status(void) {
     for (int i = 0; i < VPN_MAX_TUNNELS; i++) {
         if (tunnels[i].active) {
             vga_puts("  Tunnel ");
-            { char nb[2]; num_to_str(i, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(i, nb, 12); vga_puts(nb); }
             vga_puts(": ");
             vga_set_color(0x0A, 0);
             vga_puts("ACTIVE");

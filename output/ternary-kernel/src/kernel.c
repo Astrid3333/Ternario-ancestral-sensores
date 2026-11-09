@@ -513,10 +513,10 @@ static void cmd_ps(void) {
     for (uint8_t i = 0; i < MAX_PROCS; i++) {
         process_t info;
         if (sched_get_info(i, &info) == 0) {
-            char num_buf[8];
+            char num_buf[12];
             
             vga_putc(' ');
-            num_to_str(i, num_buf);
+            num_to_str_bounded(i, num_buf, 12);
             while (strlen_t(num_buf) < 4) {
                 vga_putc(' ');
                 strcat_t(num_buf, " ");
@@ -539,11 +539,11 @@ static void cmd_ps(void) {
             vga_print_trit(info.priority);
             
             vga_puts("  ");
-            num_to_str(info.cpu_cycles, num_buf);
+            num_to_str_bounded(info.cpu_cycles, num_buf, 12);
             vga_puts(num_buf);
             
             vga_puts("  ");
-            num_to_str(info.memory_block, num_buf);
+            num_to_str_bounded(info.memory_block, num_buf, 12);
             vga_puts(num_buf);
             
             vga_putc('\n');
@@ -556,11 +556,11 @@ static void cmd_mem(void) {
     uint8_t used, free_count, locked;
     mem_get_status(&used, &free_count, &locked);
     
-    char num_buf[8];
+    char num_buf[12];
     vga_puts("\n  Memory (Base 60 Quipu):\n");
-    vga_puts("    Used:   "); num_to_str(used, num_buf); vga_puts(num_buf); vga_putc('\n');
-    vga_puts("    Free:   "); num_to_str(free_count, num_buf); vga_puts(num_buf); vga_putc('\n');
-    vga_puts("    Locked: "); num_to_str(locked, num_buf); vga_puts(num_buf); vga_putc('\n');
+    vga_puts("    Used:   "); num_to_str_bounded(used, num_buf, 12); vga_puts(num_buf); vga_putc('\n');
+    vga_puts("    Free:   "); num_to_str_bounded(free_count, num_buf, 12); vga_puts(num_buf); vga_putc('\n');
+    vga_puts("    Locked: "); num_to_str_bounded(locked, num_buf, 12); vga_puts(num_buf); vga_putc('\n');
     vga_puts("    Total:  60 blocks x 60 bytes = 3600B\n");
     
     vga_puts("\n    Block map: ");
@@ -598,7 +598,7 @@ static void cmd_fs(void) {
         if (fs_get_type(i) == 1) vga_puts("/");
         if (files[i].size > 0) {
             vga_puts("  (");
-            char nb[8]; num_to_str(files[i].size, nb);
+            char nb[12]; num_to_str_bounded(files[i].size, nb, 12);
             vga_puts(nb); vga_puts("B)");
         }
         vga_putc('\n');
@@ -608,16 +608,16 @@ static void cmd_fs(void) {
 
 static void cmd_cal(void) {
     uint32_t tick;
-    uint8_t tzolkin, haab;
+    uint16_t tzolkin, haab;
     trit_t load;
     sched_get_state(&tick, &tzolkin, &haab, &load);
     
-    char num_buf[8];
+    char num_buf[12];
     vga_puts("\n  Maya Calendar:\n");
-    vga_puts("    Global tick:  "); num_to_str(tick, num_buf); vga_puts(num_buf); vga_putc('\n');
-    vga_puts("    Tzolkin day:  "); num_to_str(tzolkin, num_buf); vga_puts(num_buf);
+    vga_puts("    Global tick:  "); num_to_str_bounded(tick, num_buf, 12); vga_puts(num_buf); vga_putc('\n');
+    vga_puts("    Tzolkin day:  "); num_to_str_bounded(tzolkin, num_buf, 12); vga_puts(num_buf);
     vga_puts(" / 260\n");
-    vga_puts("    Haab day:     "); num_to_str(haab, num_buf); vga_puts(num_buf);
+    vga_puts("    Haab day:     "); num_to_str_bounded(haab, num_buf, 12); vga_puts(num_buf);
     vga_puts(" / 365\n");
     vga_puts("    System load:  ");
     if (load == -1) vga_puts("LOW");
@@ -629,9 +629,9 @@ static void cmd_cal(void) {
 static void cmd_fork(void) {
     int8_t new_pid = sys_fork();
     if (new_pid >= 0) {
-        char num_buf[8];
+        char num_buf[12];
         vga_puts("  Process created: PID ");
-        num_to_str(new_pid, num_buf);
+        num_to_str_bounded(new_pid, num_buf, 12);
         vga_puts(num_buf);
         vga_putc('\n');
     } else {
@@ -681,9 +681,9 @@ static void cmd_trit(const char* arg) {
     }
     if (neg) num = -num;
     
-    char num_buf[8];
+    char num_buf[12];
     vga_puts("  ");
-    num_to_str(num, num_buf);
+    num_to_str_bounded(num, num_buf, 12);
     vga_puts(num_buf);
     vga_puts(" in ternary: ");
     
@@ -721,16 +721,16 @@ static void cmd_b60(const char* arg) {
     }
     
     babilonian_addr_t addr = linear_to_babilonian((uint16_t)num);
-    char num_buf[8];
+    char num_buf[12];
     
     vga_puts("  Linear ");
-    num_to_str(num, num_buf);
+    num_to_str_bounded(num, num_buf, 12);
     vga_puts(num_buf);
     vga_puts(" = Babylonian (");
-    num_to_str(addr.high, num_buf);
+    num_to_str_bounded(addr.high, num_buf, 12);
     vga_puts(num_buf);
     vga_putc(':');
-    num_to_str(addr.low, num_buf);
+    num_to_str_bounded(addr.low, num_buf, 12);
     vga_puts(num_buf);
     vga_puts(")\n");
 }
@@ -807,10 +807,10 @@ static void cmd_dns(const char* arg) {
     uint32_t ip = dns_resolve(arg);
     if (ip) {
         vga_puts("  IP: ");
-        { char nb[8]; num_to_str((ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[8]; num_to_str((ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[8]; num_to_str((ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[8]; num_to_str(ip & 0xFF, nb); vga_puts(nb); vga_puts("\n"); }
+        { char nb[12]; num_to_str_bounded((ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded(ip & 0xFF, nb, 12); vga_puts(nb); vga_puts("\n"); }
     } else {
         vga_puts("  Failed to resolve\n");
     }
@@ -924,7 +924,7 @@ static void cmd_usermgt(const char* args) {
             vga_puts("  Created user: ");
             vga_puts(name);
             vga_puts(" (UID=");
-            { char nb[4]; num_to_str(uid, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(uid, nb, 12); vga_puts(nb); }
             vga_puts(")\n");
         } else {
             vga_puts("  Error creating user\n");
@@ -1352,7 +1352,7 @@ static void cmd_conv(const char* args) {
     vga_puts("\n  Conversion for ");
     vga_puts(args);
     vga_puts(" (decimal: ");
-    { char nb[8]; num_to_str(decimal, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(decimal, nb, 12); vga_puts(nb); }
     vga_puts(")\n\n");
     
     // Binary
@@ -1413,7 +1413,7 @@ static void cmd_conv(const char* args) {
         }
         if (decimal < 0) { vga_puts("-"); }
         for (int i = len - 1; i >= 0; i--) {
-            { char nb[4]; num_to_str(temp[i] - '0', nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(temp[i] - '0', nb, 12); vga_puts(nb); }
             if (i > 0) vga_puts(":");
         }
     }
@@ -1508,7 +1508,7 @@ static void cmd_ver(const char* args) {
       else { while (num > 0) { t[l++] = '0' + (num & 1); num >>= 1; }
       for (int i = l-1; i >= 0; i--) vga_putc(t[i]); } }
     vga_puts("  = ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     
     // Ternary
@@ -1538,7 +1538,7 @@ static void cmd_ver(const char* args) {
       if (result < 0) vga_putc('-');
       for (int i = l-1; i >= 0; i--) vga_putc(t[i]); } }
     vga_puts("  = ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
 }
 
@@ -1551,7 +1551,7 @@ static void cmd_wm(const char* args) {
         int8_t id = wm_create_window("Window", 10, 3, 40, 15, 0x1E);
         if (id > 0) {
             vga_puts("  Created window ");
-            { char nb[4]; num_to_str(id, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(id, nb, 12); vga_puts(nb); }
             vga_puts("\n");
             wm_redraw();
         }
@@ -1582,7 +1582,7 @@ static void cmd_proc(const char* args) {
             vga_puts("  Created process '");
             vga_puts(name);
             vga_puts("' with PID ");
-            { char nb[4]; num_to_str(pid, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(pid, nb, 12); vga_puts(nb); }
             vga_puts("\n");
         }
     } else if (strncmp_t(args, "kill", 4) == 0) {
@@ -1592,7 +1592,7 @@ static void cmd_proc(const char* args) {
         if (pid > 0) {
             process_exit(0);
             vga_puts("  Killed process ");
-            { char nb[4]; num_to_str(pid, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(pid, nb, 12); vga_puts(nb); }
             vga_puts("\n");
         }
     } else if (strcmp_t(args, "test") == 0) {
@@ -1601,9 +1601,9 @@ static void cmd_proc(const char* args) {
         int8_t p2 = process_create("test_b", 0, 0x02);
         int8_t p3 = process_create("test_c", 0, 0x02);
         vga_puts("  Created PIDs: ");
-        { char nb[4]; num_to_str(p1, nb); vga_puts(nb); vga_puts(", "); }
-        { char nb[4]; num_to_str(p2, nb); vga_puts(nb); vga_puts(", "); }
-        { char nb[4]; num_to_str(p3, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(p1, nb, 12); vga_puts(nb); vga_puts(", "); }
+        { char nb[12]; num_to_str_bounded(p2, nb, 12); vga_puts(nb); vga_puts(", "); }
+        { char nb[12]; num_to_str_bounded(p3, nb, 12); vga_puts(nb); }
         vga_puts("\n");
         process_list();
     } else {
@@ -1707,8 +1707,8 @@ static void cmd_write(const char* args) {
     files[idx].size = dlen;
     
     vga_puts("  Wrote ");
-    char nb[8];
-    num_to_str(dlen, nb);
+    char nb[12];
+    num_to_str_bounded(dlen, nb, 12);
     vga_puts(nb);
     vga_puts(" bytes to ");
     vga_puts(filename);

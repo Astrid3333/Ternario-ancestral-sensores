@@ -40,7 +40,7 @@ void history_show(void) {
     
     for (int i = 0; i < history_count; i++) {
         vga_puts("  ");
-        { char nb[4]; num_to_str(i + 1, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(i + 1, nb, 12); vga_puts(nb); }
         vga_puts(". ");
         vga_puts(history[i]);
         vga_puts("\n");
@@ -137,17 +137,17 @@ static void bench_add(int a, int b) {
     int ter_trits = count_trits(a) + count_trits(b) + count_trits(result);
     
     vga_puts("  ADD ");
-    { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
     vga_puts(" + ");
-    { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
     vga_puts(" = ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     vga_puts("    Binary:  ");
-    { char nb[4]; num_to_str(bin_bits, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(bin_bits, nb, 12); vga_puts(nb); }
     vga_puts(" bits\n");
     vga_puts("    Ternary: ");
-    { char nb[4]; num_to_str(ter_trits, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(ter_trits, nb, 12); vga_puts(nb); }
     vga_puts(" trits\n");
 }
 
@@ -158,17 +158,17 @@ static void bench_mul(int a, int b) {
     int ter_trits = count_trits(a) + count_trits(b) + count_trits(result);
     
     vga_puts("  MUL ");
-    { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
     vga_puts(" * ");
-    { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
     vga_puts(" = ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     vga_puts("    Binary:  ");
-    { char nb[4]; num_to_str(bin_bits, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(bin_bits, nb, 12); vga_puts(nb); }
     vga_puts(" bits\n");
     vga_puts("    Ternary: ");
-    { char nb[4]; num_to_str(ter_trits, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(ter_trits, nb, 12); vga_puts(nb); }
     vga_puts(" trits\n");
 }
 
@@ -206,7 +206,7 @@ void cmd_bench(const char* args) {
         total_ter += t;
         
         vga_puts("  ");
-        { char nb[6]; num_to_str(v, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(v, nb, 12); vga_puts(nb); }
         
         // Padding
         if (v < 10) vga_puts("    ");
@@ -214,29 +214,29 @@ void cmd_bench(const char* args) {
         else if (v < 1000) vga_puts("  ");
         else vga_puts(" ");
         
-        { char nb[4]; num_to_str(b, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
         vga_puts("      ");
-        { char nb[4]; num_to_str(t, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(t, nb, 12); vga_puts(nb); }
         vga_puts("       ");
         
         if (b > t) {
             int saving = (b - t) * 100 / b;
-            { char nb[4]; num_to_str(saving, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(saving, nb, 12); vga_puts(nb); }
             vga_puts("%");
         }
         vga_puts("\n");
     }
     
     vga_puts("\n  Total: Binary=");
-    { char nb[4]; num_to_str(total_bin, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(total_bin, nb, 12); vga_puts(nb); }
     vga_puts(" bits, Ternary=");
-    { char nb[4]; num_to_str(total_ter, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(total_ter, nb, 12); vga_puts(nb); }
     vga_puts(" trits\n");
     
     if (total_bin > total_ter) {
         int saving = (total_bin - total_ter) * 100 / total_bin;
         vga_puts("  Overall savings: ");
-        { char nb[4]; num_to_str(saving, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(saving, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
     }
     vga_puts("\n");
@@ -309,19 +309,19 @@ void cmd_savings(const char* args) {
     
     for (int i = 0; i < 6; i++) {
         vga_puts("  ");
-        { char nb[10]; num_to_str(ranges[i].max_val, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(ranges[i].max_val, nb, 12); vga_puts(nb); }
         
         // Padding
-        { char nb[10]; num_to_str(ranges[i].max_val, nb);
+        { char nb[12]; num_to_str_bounded(ranges[i].max_val, nb, 12);
           for (int j = strlen_t(nb); j < 10; j++) vga_puts(" "); }
         
-        { char nb[4]; num_to_str(ranges[i].bin_bits, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(ranges[i].bin_bits, nb, 12); vga_puts(nb); }
         vga_puts(" bits     ");
-        { char nb[4]; num_to_str(ranges[i].ter_trits, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(ranges[i].ter_trits, nb, 12); vga_puts(nb); }
         vga_puts(" trits    ");
         
         int saving = (ranges[i].bin_bits - ranges[i].ter_trits) * 100 / ranges[i].bin_bits;
-        { char nb[4]; num_to_str(saving, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(saving, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
     }
     

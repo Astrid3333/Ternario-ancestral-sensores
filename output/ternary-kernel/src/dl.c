@@ -109,7 +109,7 @@ int8_t dl_start(int8_t slot) {
         vga_puts("[DL] Complete: ");
         vga_puts(downloads[slot].filename);
         vga_puts(" (");
-        { char nb[8]; num_to_str(received, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(received, nb, 12); vga_puts(nb); }
         vga_puts(" bytes)\n");
         vga_set_color(0x07, 0);
     } else {
@@ -165,7 +165,7 @@ void dl_list(void) {
     for (int i = 0; i < DL_MAX_DOWNLOADS; i++) {
         if (downloads[i].in_use) {
             vga_puts("  [");
-            { char nb[2]; num_to_str(i, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(i, nb, 12); vga_puts(nb); }
             vga_puts("] ");
             vga_puts(downloads[i].filename);
             vga_puts(" - ");
@@ -196,9 +196,9 @@ void dl_list(void) {
             
             if (downloads[i].status == 1 || downloads[i].status == 2) {
                 vga_puts(" (");
-                { char nb[8]; num_to_str(downloads[i].downloaded, nb); vga_puts(nb); }
+                { char nb[12]; num_to_str_bounded(downloads[i].downloaded, nb, 12); vga_puts(nb); }
                 vga_puts("/");
-                { char nb[8]; num_to_str(downloads[i].total_size, nb); vga_puts(nb); }
+                { char nb[12]; num_to_str_bounded(downloads[i].total_size, nb, 12); vga_puts(nb); }
                 vga_puts(" bytes)");
             }
             
@@ -247,14 +247,14 @@ void dl_status(void) {
     }
     
     vga_puts("  Active: ");
-    { char nb[4]; num_to_str(active, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(active, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("  Completed: ");
-    { char nb[4]; num_to_str(done, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(done, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("  Pending: ");
-    { char nb[4]; num_to_str(pending, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(pending, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

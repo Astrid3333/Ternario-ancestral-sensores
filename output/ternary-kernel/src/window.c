@@ -231,16 +231,16 @@ int8_t wm_get_focused(void) { return focused_window; }
 void wm_status(void) {
     vga_puts("\n  Window Manager:\n\n");
     vga_puts("  Windows: ");
-    { char nb[4]; num_to_str(window_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(window_count, nb, 12); vga_puts(nb); }
     vga_puts("/");
     vga_puts("16\n");
     vga_puts("  Focused: ");
-    { char nb[4]; num_to_str(focused_window + 1, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(focused_window + 1, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     for (int i = 0; i < MAX_WINDOWS; i++) {
         if (windows[i].visible) {
             vga_puts("  [");
-            { char nb[4]; num_to_str(windows[i].id, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(windows[i].id, nb, 12); vga_puts(nb); }
             vga_puts("] ");
             vga_puts(windows[i].title);
             vga_puts("\n");

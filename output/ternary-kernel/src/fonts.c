@@ -450,7 +450,7 @@ static void snake_update(void) {
 
 static void snake_draw(void) {
     vga_puts("\n  [Snake] Score: ");
-    { char nb[8]; num_to_str(snake_score, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(snake_score, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     
     // Draw border
@@ -493,7 +493,7 @@ static void snake_draw(void) {
 void cmd_snake(const char* args) {
     if (strcmp_t(args, "quit") == 0 || strcmp_t(args, "q") == 0) {
         vga_puts("  Game over! Score: ");
-        { char nb[8]; num_to_str(snake_score, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(snake_score, nb, 12); vga_puts(nb); }
         vga_puts("\n");
         return;
     }
@@ -507,7 +507,7 @@ void cmd_snake(const char* args) {
     
     if (snake_game_over) {
         vga_puts("  Game over! Score: ");
-        { char nb[8]; num_to_str(snake_score, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(snake_score, nb, 12); vga_puts(nb); }
         vga_puts("\n  Type 'snake start' to play again\n");
         return;
     }
@@ -570,7 +570,7 @@ static void pong_update(void) {
 
 static void pong_draw(void) {
     vga_puts("\n  [Pong] Score: ");
-    { char nb[8]; num_to_str(pong_score, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(pong_score, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     
     for (int y = 0; y < 20; y++) {
@@ -595,7 +595,7 @@ static void pong_draw(void) {
 void cmd_pong(const char* args) {
     if (strcmp_t(args, "quit") == 0 || strcmp_t(args, "q") == 0) {
         vga_puts("  Game over! Score: ");
-        { char nb[8]; num_to_str(pong_score, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(pong_score, nb, 12); vga_puts(nb); }
         vga_puts("\n");
         return;
     }
@@ -609,7 +609,7 @@ void cmd_pong(const char* args) {
     
     if (pong_game_over) {
         vga_puts("  Game over! Score: ");
-        { char nb[8]; num_to_str(pong_score, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(pong_score, nb, 12); vga_puts(nb); }
         vga_puts("\n  Type 'pong start' to play again\n");
         return;
     }

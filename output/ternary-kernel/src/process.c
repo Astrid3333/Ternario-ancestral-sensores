@@ -100,7 +100,7 @@ int8_t process_create(const char* name, uint32_t entry_point, uint8_t flags) {
     vga_puts("[PROC] Created process '");
     vga_puts(name);
     vga_puts("' with PID ");
-    { char nb[4]; num_to_str(pid, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(pid, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     return pid;
@@ -117,7 +117,7 @@ void process_exit(int32_t status) {
     vga_puts("[PROC] Process '");
     vga_puts(proc->name);
     vga_puts("' exiting with status ");
-    { char nb[8]; num_to_str(status, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(status, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     // Close file descriptors
@@ -283,7 +283,7 @@ void process_init(void) {
     
     vga_puts("[PROC] Process management ready\n");
     vga_puts("[PROC] ");
-    { char nb[4]; num_to_str(MAX_PROCESSES, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(MAX_PROCESSES, nb, 12); vga_puts(nb); }
     vga_puts(" process slots available\n");
 }
 
@@ -299,7 +299,7 @@ void process_list(void) {
     for (int i = 0; i < MAX_PROCESSES; i++) {
         if (processes[i].state != PROC_UNUSED) {
             vga_puts("  ");
-            { char nb[4]; num_to_str(i, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(i, nb, 12); vga_puts(nb); }
             vga_puts("   ");
             vga_puts(processes[i].name);
             
@@ -319,13 +319,13 @@ void process_list(void) {
             
             // CPU ticks
             vga_puts("    ");
-            { char nb[8]; num_to_str(processes[i].ticks, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(processes[i].ticks, nb, 12); vga_puts(nb); }
             vga_puts("\n");
         }
     }
     
     vga_puts("\n  Total: ");
-    { char nb[4]; num_to_str(process_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(process_count, nb, 12); vga_puts(nb); }
     vga_puts(" processes\n");
 }
 

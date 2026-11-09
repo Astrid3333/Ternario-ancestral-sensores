@@ -197,22 +197,16 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 	$(OBJCOPY) -O binary $< $@
 
 $(DISK_IMG): $(BOOT_OBJ) $(KERNEL_BIN)
+	mkdir -p $(RELEASE_DIR)
 	dd if=/dev/zero of=$@ bs=512 count=40 2>/dev/null
 	dd if=$(BOOT_OBJ) of=$@ bs=512 count=1 conv=notrunc 2>/dev/null
 	dd if=$(KERNEL_BIN) of=$@ bs=512 seek=1 conv=notrunc 2>/dev/null
 
 $(ISO_FILE): $(KERNEL_ELF)
-	mkdir -p iso/boot/grub
+	mkdir -p iso/boot/grub $(RELEASE_DIR)
 	cp $(KERNEL_ELF) iso/boot/ternary_kernel.elf
-	@echo 'set timeout=0' > iso/boot/grub/grub.cfg
-	@echo 'insmod all_video' >> iso/boot/grub/grub.cfg
-	@echo 'set default=0' >> iso/boot/grub/grub.cfg
-	@echo '' >> iso/boot/grub/grub.cfg
-	@echo 'set gfxpayload=1024x768x32' >> iso/boot/grub/grub.cfg
-	@echo 'menuentry "Ternary Ancestral Kernel v4.5 (GUI)" {' >> iso/boot/grub/grub.cfg
-	@echo '    multiboot /boot/ternary_kernel.elf' >> iso/boot/grub/grub.cfg
-	@echo '    boot' >> iso/boot/grub/grub.cfg
-	@echo '}' >> iso/boot/grub/grub.cfg
+	# El grub.cfg versionado ya es el canonico (multiboot). No se reescribe:
+	# hacerlo dejaba el working tree sucio en cada build.
 	grub-mkrescue -o $@ iso/ 2>&1 || genisoimage -R -b boot/grub/grub.cfg -no-emul-boot -o $@ iso/
 
 run: $(ISO_FILE)
@@ -226,9 +220,11 @@ run-disk: $(DISK_IMG)
 	qemu-system-i386 -drive file=$(DISK_IMG),format=raw -m 8M -serial stdio -device rtl8139,netdev=net0 -netdev user,id=net0
 
 clean:
-	rm -f $(BOOT_OBJ) $(KERNEL_OBJ) $(KERNEL_ELF) $(KERNEL_BIN)
+	# No se borran boot/boot.bin ni boot/multiboot_header.o: estan versionados.
+	rm -f $(filter-out boot/multiboot_header.o,$(KERNEL_OBJ)) $(KERNEL_ELF) $(KERNEL_BIN)
+	rm -f iso/boot/ternary_kernel.elf
 	rm -f $(RELEASE_DIR)/disk.img $(RELEASE_DIR)/ternary_os.iso
-	rm -rf iso/
+	# No se borra iso/boot/grub/grub.cfg: esta versionado en git.
 
 info: $(KERNEL_BIN)
 	@echo "=== Ternary Ancestral Kernel v3 ==="

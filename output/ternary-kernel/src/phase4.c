@@ -274,7 +274,7 @@ int vm_execute(const uint8_t* code, uint32_t size) {
             case VM_PRINT: {
                 int32_t val = vm_pop();
                 char buf[16];
-                { char nb[8]; num_to_str(val, nb); vm_print(nb); }
+                { char nb[12]; int_to_str_bounded(val, nb, 12); vm_print(nb); }
                 vm_print("\n");
                 break;
             }
@@ -307,7 +307,7 @@ int vm_execute(const uint8_t* code, uint32_t size) {
                 
             default:
                 vm_print("  Unknown opcode: ");
-                { char nb[4]; num_to_str(opcode, nb); vm_print(nb); }
+                { char nb[12]; num_to_str_bounded(opcode, nb, 12); vm_print(nb); }
                 vm_print("\n");
                 vm.running = 0;
                 break;
@@ -437,7 +437,7 @@ void cmd_vm(const char* args) {
         vm_compile(buf, bytecode, &bytecode_size);
         
         vga_puts("  Compiled ");
-        { char nb[8]; num_to_str(bytecode_size, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(bytecode_size, nb, 12); vga_puts(nb); }
         vga_puts(" bytes of bytecode\n");
         
         vm_execute(bytecode, bytecode_size);
@@ -510,33 +510,33 @@ void cmd_logic(const char* args) {
     vga_puts("  AND truth table:\n");
     vga_puts("    A B | A∧B\n");
     vga_puts("    ----|----\n");
-    vga_puts("    0 0 | "); { char nb[2]; num_to_str(kleene_and(0,0), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    0 1 | "); { char nb[2]; num_to_str(kleene_and(0,1), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    0 2 | "); { char nb[2]; num_to_str(kleene_and(0,2), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    1 0 | "); { char nb[2]; num_to_str(kleene_and(1,0), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    1 1 | "); { char nb[2]; num_to_str(kleene_and(1,1), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    1 2 | "); { char nb[2]; num_to_str(kleene_and(1,2), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    2 0 | "); { char nb[2]; num_to_str(kleene_and(2,0), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    2 1 | "); { char nb[2]; num_to_str(kleene_and(2,1), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    2 2 | "); { char nb[2]; num_to_str(kleene_and(2,2), nb); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    0 0 | "); { char nb[12]; num_to_str_bounded(kleene_and(0,0), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    0 1 | "); { char nb[12]; num_to_str_bounded(kleene_and(0,1), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    0 2 | "); { char nb[12]; num_to_str_bounded(kleene_and(0,2), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    1 0 | "); { char nb[12]; num_to_str_bounded(kleene_and(1,0), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    1 1 | "); { char nb[12]; num_to_str_bounded(kleene_and(1,1), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    1 2 | "); { char nb[12]; num_to_str_bounded(kleene_and(1,2), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    2 0 | "); { char nb[12]; num_to_str_bounded(kleene_and(2,0), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    2 1 | "); { char nb[12]; num_to_str_bounded(kleene_and(2,1), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    2 2 | "); { char nb[12]; num_to_str_bounded(kleene_and(2,2), nb, 12); vga_puts(nb); vga_puts("\n"); }
     
     vga_puts("\n  OR truth table:\n");
     vga_puts("    A B | A∨B\n");
     vga_puts("    ----|----\n");
-    vga_puts("    0 0 | "); { char nb[2]; num_to_str(kleene_or(0,0), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    0 1 | "); { char nb[2]; num_to_str(kleene_or(0,1), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    0 2 | "); { char nb[2]; num_to_str(kleene_or(0,2), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    1 0 | "); { char nb[2]; num_to_str(kleene_or(1,0), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    1 1 | "); { char nb[2]; num_to_str(kleene_or(1,1), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    1 2 | "); { char nb[2]; num_to_str(kleene_or(1,2), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    2 0 | "); { char nb[2]; num_to_str(kleene_or(2,0), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    2 1 | "); { char nb[2]; num_to_str(kleene_or(2,1), nb); vga_puts(nb); vga_puts("\n"); }
-    vga_puts("    2 2 | "); { char nb[2]; num_to_str(kleene_or(2,2), nb); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    0 0 | "); { char nb[12]; num_to_str_bounded(kleene_or(0,0), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    0 1 | "); { char nb[12]; num_to_str_bounded(kleene_or(0,1), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    0 2 | "); { char nb[12]; num_to_str_bounded(kleene_or(0,2), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    1 0 | "); { char nb[12]; num_to_str_bounded(kleene_or(1,0), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    1 1 | "); { char nb[12]; num_to_str_bounded(kleene_or(1,1), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    1 2 | "); { char nb[12]; num_to_str_bounded(kleene_or(1,2), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    2 0 | "); { char nb[12]; num_to_str_bounded(kleene_or(2,0), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    2 1 | "); { char nb[12]; num_to_str_bounded(kleene_or(2,1), nb, 12); vga_puts(nb); vga_puts("\n"); }
+    vga_puts("    2 2 | "); { char nb[12]; num_to_str_bounded(kleene_or(2,2), nb, 12); vga_puts(nb); vga_puts("\n"); }
     
     vga_puts("\n  NOT operation:\n");
-    vga_puts("    ¬0 = "); { char nb[2]; num_to_str(kleene_not(0), nb); vga_puts(nb); vga_puts(" (True)\n"); }
-    vga_puts("    ¬1 = "); { char nb[2]; num_to_str(kleene_not(1), nb); vga_puts(nb); vga_puts(" (Unknown)\n"); }
-    vga_puts("    ¬2 = "); { char nb[2]; num_to_str(kleene_not(2), nb); vga_puts(nb); vga_puts(" (False)\n"); }
+    vga_puts("    ¬0 = "); { char nb[12]; num_to_str_bounded(kleene_not(0), nb, 12); vga_puts(nb); vga_puts(" (True)\n"); }
+    vga_puts("    ¬1 = "); { char nb[12]; num_to_str_bounded(kleene_not(1), nb, 12); vga_puts(nb); vga_puts(" (Unknown)\n"); }
+    vga_puts("    ¬2 = "); { char nb[12]; num_to_str_bounded(kleene_not(2), nb, 12); vga_puts(nb); vga_puts(" (False)\n"); }
     
     // Łukasiewicz
     vga_puts("\n  === Łukasiewicz Logic (Fuzzy) ===\n\n");
@@ -546,11 +546,11 @@ void cmd_logic(const char* args) {
     for (int a = 0; a <= 2; a++) {
         for (int b = 0; b <= 2; b++) {
             vga_puts("    ");
-            { char nb[2]; num_to_str(a, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
             vga_puts(" ");
-            { char nb[2]; num_to_str(b, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
             vga_puts(" | ");
-            { char nb[2]; num_to_str(luk_implies(a, b), nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(luk_implies(a, b), nb, 12); vga_puts(nb); }
             vga_puts("\n");
         }
     }
@@ -598,7 +598,7 @@ void cmd_compile(const char* args) {
         vm_compile(buf, bytecode, &bytecode_size);
         
         vga_puts("  Compiled ");
-        { char nb[8]; num_to_str(bytecode_size, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(bytecode_size, nb, 12); vga_puts(nb); }
         vga_puts(" bytes\n");
         
         vm_execute(bytecode, bytecode_size);

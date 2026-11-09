@@ -89,11 +89,11 @@ void framebuffer_init(uint32_t addr, uint32_t width, uint32_t height, uint32_t p
     
     vga_puts("[FB] Framebuffer initialized\n");
     vga_puts("[FB] Resolution: ");
-    { char nb[8]; num_to_str(width, nb); vga_puts(nb); vga_puts("x"); }
-    { char nb[8]; num_to_str(height, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(width, nb, 12); vga_puts(nb); vga_puts("x"); }
+    { char nb[12]; num_to_str_bounded(height, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     vga_puts("[FB] Pitch: ");
-    { char nb[8]; num_to_str(fb_pitch, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(fb_pitch, nb, 12); vga_puts(nb); }
     vga_puts(" bytes\n");
     vga_puts("[FB] Ternary color palette loaded (27 colors)\n");
 }

@@ -30,8 +30,8 @@ typedef struct {
     uint32_t total_blocks;
     uint32_t block_size;
     char name[32];
-    char vendor[16];
-    char product[16];
+    char vendor[17];
+    char product[17];
     uint8_t mounted;
     char mount_point[16];
 } usb_storage_t;
@@ -74,6 +74,7 @@ int usb_storage_inquiry(uint8_t port, char* vendor, char* product) {
     uint8_t cdb[6];
     uint8_t data[36];
     memset(cdb, 0, 6);
+    memset(data, 0, sizeof(data));
     cdb[0] = SCSI_INQUIRY;
     cdb[4] = 36;
 
@@ -160,8 +161,8 @@ void usb_storage_detect(void) {
             usb_storage[idx].product[2] = 'v';
             usb_storage[idx].product[3] = ' ';
             {
-                char nb[4];
-                num_to_str(idx, nb);
+                char nb[12];
+                num_to_str_bounded(idx, nb, 12);
                 int len = 0;
                 while (nb[len]) { usb_storage[idx].product[3 + len] = nb[len]; len++; }
                 usb_storage[idx].product[3 + len] = 0;
@@ -193,6 +194,7 @@ int usb_storage_mount(uint8_t dev_idx, const char* mount_point) {
     if (!usb_storage[dev_idx].present) return -1;
 
     uint8_t sector[512];
+    memset(sector, 0, sizeof(sector));
     if (usb_storage_read_block(usb_storage[dev_idx].port, 0, sector) < 0) {
         vga_puts("[USB-STORAGE] Cannot read partition table\n");
         return -1;
@@ -248,7 +250,7 @@ void usb_storage_status(void) {
     vga_puts("\n  [USB Mass Storage]\n\n");
 
     vga_puts("  Devices: ");
-    { char nb[2]; num_to_str(usb_storage_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(usb_storage_count, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     for (int i = 0; i < usb_storage_count; i++) {
@@ -263,7 +265,7 @@ void usb_storage_status(void) {
             vga_puts(usb_storage[i].vendor);
             vga_puts("\n        Size: ");
             uint32_t size_mb = (usb_storage[i].total_blocks * usb_storage[i].block_size) / (1024 * 1024);
-            { char nb[8]; num_to_str(size_mb, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(size_mb, nb, 12); vga_puts(nb); }
             vga_puts(" MB\n");
 
             vga_puts("        Mount: ");

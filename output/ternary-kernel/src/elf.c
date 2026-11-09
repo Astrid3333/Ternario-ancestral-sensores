@@ -118,7 +118,7 @@ int8_t elf_load(const uint8_t* data, uint32_t size, uint32_t* entry_point) {
     
     // Load program headers
     vga_puts("[ELF] Loading ");
-    { char nb[4]; num_to_str(header->e_phnum, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(header->e_phnum, nb, 12); vga_puts(nb); }
     vga_puts(" program headers...\n");
     
     for (int i = 0; i < header->e_phnum; i++) {
@@ -137,13 +137,13 @@ int8_t elf_load(const uint8_t* data, uint32_t size, uint32_t* entry_point) {
         }
         
         vga_puts("[ELF] Segment ");
-        { char nb[2]; num_to_str(i, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(i, nb, 12); vga_puts(nb); }
         vga_puts(": vaddr=");
         { char nb[12]; num_to_hex(phdr->p_vaddr, nb); vga_puts(nb); }
         vga_puts(" filesz=");
-        { char nb[8]; num_to_str(phdr->p_filesz, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(phdr->p_filesz, nb, 12); vga_puts(nb); }
         vga_puts(" memsz=");
-        { char nb[8]; num_to_str(phdr->p_memsz, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(phdr->p_memsz, nb, 12); vga_puts(nb); }
         vga_puts("\n");
         
         // Copy segment data
@@ -220,7 +220,7 @@ int8_t elf_execute(const uint8_t* data, uint32_t size) {
     uint32_t user_esp = user_stack_base + user_stack_size - 4;
     
     vga_puts("[ELF] Process ");
-    { char nb[4]; num_to_str(pid, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(pid, nb, 12); vga_puts(nb); }
     vga_puts(" starting at ");
     { char nb[12]; num_to_hex(entry_point, nb); vga_puts(nb); }
     vga_puts("\n");

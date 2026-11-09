@@ -129,7 +129,7 @@ void sock_info(int8_t fd) {
     }
     
     vga_puts("\n  Socket ");
-    { char nb[2]; num_to_str(fd, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(fd, nb, 12); vga_puts(nb); }
     vga_puts(":\n");
     
     vga_puts("    Type: ");
@@ -147,17 +147,17 @@ void sock_info(int8_t fd) {
     
     if (sockets[fd].state == 1) {
         vga_puts("    Remote: ");
-        { char nb[4]; num_to_str((sockets[fd].remote_ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[4]; num_to_str((sockets[fd].remote_ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[4]; num_to_str((sockets[fd].remote_ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[4]; num_to_str(sockets[fd].remote_ip & 0xFF, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded((sockets[fd].remote_ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((sockets[fd].remote_ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((sockets[fd].remote_ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded(sockets[fd].remote_ip & 0xFF, nb, 12); vga_puts(nb); }
         vga_puts(":");
-        { char nb[8]; num_to_str(sockets[fd].remote_port, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(sockets[fd].remote_port, nb, 12); vga_puts(nb); }
         vga_puts("\n");
     }
     
     vga_puts("    Local port: ");
-    { char nb[8]; num_to_str(sockets[fd].local_port, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(sockets[fd].local_port, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }
 

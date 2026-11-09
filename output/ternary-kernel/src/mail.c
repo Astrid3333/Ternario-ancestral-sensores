@@ -173,7 +173,7 @@ int8_t mail_receive(void) {
     }
     
     vga_puts("[MAIL] ");
-    { char nb[4]; num_to_str(n_emails, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_emails, nb, 12); vga_puts(nb); }
     vga_puts(" emails in inbox\n");
     
     return 0;
@@ -246,17 +246,17 @@ void mail_accounts(void) {
     
     for (int i = 0; i < n_accounts; i++) {
         vga_puts("  ");
-        { char nb[2]; num_to_str(i, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(i, nb, 12); vga_puts(nb); }
         vga_puts(". ");
         vga_puts(accounts[i].email);
         vga_puts("\n     SMTP: ");
         vga_puts(accounts[i].smtp_host);
         vga_puts(":");
-        { char nb[8]; num_to_str(accounts[i].smtp_port, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(accounts[i].smtp_port, nb, 12); vga_puts(nb); }
         vga_puts("\n     POP3: ");
         vga_puts(accounts[i].pop3_host);
         vga_puts(":");
-        { char nb[8]; num_to_str(accounts[i].pop3_port, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(accounts[i].pop3_port, nb, 12); vga_puts(nb); }
         vga_puts("\n");
     }
 }
@@ -266,7 +266,7 @@ void mail_status(void) {
     vga_puts("\n  Mail status:\n\n");
     
     vga_puts("  Accounts: ");
-    { char nb[4]; num_to_str(n_accounts, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_accounts, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     uint8_t unread = 0;
@@ -275,6 +275,6 @@ void mail_status(void) {
     }
     
     vga_puts("  Unread: ");
-    { char nb[4]; num_to_str(unread, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(unread, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

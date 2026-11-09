@@ -127,7 +127,7 @@ void pkg_list(void) {
     }
     
     vga_puts("\n  Total: ");
-    { char nb[4]; num_to_str(count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(count, nb, 12); vga_puts(nb); }
     vga_puts(" packages\n");
 }
 
@@ -275,7 +275,7 @@ void pkg_info(const char* name) {
             vga_puts("\n  Description: ");
             vga_puts(packages[i].description);
             vga_puts("\n  Size: ");
-            { char nb[8]; num_to_str(packages[i].size, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(packages[i].size, nb, 12); vga_puts(nb); }
             vga_puts(" bytes");
             vga_puts("\n  Status: ");
             if (packages[i].installed) {

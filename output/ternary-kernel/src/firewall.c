@@ -79,14 +79,14 @@ int8_t fw_add_rule(uint32_t ip, uint32_t mask, uint16_t port,
     vga_puts(" ");
     
     // Print IP
-    { char nb[4]; num_to_str((ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-    { char nb[4]; num_to_str((ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-    { char nb[4]; num_to_str((ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-    { char nb[4]; num_to_str(ip & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+    { char nb[12]; num_to_str_bounded((ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+    { char nb[12]; num_to_str_bounded((ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+    { char nb[12]; num_to_str_bounded(ip & 0xFF, nb, 12); vga_puts(nb); }
     
     if (port > 0) {
         vga_puts(":");
-        { char nb[8]; num_to_str(port, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(port, nb, 12); vga_puts(nb); }
     }
     
     vga_puts("\n");
@@ -113,10 +113,10 @@ void fw_block_ip(uint32_t ip) {
     n_blocked++;
     
     vga_puts("[FW] Blocked IP: ");
-    { char nb[4]; num_to_str((ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-    { char nb[4]; num_to_str((ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-    { char nb[4]; num_to_str((ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-    { char nb[4]; num_to_str(ip & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+    { char nb[12]; num_to_str_bounded((ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+    { char nb[12]; num_to_str_bounded((ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+    { char nb[12]; num_to_str_bounded(ip & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }
 
@@ -177,7 +177,7 @@ void fw_list_rules(void) {
         if (!fw_rules[i].active) continue;
         
         vga_puts("  ");
-        { char nb[4]; num_to_str(i + 1, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(i + 1, nb, 12); vga_puts(nb); }
         vga_puts(". ");
         
         if (fw_rules[i].action == 0) {
@@ -191,14 +191,14 @@ void fw_list_rules(void) {
         vga_puts(" ");
         
         // IP
-        { char nb[4]; num_to_str((fw_rules[i].ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[4]; num_to_str((fw_rules[i].ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[4]; num_to_str((fw_rules[i].ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[4]; num_to_str(fw_rules[i].ip & 0xFF, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded((fw_rules[i].ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((fw_rules[i].ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((fw_rules[i].ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded(fw_rules[i].ip & 0xFF, nb, 12); vga_puts(nb); }
         
         if (fw_rules[i].port > 0) {
             vga_puts(":");
-            { char nb[8]; num_to_str(fw_rules[i].port, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded(fw_rules[i].port, nb, 12); vga_puts(nb); }
         }
         
         // Protocol
@@ -220,10 +220,10 @@ void fw_list_blocked(void) {
     for (uint8_t i = 0; i < n_blocked; i++) {
         if (fw_blocked[i].active) {
             vga_puts("  ");
-            { char nb[4]; num_to_str((fw_blocked[i].ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-            { char nb[4]; num_to_str((fw_blocked[i].ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-            { char nb[4]; num_to_str((fw_blocked[i].ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-            { char nb[4]; num_to_str(fw_blocked[i].ip & 0xFF, nb); vga_puts(nb); }
+            { char nb[12]; num_to_str_bounded((fw_blocked[i].ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+            { char nb[12]; num_to_str_bounded((fw_blocked[i].ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+            { char nb[12]; num_to_str_bounded((fw_blocked[i].ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+            { char nb[12]; num_to_str_bounded(fw_blocked[i].ip & 0xFF, nb, 12); vga_puts(nb); }
             vga_puts("\n");
             count++;
         }
@@ -248,10 +248,10 @@ void fw_status(void) {
     vga_puts("\n");
     
     vga_puts("  Rules: ");
-    { char nb[4]; num_to_str(n_rules, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_rules, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("  Blocked IPs: ");
-    { char nb[4]; num_to_str(n_blocked, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_blocked, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

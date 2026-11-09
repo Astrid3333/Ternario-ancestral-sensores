@@ -189,8 +189,8 @@ void mouse_status(void) {
     vga_puts("\n  Mouse status:\n\n");
 
     vga_puts("  Position: ");
-    { char nb[12]; num_to_str((uint32_t)cursor_x, nb); vga_puts(nb); vga_puts(","); }
-    { char nb[12]; num_to_str((uint32_t)cursor_y, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((uint32_t)cursor_x, nb, 12); vga_puts(nb); vga_puts(","); }
+    { char nb[12]; num_to_str_bounded((uint32_t)cursor_y, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     vga_puts("  Buttons: ");

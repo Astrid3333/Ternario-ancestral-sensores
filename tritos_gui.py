@@ -8,6 +8,7 @@ import subprocess
 import os
 import math
 import struct
+import sys
 import wave
 import datetime
 import time
@@ -2379,13 +2380,15 @@ class TritosGUI(Gtk.Window):
 
     def _kernel_run(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        disk_img = os.path.join(script_dir, "disk.img")
+        disk_img = os.path.join(script_dir, "output", "releases", "disk.img")
+        if not os.path.exists(disk_img):
+            disk_img = os.path.join(script_dir, "disk.img")
         if not os.path.exists(disk_img):
             self._kern_output.get_buffer().set_text(
                 f"Error: disk.img no encontrado en {script_dir}\n"
-                "Compilá el kernel primero.")
+                "Compilá el kernel primero (make -C output/ternary-kernel).")
             return
-        cmd = ["qemu-system-i386", "-drive", f"file={disk.img}"]
+        cmd = ["qemu-system-i386", "-drive", f"file={disk_img}"]
         self._kern_output.get_buffer().set_text(f"$ {' '.join(cmd)}\n\n")
         try:
             subprocess.Popen(cmd, cwd=script_dir,

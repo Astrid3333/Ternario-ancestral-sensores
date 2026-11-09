@@ -273,18 +273,18 @@ void cmd_trinary(const char* args) {
         trits_to_ternary_str(rt, 16, r_str);
         
         vga_puts("\n  ");
-        { char nb[8]; num_to_str(a, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(a, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(a_str);
         vga_puts(") ");
         vga_puts(op_str);
         vga_puts(" ");
-        { char nb[8]; num_to_str(b, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(b, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(b_str);
         vga_puts(")\n");
         vga_puts("  = ");
-        { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
         vga_puts(" (");
         vga_puts(r_str);
         vga_puts(")\n\n");
@@ -304,7 +304,7 @@ void cmd_trinary(const char* args) {
         trits_to_ternary_str(trits, len, ter);
         
         vga_puts("\n  Decimal: ");
-        { char nb[8]; num_to_str(n, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(n, nb, 12); vga_puts(nb); }
         vga_puts("\n  Ternary: ");
         vga_puts(ter);
         vga_puts("\n  Trits: ");
@@ -324,11 +324,11 @@ void cmd_trinary(const char* args) {
         int len = int_to_base60(n, digits, 8);
         
         vga_puts("\n  Decimal: ");
-        { char nb[8]; num_to_str(n, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(n, nb, 12); vga_puts(nb); }
         vga_puts("\n  Base-60: ");
         for (int i = len - 1; i >= 0; i--) {
-            char nb[4];
-            num_to_str(digits[i], nb);
+            char nb[12];
+            num_to_str_bounded(digits[i], nb, 12);
             vga_puts(nb);
             if (i > 0) vga_puts(".");
         }
@@ -415,13 +415,13 @@ void cmd_tcalc(const char* args) {
     
     vga_puts("\n  Result:\n");
     vga_puts("  Decimal: ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n  Ternary: ");
     vga_puts(ter);
     vga_puts("\n  Base-60: ");
     for (int i = b60_len - 1; i >= 0; i--) {
-        char nb[4];
-        num_to_str(base60[i], nb);
+        char nb[12];
+        num_to_str_bounded(base60[i], nb, 12);
         vga_puts(nb);
         if (i > 0) vga_puts(".");
     }

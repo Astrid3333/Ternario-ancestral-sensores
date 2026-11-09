@@ -39,7 +39,7 @@ int8_t ftp_connect(const char* host, uint16_t port) {
     vga_puts("[FTP] Connecting to ");
     vga_puts(host);
     vga_puts(":");
-    { char nb[8]; num_to_str(port, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(port, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     uint32_t ip = dns_resolve(host);
@@ -159,7 +159,7 @@ int8_t ftp_get(const char* host, const char* path, const char* filename) {
         vga_puts("[FTP] Downloaded: ");
         vga_puts(filename);
         vga_puts(" (");
-        { char nb[8]; num_to_str(total, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(total, nb, 12); vga_puts(nb); }
         vga_puts(" bytes)\n");
         vga_set_color(0x07, 0);
         return 0;

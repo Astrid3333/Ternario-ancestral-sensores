@@ -82,16 +82,46 @@ fprintf('    Ternario: %e J\n', bench.energy_ternary);
 fprintf('    Ahorro: %.1f%%\n', bench.energy_saving * 100);
 
 % --- 6. Verificación H4 (Landauer) ---
+% Landauer: E_min = kB*T*ln(S) para borrar un símbolo de S estados equiprobables.
+% Ojo con las unidades: un trit vale log2(3) = 1.585 bits, así que "por símbolo"
+% y "por bit" NO son la misma magnitud. Se reportan las dos por separado y con
+% el modelo explícito; comparar ln(S)/S (memoria multinivel: se borra un nivel
+% entre S) contra ln(S) (Landauer clásico) mezclaba dos modelos distintos.
 fprintf('\n--- 6. Verificación Landauer (H4) ---\n');
 kB = 1.380649e-23;
 T = 300;
-E_binary = kB * T * log(2);
-E_ternary = kB * T * log(3);
-fprintf('  Energía por bit (binario): %e J\n', E_binary);
+E_binary = kB * T * log(2);          % por bit (S = 2)
+E_ternary = kB * T * log(3);         % por trit (S = 3)
+bits_per_symbol_binary = log2(2);
+bits_per_symbol_ternary = log2(3);
+
+fprintf('  [Landauer clásico: E = kB*T*ln(S)]\n');
+fprintf('  Energía por bit  (binario): %e J\n', E_binary);
 fprintf('  Energía por trit (ternario): %e J\n', E_ternary);
-fprintf('  Eficiencia ternario/binario: %.3f\n', log(3)/log(2));
-fprintf('  ln(3)/3 = %.6f vs ln(2)/2 = %.6f\n', log(3)/3, log(2)/2);
-fprintf('  Ternario es %.1f%% más eficiente por símbolo\n', (log(3)/3 - log(2)/2) / (log(2)/2) * 100);
+fprintf('  Coste por símbolo: ternario/binario = %.3f (el trit gasta %.1f%% más energía por símbolo)\n', ...
+        E_ternary / E_binary, (E_ternary / E_binary - 1) * 100);
+
+fprintf('  [Por bit de información: E/bit = E/log2(S)]\n');
+e_per_bit_binary = E_binary / bits_per_symbol_binary;
+e_per_bit_ternary = E_ternary / bits_per_symbol_ternary;
+fprintf('  Energía por bit (binario): %e J/bit\n', e_per_bit_binary);
+fprintf('  Energía por bit (ternario): %e J/bit\n', e_per_bit_ternary);
+fprintf('  Diferencia por bit: %.1f%% (Landauer clásico da el MISMO coste por bit)\n', ...
+        (e_per_bit_ternary - e_per_bit_binary) / e_per_bit_binary * 100);
+
+fprintf('  [Memoria multinivel: E = kB*T*ln(S)/S, se borra un nivel entre S]\n');
+e_ml_binary = kB * T * log(2) / 2;
+e_ml_ternary = kB * T * log(3) / 3;
+e_ml_bit_binary = e_ml_binary / bits_per_symbol_binary;
+e_ml_bit_ternary = e_ml_ternary / bits_per_symbol_ternary;
+fprintf('  Energía por símbolo (binario): %e J\n', e_ml_binary);
+fprintf('  Energía por símbolo (ternario): %e J\n', e_ml_ternary);
+fprintf('  Coste por símbolo: ternario es %.1f%% más caro que el binario\n', ...
+        (e_ml_ternary - e_ml_binary) / e_ml_binary * 100);
+fprintf('  Ahorro por bit:    ternario es %.1f%% más barato que el binario\n', ...
+        (e_ml_bit_binary - e_ml_bit_ternary) / e_ml_bit_binary * 100);
+fprintf('  Nota: el ahorro global de energía (%0.1f%%) viene de la compresión, no del modelo termodinámico.\n', ...
+        bench.energy_saving * 100);
 
 % --- 7. Guardar resultados ---
 fprintf('\n--- 7. Guardando resultados ---\n');

@@ -120,7 +120,7 @@ void cmd_calc(const char* args) {
     calc_to_ternary(result, ter);
     
     vga_puts("\n  Result: ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n  Ternary: ");
     vga_puts(ter);
     vga_puts("\n\n");
@@ -175,11 +175,11 @@ void cmd_clock(const char* args) {
     
     vga_puts("\n  [Clock]\n\n");
     vga_puts("  Time: ");
-    { char nb[3]; num_to_str(h, nb); if (h < 10) vga_putc('0'); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(h, nb, 12); if (h < 10) vga_putc('0'); vga_puts(nb); }
     vga_puts(":");
-    { char nb[3]; num_to_str(m, nb); if (m < 10) vga_putc('0'); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(m, nb, 12); if (m < 10) vga_putc('0'); vga_puts(nb); }
     vga_puts(":");
-    { char nb[3]; num_to_str(s, nb); if (s < 10) vga_putc('0'); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(s, nb, 12); if (s < 10) vga_putc('0'); vga_puts(nb); }
     vga_puts("\n\n");
     
     vga_puts("  Ternary time: ");
@@ -327,11 +327,11 @@ void cmd_convert(const char* args) {
     
     if (converted) {
         vga_puts("\n  ");
-        { char nb[8]; num_to_str((int)value, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded((int)value, nb, 12); vga_puts(nb); }
         vga_puts(" ");
         vga_puts(from);
         vga_puts(" = ");
-        { char nb[8]; num_to_str((int)result, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded((int)result, nb, 12); vga_puts(nb); }
         vga_puts(" ");
         vga_puts(to);
         vga_puts("\n\n");
@@ -451,7 +451,7 @@ static void tetris_lock(void) {
 
 static void tetris_draw(void) {
     vga_puts("\n  [Ternary Tetris] Score: ");
-    { char nb[8]; num_to_str(tetris_score, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(tetris_score, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     
     // Draw board
@@ -491,7 +491,7 @@ static void tetris_draw(void) {
 void cmd_tetris(const char* args) {
     if (strcmp_t(args, "quit") == 0 || strcmp_t(args, "q") == 0) {
         vga_puts("  Game over! Final score: ");
-        { char nb[8]; num_to_str(tetris_score, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(tetris_score, nb, 12); vga_puts(nb); }
         vga_puts("\n");
         return;
     }
@@ -505,7 +505,7 @@ void cmd_tetris(const char* args) {
     
     if (tetris_game_over) {
         vga_puts("  Game over! Score: ");
-        { char nb[8]; num_to_str(tetris_score, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(tetris_score, nb, 12); vga_puts(nb); }
         vga_puts("\n  Type 'tetris start' to play again\n");
         return;
     }

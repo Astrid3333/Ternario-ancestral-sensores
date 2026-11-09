@@ -21,6 +21,10 @@ typedef unsigned int uint32_t;
 typedef uint32_t size_t;
 typedef signed long long int64_t;
 typedef unsigned long long uint64_t;
+typedef uint32_t uintptr_t;   // kernel 32-bit: puntero y direccion fisica share tamano
+
+// Fin de fichero / fin de entrada (estandar C)
+#define EOF (-1)
 
 // =============================================================================
 // I/O PORTS — Inline assembly para x86
@@ -289,6 +293,33 @@ static inline void int_to_str(int32_t n, char* buf) {
     else { num_to_str(n, buf); }
 }
 
+// Variantes con capacidad: nunca escriben fuera de buf[0..cap-1].
+// Usar estas cuando el buffer destino es local y su tamaño no esta acotado
+// por el valor (num_to_str no conoce el tamano del buffer y escribe
+// digitos+NUL sin limite: 11 bytes para un uint32_t, 12 con signo).
+static inline void num_to_str_bounded(uint32_t n, char* buf, uint32_t cap) {
+    if (cap == 0) return;
+    if (cap == 1) { buf[0] = 0; return; }
+    char tmp[12];
+    int i = 0;
+    if (n == 0) { buf[0] = '0'; buf[1] = 0; return; }
+    while (n > 0) { tmp[i++] = '0' + (n % 10); n /= 10; }
+    uint32_t j = 0;
+    while (i > 0 && j + 1 < cap) { buf[j++] = tmp[--i]; }
+    buf[j] = 0;
+}
+
+static inline void int_to_str_bounded(int32_t n, char* buf, uint32_t cap) {
+    if (cap == 0) return;
+    if (n < 0) {
+        if (cap < 2) { buf[0] = 0; return; }
+        buf[0] = '-';
+        num_to_str_bounded((uint32_t)(-(int64_t)n), buf + 1, cap - 1);
+    } else {
+        num_to_str_bounded((uint32_t)n, buf, cap);
+    }
+}
+
 static inline int8_t memcmp_t(const void* a, const void* b, uint16_t n) {
     const uint8_t* pa = (const uint8_t*)a;
     const uint8_t* pb = (const uint8_t*)b;
@@ -326,6 +357,8 @@ static inline int16_t parse_num(const char* str) {
 void mem_init(void);
 void mem_get_status(uint8_t* used, uint8_t* free_count, uint8_t* locked);
 uint8_t mem_get_color(uint8_t block);
+int16_t mem_alloc(uint8_t owner, uint8_t color);
+int8_t mem_free(uint8_t block_idx);
 
 void sched_init(void);
 int8_t sched_create(uint8_t parent, trit_t priority);
@@ -334,7 +367,7 @@ int8_t sched_sleep(uint8_t pid);
 int8_t sched_wake(uint8_t pid);
 uint8_t sched_tick(void);
 uint8_t sched_get_current(void);
-void sched_get_state(uint32_t* tick, uint8_t* tzolkin, uint8_t* haab, trit_t* load);
+void sched_get_state(uint32_t* tick, uint16_t* tzolkin, uint16_t* haab, trit_t* load);
 int8_t sched_get_info(uint8_t pid, process_t* info);
 int8_t sys_fork(void);
 
@@ -645,6 +678,11 @@ void wm_handle_release(void);
 uint8_t wm_get_window_count(void);
 int8_t wm_get_focused(void);
 void wm_status(void);
+void wm_redraw(void);
+
+// Puerto serie (kernel.c) — usado por syscalls.c y libc
+void serial_putc(char c);
+void serial_puts(const char* str);
 
 // AC97 Sound
 void ac97_init(void);

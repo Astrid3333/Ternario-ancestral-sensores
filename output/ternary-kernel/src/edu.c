@@ -178,7 +178,7 @@ static void cmd_conv(const char* args) {
     vga_puts("\n  Conversion for ");
     vga_puts(args);
     vga_puts(" (decimal: ");
-    { char nb[8]; num_to_str(decimal, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(decimal, nb, 12); vga_puts(nb); }
     vga_puts(")\n\n");
     
     // Binary
@@ -211,7 +211,7 @@ static void cmd_conv(const char* args) {
             num /= 20;
         }
         for (int i = mlen - 1; i >= 0; i--) {
-            { char nb[4]; num_to_str(maya[i] - '0', nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(maya[i] - '0', nb, 12); vga_puts(nb); }
             if (i > 0) vga_puts(".");
         }
     }
@@ -380,7 +380,7 @@ static void cmd_visualizar(const char* args) {
     decimal_to_binary(result, buf);
     vga_puts(buf);
     vga_puts("  = ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     
     // Ternary
@@ -400,7 +400,7 @@ static void cmd_visualizar(const char* args) {
     decimal_to_ternary(result, buf);
     vga_puts(buf);
     vga_puts("  = ");
-    { char nb[8]; num_to_str(result, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(result, nb, 12); vga_puts(nb); }
     vga_puts("\n\n");
     
     // Comparison
@@ -412,15 +412,15 @@ static void cmd_visualizar(const char* args) {
     
     vga_puts("  COMPARISON:\n");
     vga_puts("    Binary:  ");
-    { char nb[4]; num_to_str(bin_bits, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(bin_bits, nb, 12); vga_puts(nb); }
     vga_puts(" bits\n");
     vga_puts("    Ternary: ");
-    { char nb[4]; num_to_str(trit_count, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(trit_count, nb, 12); vga_puts(nb); }
     vga_puts(" trits\n");
     if (trit_count > 0 && bin_bits > 0) {
         int saving = (bin_bits - trit_count) * 100 / bin_bits;
         vga_puts("    Savings: ");
-        { char nb[4]; num_to_str(saving, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(saving, nb, 12); vga_puts(nb); }
         vga_puts("%\n");
     }
     vga_puts("\n");

@@ -167,9 +167,9 @@ static void rtl8139_init(void) {
     rtl8139_irq = pci.interrupt_line;
 
     vga_puts("[NET] RTL8139 found at IO=0x");
-    { char nb[8]; num_to_str(rtl8139_iobase, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(rtl8139_iobase, nb, 12); vga_puts(nb); }
     vga_puts(" IRQ=");
-    { char nb[8]; num_to_str(rtl8139_irq, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(rtl8139_irq, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     // Enable bus mastering
@@ -199,7 +199,7 @@ static void rtl8139_init(void) {
     vga_puts("\n");
 
     // Set Rx buffer start address
-    uint32_t rx_phys = (uint32_t)(uint64_t)rx_buffer;
+    uint32_t rx_phys = (uint32_t)(uintptr_t)rx_buffer;
     outl(rtl8139_iobase + RTL8139_RBSTART, rx_phys);
 
     // Configure Rx: accept broadcast + physical match
@@ -233,7 +233,7 @@ static void rtl8139_send_raw(uint8_t* data, uint16_t len) {
     memcpy_t(tx_buffer, data, len);
 
     // Set Tx start address
-    uint32_t tx_phys = (uint32_t)(uint64_t)tx_buffer;
+    uint32_t tx_phys = (uint32_t)(uintptr_t)tx_buffer;
     outl(rtl8139_iobase + RTL8139_TSAD0, tx_phys);
 
     // Set Tx status (length + OWN bit)
@@ -617,23 +617,23 @@ void net_init(void) {
     rtl8139_init();
 
     vga_puts("[NET] IP: ");
-    { char nb[8]; num_to_str((my_ip >> 24) & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((my_ip >> 24) & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts(".");
-    { char nb[8]; num_to_str((my_ip >> 16) & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((my_ip >> 16) & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts(".");
-    { char nb[8]; num_to_str((my_ip >> 8) & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((my_ip >> 8) & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts(".");
-    { char nb[8]; num_to_str(my_ip & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(my_ip & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 
     vga_puts("[NET] Gateway: ");
-    { char nb[8]; num_to_str((my_gateway >> 24) & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((my_gateway >> 24) & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts(".");
-    { char nb[8]; num_to_str((my_gateway >> 16) & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((my_gateway >> 16) & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts(".");
-    { char nb[8]; num_to_str((my_gateway >> 8) & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded((my_gateway >> 8) & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts(".");
-    { char nb[8]; num_to_str(my_gateway & 0xFF, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(my_gateway & 0xFF, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }
 
@@ -1245,10 +1245,10 @@ void dhcp_handle(uint8_t* packet, uint16_t len, uint32_t src_ip) {
         if (dns) dns_server = dns;
 
         vga_puts("[DHCP] IP assigned: ");
-        { char nb[8]; num_to_str((my_ip >> 24) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[8]; num_to_str((my_ip >> 16) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[8]; num_to_str((my_ip >> 8) & 0xFF, nb); vga_puts(nb); vga_puts("."); }
-        { char nb[8]; num_to_str(my_ip & 0xFF, nb); vga_puts(nb); vga_puts("\n"); }
+        { char nb[12]; num_to_str_bounded((my_ip >> 24) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((my_ip >> 16) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded((my_ip >> 8) & 0xFF, nb, 12); vga_puts(nb); vga_puts("."); }
+        { char nb[12]; num_to_str_bounded(my_ip & 0xFF, nb, 12); vga_puts(nb); vga_puts("\n"); }
     } else if (msg_type == DHCP_NAK) {
         vga_puts("[DHCP] Request rejected\n");
     }
@@ -1454,7 +1454,7 @@ uint32_t http_get(const char* url, uint8_t* buf, uint32_t buf_size) {
     
     vga_puts("[HTTP] Connecting to ");
     vga_puts(host);
-    { char nb[8]; num_to_str(port, nb); vga_puts(":"); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(port, nb, 12); vga_puts(":"); vga_puts(nb); }
     vga_puts("...\n");
     
     // Resolve DNS if needed
@@ -1509,7 +1509,7 @@ uint32_t http_get(const char* url, uint8_t* buf, uint32_t buf_size) {
     uint16_t body_offset = http_parse_headers(buf, total, &resp);
     
     vga_puts("[HTTP] Status: ");
-    { char nb[8]; num_to_str(resp.status, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(resp.status, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     if (resp.content_type[0]) {
@@ -1519,7 +1519,7 @@ uint32_t http_get(const char* url, uint8_t* buf, uint32_t buf_size) {
     }
     
     vga_puts("[HTTP] Body: ");
-    { char nb[8]; num_to_str(total - body_offset, nb); vga_puts(nb); vga_puts(" bytes\n"); }
+    { char nb[12]; int_to_str_bounded(total - body_offset, nb, 12); vga_puts(nb); vga_puts(" bytes\n"); }
     
     // Move body to start of buffer
     if (body_offset > 0 && body_offset < total) {
@@ -1582,7 +1582,7 @@ uint32_t https_get(const char* url, uint8_t* buf, uint32_t buf_size) {
     
     vga_puts("[HTTPS] Connecting to ");
     vga_puts(host);
-    { char nb[8]; num_to_str(port, nb); vga_puts(":"); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(port, nb, 12); vga_puts(":"); vga_puts(nb); }
     vga_puts("...\n");
     
     // Resolve DNS
@@ -1643,11 +1643,11 @@ uint32_t https_get(const char* url, uint8_t* buf, uint32_t buf_size) {
     uint16_t body_offset = http_parse_headers(buf, total, &resp);
     
     vga_puts("[HTTPS] Status: ");
-    { char nb[8]; num_to_str(resp.status, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(resp.status, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("[HTTPS] Body: ");
-    { char nb[8]; num_to_str(total - body_offset, nb); vga_puts(nb); vga_puts(" bytes\n"); }
+    { char nb[12]; int_to_str_bounded(total - body_offset, nb, 12); vga_puts(nb); vga_puts(" bytes\n"); }
     
     // Move body to start
     if (body_offset > 0 && body_offset < total) {
@@ -1684,7 +1684,7 @@ void cmd_wget(const char* url) {
     
     if (received > 0) {
         vga_puts("\n[WGET] Downloaded ");
-        { char nb[8]; num_to_str(received, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(received, nb, 12); vga_puts(nb); }
         vga_puts(" bytes\n");
         
         // Show first 512 bytes as preview

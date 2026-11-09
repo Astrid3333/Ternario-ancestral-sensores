@@ -340,9 +340,9 @@ int putchar(int c) {
 }
 
 int getchar(void) {
-    char c;
-    syscall_read(0, &c, 1);
-    return c;
+    unsigned char c = 0;
+    if (syscall_read(0, &c, 1) != 1) return EOF;
+    return (int)c;
 }
 
 int sprintf(char* str, const char* format, ...) {

@@ -95,7 +95,7 @@ script = ExtResource("1")
         # Run Godot headless
         try:
             result = subprocess.run(
-                [self.godot", "--headless", "--path", project_dir],
+                [self.godot, "--headless", "--path", project_dir],
                 capture_output=True, text=True, timeout=120
             )
             # Read results

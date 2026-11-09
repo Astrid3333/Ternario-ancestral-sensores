@@ -17,8 +17,8 @@
 typedef struct {
     uint32_t global_tick;
     uint8_t current_pid;
-    uint8_t tzolkin_day;
-    uint8_t haab_day;
+    uint16_t tzolkin_day;
+    uint16_t haab_day;
     uint8_t active_count;
     trit_t system_load;
 } __attribute__((packed)) scheduler_state_t;
@@ -190,7 +190,7 @@ uint8_t sched_get_current(void) {
     return scheduler.current_pid;
 }
 
-void sched_get_state(uint32_t* tick, uint8_t* tzolkin, uint8_t* haab, trit_t* load) {
+void sched_get_state(uint32_t* tick, uint16_t* tzolkin, uint16_t* haab, trit_t* load) {
     *tick = scheduler.global_tick;
     *tzolkin = scheduler.tzolkin_day;
     *haab = scheduler.haab_day;

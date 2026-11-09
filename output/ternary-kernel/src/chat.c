@@ -187,15 +187,15 @@ void chat_status(void) {
     vga_puts("\n");
     
     vga_puts("  Users online: ");
-    { char nb[4]; num_to_str(n_users, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_users, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("  Messages: ");
-    { char nb[4]; num_to_str(n_messages, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_messages, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     vga_puts("  Rooms: ");
-    { char nb[4]; num_to_str(n_rooms, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_rooms, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }
 

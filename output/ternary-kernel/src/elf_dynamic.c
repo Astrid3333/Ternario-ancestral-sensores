@@ -122,7 +122,7 @@ typedef struct {
 } symbol_entry_t;
 
 static symbol_entry_t global_symbols[MAX_SYMBOLS];
-static uint8_t global_symbol_count = 0;
+static uint16_t global_symbol_count = 0;
 
 // =============================================================================
 // Symbol Table Management
@@ -160,7 +160,7 @@ void dyn_list_symbols(void) {
         vga_puts(" @ 0x");
         { char nb[8]; num_to_hex(global_symbols[i].address, nb); vga_puts(nb); }
         vga_puts(" (");
-        { char nb[8]; num_to_str(global_symbols[i].size, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(global_symbols[i].size, nb, 12); vga_puts(nb); }
         vga_puts(" bytes)\n");
     }
     vga_puts("\n");

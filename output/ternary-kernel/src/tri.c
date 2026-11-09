@@ -389,7 +389,7 @@ static void interp_stmt(interpreter_t* interp) {
         interp_dec_to_ternary(val, buf);
         
         interp_print(interp, "  ");
-        { char nb[8]; num_to_str(val, nb); interp_print(interp, nb); }
+        { char nb[12]; int_to_str_bounded(val, nb, 12); interp_print(interp, nb); }
         interp_print(interp, " (ternary: ");
         interp_print(interp, buf);
         interp_print(interp, ")\n");
@@ -805,7 +805,7 @@ void editor_load(const char* filename) {
     vga_puts("  Loaded: ");
     vga_puts(filename);
     vga_puts(" (");
-    { char nb[4]; num_to_str(editor_line_count, nb); vga_puts(nb); }
+    { char nb[12]; int_to_str_bounded(editor_line_count, nb, 12); vga_puts(nb); }
     vga_puts(" lines)\n");
 }
 
@@ -821,7 +821,7 @@ void editor_display(void) {
     for (int i = start; i < end; i++) {
         // Line number
         vga_set_color(0x08, 0);
-        { char nb[4]; num_to_str(i + 1, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(i + 1, nb, 12); vga_puts(nb); }
         vga_puts(": ");
         vga_set_color(0x07, 0);
         
@@ -842,9 +842,9 @@ void editor_display(void) {
     vga_puts(editor_filename);
     if (editor_modified) vga_puts(" *");
     vga_puts("] Line ");
-    { char nb[4]; num_to_str(editor_cursor_y + 1, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(editor_cursor_y + 1, nb, 12); vga_puts(nb); }
     vga_puts(", Col ");
-    { char nb[4]; num_to_str(editor_cursor_x + 1, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(editor_cursor_x + 1, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     vga_puts("  Commands: save, run, quit\n\n");
 }

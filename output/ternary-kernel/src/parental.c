@@ -58,11 +58,11 @@ void parental_set_schedule(uint8_t day, uint8_t start, uint8_t end) {
     schedules[day].active = 1;
     
     vga_puts("[PARENTAL] Schedule set: day ");
-    { char nb[2]; num_to_str(day, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(day, nb, 12); vga_puts(nb); }
     vga_puts(" ");
-    { char nb[4]; num_to_str(start, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(start, nb, 12); vga_puts(nb); }
     vga_puts(":00 - ");
-    { char nb[4]; num_to_str(end, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(end, nb, 12); vga_puts(nb); }
     vga_puts(":00\n");
 }
 
@@ -157,6 +157,6 @@ void parental_status(void) {
     vga_puts("\n");
     
     vga_puts("  Filters: ");
-    { char nb[4]; num_to_str(n_filters, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(n_filters, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

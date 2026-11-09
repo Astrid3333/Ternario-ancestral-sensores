@@ -115,6 +115,6 @@ void doh_status(void) {
     }
     
     vga_puts("  Cache entries: ");
-    { char nb[4]; num_to_str(cached, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(cached, nb, 12); vga_puts(nb); }
     vga_puts("\n");
 }

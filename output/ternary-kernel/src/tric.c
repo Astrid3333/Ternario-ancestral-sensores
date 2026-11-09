@@ -245,7 +245,7 @@ static void eat(token_type_t expected) {
         current_token = next_token();
     } else {
         vga_puts("  [tric] Syntax error at line ");
-        { char nb[8]; num_to_str(current_token.line, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(current_token.line, nb, 12); vga_puts(nb); }
         vga_puts("\n");
     }
 }
@@ -559,7 +559,7 @@ void cmd_tric(const char* args) {
 
         if (tric_compile(code, code_buf, &code_size) == 0) {
             vga_puts("  Compiled: ");
-            { char nb[8]; num_to_str(code_size, nb); vga_puts(nb); }
+            { char nb[12]; int_to_str_bounded(code_size, nb, 12); vga_puts(nb); }
             vga_puts(" bytes\n\n");
 
             // Execute
@@ -578,7 +578,7 @@ void cmd_tric(const char* args) {
 
     if (tric_compile(args, code_buf, &code_size) == 0) {
         vga_puts("  Compiled: ");
-        { char nb[8]; num_to_str(code_size, nb); vga_puts(nb); }
+        { char nb[12]; int_to_str_bounded(code_size, nb, 12); vga_puts(nb); }
         vga_puts(" bytes\n\n");
 
         vga_puts("  Output:\n");

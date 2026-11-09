@@ -419,9 +419,9 @@ int8_t tls_connect(uint32_t ip, uint16_t port) {
     uint16_t rec_len2 = (buf[3] << 8) | buf[4];
     
     vga_puts("[TLS] Received record type=");
-    { char nb[4]; num_to_str(rec_type, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(rec_type, nb, 12); vga_puts(nb); }
     vga_puts(" len=");
-    { char nb[8]; num_to_str(rec_len2, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(rec_len2, nb, 12); vga_puts(nb); }
     vga_puts("\n");
     
     // For now, return success (simplified handshake)

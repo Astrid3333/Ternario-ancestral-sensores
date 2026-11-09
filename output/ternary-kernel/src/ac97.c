@@ -223,7 +223,7 @@ void ac97_init(void) {
     
     vga_puts("[SOUND] AC97 initialized\n");
     vga_puts("[SOUND] Sample rate: ");
-    { char nb[8]; num_to_str(current_sample_rate, nb); vga_puts(nb); }
+    { char nb[12]; num_to_str_bounded(current_sample_rate, nb, 12); vga_puts(nb); }
     vga_puts(" Hz\n");
 }
 
@@ -241,7 +241,7 @@ void ac97_status(void) {
         { char nb[8]; num_to_hex(ac97_nabm, nb); vga_puts(nb); }
         vga_puts("\n");
         vga_puts("  Sample rate: ");
-        { char nb[8]; num_to_str(current_sample_rate, nb); vga_puts(nb); }
+        { char nb[12]; num_to_str_bounded(current_sample_rate, nb, 12); vga_puts(nb); }
         vga_puts(" Hz\n");
         vga_puts("  Status: Ready\n");
     } else {
